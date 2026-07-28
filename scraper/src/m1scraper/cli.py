@@ -89,8 +89,14 @@ def cmd_parse_combi(args):
 
     unknown: dict[str, int] = {}
     no_history = 0
+    junk = 0
     for n, path in enumerate(files, 1):
         record = parse_combi_page(int(path.stem), decode_html(path.read_bytes()))
+        if record["name"] is None:
+            # 存在しないIDは404ページへリダイレクトされる。コンビ名が取れないものは除外
+            junk += 1
+            records.pop(record["id"], None)
+            continue
         if not record["history"]:
             no_history += 1
         for year_entry in record["history"].values():
@@ -110,7 +116,7 @@ def cmd_parse_combi(args):
     report = WORK_DIR / "unknown_results.json"
     report.write_text(json.dumps(unknown, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[parse-combi] -> {out_path} (計{len(records)}組, 既存{merged_from}組とマージ)")
-    print(f"[parse-combi] 成績なし: {no_history}件 / 未知の結果文字列: {unknown or 'なし'}")
+    print(f"[parse-combi] 成績なし: {no_history}件 / 404等の除外: {junk}件 / 未知の結果文字列: {unknown or 'なし'}")
 
 
 def cmd_crawl_archive(args):

@@ -33,7 +33,9 @@ def parse_history(description: str) -> dict[str, dict]:
         for j, rm in enumerate(rounds):
             round_key = ROUND_NAME_TO_KEY[rm.group(1)]
             val_end = rounds[j + 1].start() if j + 1 < len(rounds) else len(segment)
-            raw_value = segment[rm.end() : val_end].strip()
+            raw_value = segment[rm.end() : val_end]
+            # 生HTMLフォールバック時は属性の切れ目やタグの手前までを値とする
+            raw_value = re.split(r'["<\n]', raw_value)[0].strip()[:50]
             key, unknown_raw = normalize_result(raw_value)
             results[round_key] = key
             if unknown_raw is not None:
@@ -50,6 +52,11 @@ def parse_combi_page(combi_id: int, html: str) -> dict:
 
     meta = soup.find("meta", attrs={"name": "description"})
     description = meta["content"] if meta else ""
+    history = parse_history(description)
+    if not history:
+        # コンビ名にダブルクォートを含むとサイト側のmeta属性が壊れて成績が切れる
+        # (例: 九州男子")。その場合は生HTML全体から年ブロックを拾う
+        history = parse_history(html)
 
     name_el = soup.select_one(".name-txt-full")
     kana_el = soup.select_one(".name-txt-kana")
@@ -88,7 +95,7 @@ def parse_combi_page(combi_id: int, html: str) -> dict:
         "formedRaw": formed_raw,
         "belong": belong,
         "members": members,
-        "history": parse_history(description),
+        "history": history,
     }
 
 

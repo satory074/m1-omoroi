@@ -36,8 +36,8 @@ class Fetcher:
                     raise
                 time.sleep(2 ** (attempt + 1))
                 continue
-            if resp.status_code in (429, 503):
-                # サーバ都合の拒否は長めに待つ
+            if resp.status_code == 429 or resp.status_code >= 500:
+                # レート制限や一時的なサーバエラーは長めに待ってリトライ
                 time.sleep(30 * (attempt + 1))
                 continue
             resp.raise_for_status()
