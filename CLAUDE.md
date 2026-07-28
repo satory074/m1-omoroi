@@ -17,7 +17,7 @@ uv run m1 crawl-combi [--limit N]    # 詳細ページ取得 → cache/combi/ (�
 uv run m1 parse-combi                # キャッシュ全件パース → work/combi.jsonl
 uv run m1 crawl-archive / parse-archive  # 2001〜2010 旧アーカイブ
 uv run m1 crawl-finals               # Wikipedia決勝得点表
-uv run m1 fetch-popularity --budget 95   # CSEヒット件数 (要 .env)
+uv run m1 fetch-popularity           # Wikipedia閲覧数(注目度)。APIキー不要
 uv run m1 build                      # work/* → ../data/* 生成 + 整合性検証
 uv run pytest
 
@@ -31,7 +31,8 @@ npm run dev / npm run build
 - 列挙は `list.php` 全41,018組・20件/頁。公式DBは2015年以降のみ
 - 2001〜2010は `archive/{year}/` の日付別ページ(合格者のみ → 敗退者は前回戦との差分導出、1回戦敗退者は不明)
 - 生HTMLは `scraper/cache/` にキャッシュ(gitignore、~2GB)。再パースはクロール不要
-- レート制限: 2〜4req/s厳守。CSEはCIで実行しない(課金防止)
+- レート制限: 2〜4req/s厳守
+- 注目度ソートはWikipedia閲覧数(直近1年)。当初のGoogle CSEヒット件数案は、GoogleがCSEの「ウェブ全体を検索」を2027-01に廃止予定のため断念した経緯あり
 
 ## 注意
 

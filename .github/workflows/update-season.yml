@@ -1,6 +1,5 @@
 # シーズン中(8〜12月)の週次差分更新。
 # 2026年出場コンビの最新ステータスを走査し、変化したコンビだけ詳細を再取得して data/ を更新する。
-# CSE(検索ヒット件数)はCIでは実行しない(課金防止のためローカル手動のみ)。
 name: Update season data
 
 on:
@@ -31,12 +30,14 @@ jobs:
           uv run m1 crawl-combi --ids work/changed_2026.json --force
           # 変化したコンビだけ再取得し、コミット済みの正本(combi.jsonl.gz)にマージする
           uv run m1 parse-combi
+          # 新たに準々決勝へ進んだコンビの注目度(Wikipedia閲覧数)を追加取得
+          uv run m1 fetch-popularity
           uv run m1 build
       - name: Commit data changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data scraper/state scraper/work/combi.jsonl.gz
+          git add data scraper/state scraper/work/combi.jsonl.gz scraper/work/popularity.json
           if git diff --cached --quiet; then
             echo "変更なし"
           else

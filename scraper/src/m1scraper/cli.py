@@ -146,9 +146,9 @@ def cmd_crawl_finals(args):
 
 
 def cmd_fetch_popularity(args):
-    from .cse_popularity import fetch_popularity
+    from .wiki_popularity import fetch_popularity
 
-    fetch_popularity(budget=args.budget)
+    fetch_popularity()
 
 
 def cmd_build(args):
@@ -187,8 +187,7 @@ def main():
     p.add_argument("--year", type=int)
     p.set_defaults(func=cmd_crawl_finals)
 
-    p = sub.add_parser("fetch-popularity", help="Google CSEでヒット件数を取得")
-    p.add_argument("--budget", type=int, default=95, help="この実行で使うクエリ数上限")
+    p = sub.add_parser("fetch-popularity", help="Wikipedia閲覧数(注目度)を取得")
     p.set_defaults(func=cmd_fetch_popularity)
 
     p = sub.add_parser("build", help="work/* から data/* を生成")

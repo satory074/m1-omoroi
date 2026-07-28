@@ -55,7 +55,7 @@ export default function App() {
             <a href="https://www.m-1gp.com/" target="_blank" rel="noreferrer">
               M-1グランプリ公式サイト
             </a>
-            、決勝の得点はWikipediaを出典としています。検索ヒット件数はGoogle検索の参考値です。
+            、決勝の得点はWikipediaを出典としています。注目度は各コンビのWikipedia記事の閲覧数(直近1年)です。
           </p>
         </div>
       </footer>

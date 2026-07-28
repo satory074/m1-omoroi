@@ -172,11 +172,11 @@ export default function YearPage() {
         <select value={sort} onChange={(e) => setParam('sort', e.target.value)} aria-label="並び順">
           <option value="no">エントリーNo順</option>
           <option value="kana">五十音順</option>
-          <option value="hits">Google検索ヒット件数順</option>
+          <option value="hits">注目度順 (Wikipedia閲覧数)</option>
         </select>
         {sort === 'hits' && (
           <p className="hit-note">
-            ヒット件数は準々決勝以上に進出経験のあるコンビのみ取得した参考値です。未取得のコンビは五十音順で後ろに並びます。
+            注目度は各コンビのWikipedia記事の直近1年の閲覧数です(準々決勝以上の進出経験があるコンビが対象)。記事がないコンビは五十音順で後ろに並びます。
           </p>
         )}
       </div>
@@ -189,7 +189,7 @@ export default function YearPage() {
             {ROUND_LABEL[round]}
             {resultFilter === 'all' && ` (通過 ${passCount.toLocaleString('ja-JP')})`}
           </span>
-          <span className="hits">検索ヒット</span>
+          <span className="hits">注目度</span>
         </div>
         {rows.length === 0 ? (
           <div className="board-empty">該当するコンビがいません</div>
