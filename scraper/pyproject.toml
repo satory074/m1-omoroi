@@ -1,0 +1,26 @@
+[project]
+name = "m1scraper"
+version = "0.1.0"
+description = "M-1グランプリ公式サイト等からファンサイト用データを収集・生成するスクレイパー"
+readme = "README.md"
+authors = [
+    { name = "satory074", email = "satory074@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "httpx>=0.28.1",
+    "lxml>=6.1.1",
+]
+
+[project.scripts]
+m1 = "m1scraper.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.28,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

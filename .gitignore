@@ -1,0 +1,19 @@
+# Python
+scraper/.venv/
+scraper/cache/
+scraper/work/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+web/node_modules/
+web/dist/
+web/public/data/
+
+# Secrets
+.env
+scraper/.env
+
+# OS
+.DS_Store

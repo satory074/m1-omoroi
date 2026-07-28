@@ -1,0 +1,695 @@
+/* ============ デザイントークン ============
+   舞台の黒(ヘッダー) × 合格発表の紙(データ面) × M-1の朱 × 王者の金 */
+:root {
+  --stage: #121010;
+  --stage-2: #1e1a18;
+  --ink: #221e1a;
+  --paper: #faf8f4;
+  --paper-2: #f2eee6;
+  --line: #e2dcd0;
+  --red: #c8102e;
+  --red-dark: #9c0c23;
+  --gold: #a5762a;
+  --gold-bg: #f7efdc;
+  --muted: #8a8378;
+  --font-jp: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --font-num: "Barlow Condensed", "Zen Kaku Gothic New", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-jp);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ============ アプリ骨格 ============ */
+.app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 16px 64px;
+}
+
+/* ============ ヘッダー(舞台) ============ */
+.site-header {
+  background: var(--stage);
+  color: #fff;
+}
+
+.site-header-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 14px 16px 0;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.brand-m1 {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: var(--red);
+  padding: 4px 8px 2px;
+  border-radius: 3px;
+}
+
+.brand-name {
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+}
+
+.brand-sub {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.site-nav {
+  display: flex;
+  gap: 2px;
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+.site-nav a {
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: 0.05em;
+  padding: 8px 14px 10px;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.site-nav a:hover {
+  color: #fff;
+}
+
+.site-nav a.active {
+  color: #fff;
+  border-bottom-color: var(--red);
+}
+
+/* ============ 年ストリップ ============ */
+.year-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 18px 0 4px;
+  scrollbar-width: thin;
+}
+
+.year-strip a {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  color: var(--muted);
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #fff;
+}
+
+.year-strip a:hover {
+  color: var(--ink);
+  border-color: var(--muted);
+}
+
+.year-strip a.active {
+  color: #fff;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.year-strip .gap {
+  align-self: center;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 2px;
+}
+
+/* ============ ファネル(シグネチャー) ============ */
+.funnel {
+  display: flex;
+  gap: 3px;
+  margin: 14px 0 18px;
+}
+
+.funnel-step {
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 8px 10px 6px;
+  min-width: 0;
+  background: var(--paper-2);
+  color: var(--ink);
+  border-radius: 3px;
+  border-bottom: 3px solid transparent;
+  transition: background 0.15s;
+}
+
+.funnel-step:hover {
+  background: var(--line);
+}
+
+.funnel-step.active {
+  background: var(--stage);
+  color: #fff;
+  border-bottom-color: var(--red);
+}
+
+.funnel-step .label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.funnel-step .count {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+
+.funnel-step .count small {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.funnel-step.active .count small {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 720px) {
+  .funnel {
+    flex-wrap: wrap;
+  }
+  .funnel-step {
+    flex: 1 1 28% !important;
+  }
+}
+
+/* ============ ツールバー ============ */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.seg button {
+  border: none;
+  background: transparent;
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  border-right: 1px solid var(--line);
+}
+
+.seg button:last-child {
+  border-right: none;
+}
+
+.seg button.active {
+  background: var(--ink);
+  color: #fff;
+}
+
+.toolbar input[type='search'] {
+  flex: 1;
+  min-width: 160px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 14px;
+  background: #fff;
+}
+
+.toolbar select {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  background: #fff;
+  color: var(--ink);
+}
+
+.toolbar .hit-note {
+  width: 100%;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ============ 一覧テーブル(合格発表の紙) ============ */
+.board {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.board-head,
+.board-row {
+  display: grid;
+  grid-template-columns: 76px 1fr 130px 110px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+}
+
+.board-head {
+  height: 38px;
+  background: var(--paper-2);
+  border-bottom: 1px solid var(--line);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.board-scroll {
+  height: min(62dvh, 640px);
+  overflow-y: auto;
+}
+
+.board-row {
+  height: 44px;
+  border-bottom: 1px solid var(--paper-2);
+  font-size: 14.5px;
+}
+
+.board-row .no {
+  font-family: var(--font-num);
+  font-weight: 500;
+  font-size: 17px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.board-row .name {
+  font-weight: 700;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-row .name:hover {
+  color: var(--red);
+  text-decoration: underline;
+}
+
+.board-row .hits {
+  font-family: var(--font-num);
+  font-size: 16px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.board-empty {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .board-head,
+  .board-row {
+    grid-template-columns: 60px 1fr 96px;
+  }
+  .board-head .hits,
+  .board-row .hits {
+    display: none;
+  }
+}
+
+/* ============ 結果バッジ ============ */
+.result {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.result .sym {
+  font-size: 15px;
+}
+
+.result.pass,
+.result.seed_pass {
+  color: var(--red);
+}
+
+.result.fail,
+.result.fail_inferred {
+  color: var(--muted);
+}
+
+.result.champion {
+  color: var(--gold);
+}
+
+.result.unknown {
+  color: var(--muted);
+}
+
+/* ============ 汎用 ============ */
+.page-title {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 20px 0 4px;
+}
+
+.page-lede {
+  color: var(--muted);
+  font-size: 13.5px;
+  margin: 0 0 8px;
+}
+
+.loading,
+.error-box {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.error-box {
+  color: var(--red-dark);
+}
+
+/* ============ コンビ詳細 ============ */
+.combi-name {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.combi-kana {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+.member-cards {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0 4px;
+}
+
+.member-card {
+  flex: 1 1 240px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px 14px;
+}
+
+.member-name {
+  font-weight: 700;
+}
+
+.member-info {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  margin: 28px 0 8px;
+}
+
+.section-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin: -4px 0 8px;
+}
+
+.history-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+}
+
+.history {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  min-width: 640px;
+}
+
+.history th {
+  background: var(--paper-2);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 10px;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.history td {
+  border-bottom: 1px solid var(--paper-2);
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+
+.history td.year {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.history td.year a {
+  text-decoration: none;
+}
+
+.history td.year a:hover {
+  color: var(--red);
+}
+
+.history td.no {
+  font-family: var(--font-num);
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.history td.no.total {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.history td.cell {
+  text-align: center;
+  font-weight: 700;
+}
+
+.history td.cell.pass,
+.history td.cell.seed_pass {
+  color: var(--red);
+}
+
+.history td.cell.fail,
+.history td.cell.fail_inferred {
+  color: var(--muted);
+}
+
+.history td.cell.champion {
+  color: var(--gold);
+  background: var(--gold-bg);
+}
+
+.legend {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.official-link {
+  font-weight: 700;
+  color: var(--red);
+  text-decoration: none;
+}
+
+.official-link:hover {
+  text-decoration: underline;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* ============ ランキング ============ */
+.rank-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 8px 28px;
+}
+
+.rank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+}
+
+.rank-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--paper-2);
+}
+
+.rank-list li:last-child {
+  border-bottom: none;
+}
+
+.rank-pos {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--muted);
+  min-width: 22px;
+  text-align: right;
+}
+
+.rank-pos.champion {
+  color: var(--gold);
+}
+
+.rank-name {
+  flex: 1;
+  font-weight: 700;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-name:hover {
+  color: var(--red);
+}
+
+.rank-value {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 19px;
+}
+
+.rank-value small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+/* ============ フッター ============ */
+.site-footer {
+  border-top: 1px solid var(--line);
+  background: var(--paper-2);
+  margin-top: 48px;
+}
+
+.site-footer-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 20px 16px 28px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.site-footer a {
+  color: var(--muted);
+}
