@@ -60,6 +60,8 @@ def cmd_crawl_combi(args):
 
 
 def cmd_parse_combi(args):
+    import gzip
+
     from .combi_parser import parse_combi_page
 
     cache_dir = CACHE_DIR / "combi"
@@ -69,23 +71,45 @@ def cmd_parse_combi(args):
 
     WORK_DIR.mkdir(parents=True, exist_ok=True)
     out_path = WORK_DIR / "combi.jsonl"
+    gz_path = WORK_DIR / "combi.jsonl.gz"
+
+    # 既存の正本を読み込み、今回パースした分で上書きマージする。
+    # CI差分更新のようにキャッシュが部分的でも全コンビのデータが保たれる
+    records: dict[int, dict] = {}
+    if out_path.exists():
+        for line in out_path.open(encoding="utf-8"):
+            rec = json.loads(line)
+            records[rec["id"]] = rec
+    elif gz_path.exists():
+        with gzip.open(gz_path, "rt", encoding="utf-8") as f:
+            for line in f:
+                rec = json.loads(line)
+                records[rec["id"]] = rec
+    merged_from = len(records)
+
     unknown: dict[str, int] = {}
     no_history = 0
-    with out_path.open("w", encoding="utf-8") as out:
-        for n, path in enumerate(files, 1):
-            record = parse_combi_page(int(path.stem), decode_html(path.read_bytes()))
-            if not record["history"]:
-                no_history += 1
-            for year_entry in record["history"].values():
-                for raw in year_entry.get("raw", {}).values():
-                    unknown[raw] = unknown.get(raw, 0) + 1
-            out.write(json.dumps(record, ensure_ascii=False) + "\n")
-            if n % 2000 == 0 or n == len(files):
-                print(f"[parse-combi] {n}/{len(files)}", flush=True)
+    for n, path in enumerate(files, 1):
+        record = parse_combi_page(int(path.stem), decode_html(path.read_bytes()))
+        if not record["history"]:
+            no_history += 1
+        for year_entry in record["history"].values():
+            for raw in year_entry.get("raw", {}).values():
+                unknown[raw] = unknown.get(raw, 0) + 1
+        records[record["id"]] = record
+        if n % 2000 == 0 or n == len(files):
+            print(f"[parse-combi] {n}/{len(files)}", flush=True)
+
+    lines = [
+        json.dumps(records[i], ensure_ascii=False) + "\n" for i in sorted(records)
+    ]
+    out_path.write_text("".join(lines), encoding="utf-8")
+    with gzip.open(gz_path, "wt", encoding="utf-8") as f:
+        f.writelines(lines)
 
     report = WORK_DIR / "unknown_results.json"
     report.write_text(json.dumps(unknown, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"[parse-combi] -> {out_path}")
+    print(f"[parse-combi] -> {out_path} (計{len(records)}組, 既存{merged_from}組とマージ)")
     print(f"[parse-combi] 成績なし: {no_history}件 / 未知の結果文字列: {unknown or 'なし'}")
 
 

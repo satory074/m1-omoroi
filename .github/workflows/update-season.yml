@@ -1,0 +1,45 @@
+# シーズン中(8〜12月)の週次差分更新。
+# 2026年出場コンビの最新ステータスを走査し、変化したコンビだけ詳細を再取得して data/ を更新する。
+# CSE(検索ヒット件数)はCIでは実行しない(課金防止のためローカル手動のみ)。
+name: Update season data
+
+on:
+  schedule:
+    # 月曜 21:00 JST (12:00 UTC)。8〜12月のみ
+    - cron: '0 12 * 8-12 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Crawl season diff
+        working-directory: scraper
+        run: |
+          uv sync
+          uv run m1 crawl-list --year 2026 --refresh --detect-changed
+          uv run python -c "
+          import json, pathlib
+          changed = json.loads(pathlib.Path('work/changed_2026.json').read_text())
+          print(f'{len(changed)}組が更新対象')
+          "
+          uv run m1 crawl-combi --ids work/changed_2026.json --force
+          # 変化したコンビだけ再取得し、コミット済みの正本(combi.jsonl.gz)にマージする
+          uv run m1 parse-combi
+          uv run m1 build
+      - name: Commit data changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data scraper/state scraper/work/combi.jsonl.gz
+          if git diff --cached --quiet; then
+            echo "変更なし"
+          else
+            git commit -m "シーズンデータ自動更新 ($(date +%Y-%m-%d))"
+            git push
+          fi

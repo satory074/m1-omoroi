@@ -21,7 +21,6 @@ const SERIES = [
   { key: 'third', label: '3回戦', color: '#3468c0' },
 ] as const
 
-const INK = '#221e1a'
 const MUTED = '#8a8378'
 const GRID = '#e2dcd0'
 

@@ -1,10 +1,16 @@
 # Python
 scraper/.venv/
 scraper/cache/
-scraper/work/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# 中間ファイルは原則コミットしないが、CI差分更新に必要な正本だけ残す
+scraper/work/*
+!scraper/work/combi.jsonl.gz
+!scraper/work/archive_years.json
+!scraper/work/finals/
+!scraper/work/popularity.json
 
 # Node
 web/node_modules/

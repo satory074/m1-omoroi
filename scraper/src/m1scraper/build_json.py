@@ -27,9 +27,15 @@ PASSING = {"pass", "seed_pass", "champion"}
 
 def _load_combi_records() -> list[dict]:
     path = WORK_DIR / "combi.jsonl"
-    if not path.exists():
-        raise SystemExit(f"{path} がありません。先に `m1 parse-combi` を実行してください")
-    return [json.loads(line) for line in path.open(encoding="utf-8")]
+    if path.exists():
+        return [json.loads(line) for line in path.open(encoding="utf-8")]
+    gz_path = WORK_DIR / "combi.jsonl.gz"
+    if gz_path.exists():
+        import gzip
+
+        with gzip.open(gz_path, "rt", encoding="utf-8") as f:
+            return [json.loads(line) for line in f]
+    raise SystemExit(f"{path} がありません。先に `m1 parse-combi` を実行してください")
 
 
 def _write(path, obj):
