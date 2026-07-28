@@ -33,6 +33,8 @@ RESULT_TO_KEY = {
     "敗退": "fail",
     "シード権獲得により通過": "seed_pass",
     "優勝": "champion",
+    "欠席": "absent",
+    "出場予定": "scheduled",
 }
 
 

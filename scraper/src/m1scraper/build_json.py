@@ -77,12 +77,14 @@ def validate_years(year_files: dict[int, dict]):
                 appeared[rk] += 1
                 if res in PASSING:
                     passed[rk] += 1
-        # 敗者復活戦は本線と人数が独立なので単調性チェックから除外
+        # 敗者復活戦は本線と人数が独立なので単調性チェックから除外。
+        # ただし決勝には敗者復活戦の勝者も進むため、その分を許容する
         chain = [rk for rk in ROUND_KEYS if rk != "playoff" and appeared[rk] > 0]
         for a, b in zip(chain, chain[1:]):
-            if appeared[b] > passed[a]:
+            allowed = passed[a] + (passed["playoff"] if b == "final" else 0)
+            if appeared[b] > allowed:
                 problems.append(
-                    f"{year}: {b} 出場 {appeared[b]}人 > {a} 通過 {passed[a]}人"
+                    f"{year}: {b} 出場 {appeared[b]}人 > 前回戦通過 {allowed}人"
                 )
     if problems:
         for p in problems:

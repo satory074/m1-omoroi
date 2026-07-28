@@ -69,7 +69,8 @@ export default function YearPage() {
     if (!yearFile) return []
     let list = yearFile.entries.filter((e) => e.results[round])
     if (resultFilter === 'pass') list = list.filter((e) => isPassing(e.results[round]))
-    if (resultFilter === 'fail') list = list.filter((e) => !isPassing(e.results[round]))
+    if (resultFilter === 'fail')
+      list = list.filter((e) => e.results[round] === 'fail' || e.results[round] === 'fail_inferred')
     if (q.trim()) {
       const needle = q.trim()
       list = list.filter((e) => e.name.includes(needle) || (e.kana ?? '').includes(needle))

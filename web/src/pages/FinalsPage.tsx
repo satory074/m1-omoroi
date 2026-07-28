@@ -45,7 +45,9 @@ export default function FinalsPage() {
             </tr>
           </thead>
           <tbody>
-            {finals.firstRound.map((row) => (
+            {[...finals.firstRound]
+              .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))
+              .map((row) => (
               <tr key={row.name}>
                 <td className="no">{row.rank ?? ''}</td>
                 <td>
@@ -60,17 +62,20 @@ export default function FinalsPage() {
                     {s ?? ''}
                   </td>
                 ))}
-                <td className="no total">{row.total ?? ''}</td>
-              </tr>
-            ))}
+                  <td className="no total">{row.total ?? ''}</td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
+      <p className="legend">順位はファーストラウンドの得点順。優勝は最終決戦の得票で決定します。</p>
       {finals.finalRound && finals.finalRound.length > 0 && (
         <>
           <h2 className="section-title">最終決戦</h2>
           <ol className="rank-list">
-            {finals.finalRound.map((row) => (
+            {[...finals.finalRound]
+              .sort((a, b) => (b.votes ?? -1) - (a.votes ?? -1))
+              .map((row) => (
               <li key={row.name}>
                 <span className={`rank-pos ${row.champion ? 'champion' : ''}`}>
                   {row.champion ? '★' : ''}

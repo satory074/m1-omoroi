@@ -13,13 +13,15 @@
 import json
 import re
 
+import httpx
 from bs4 import BeautifulSoup
 
 from .config import ARCHIVE_INDEX_URL, ARCHIVE_YEARS, BASE_URL, CACHE_DIR, WORK_DIR
 from .http import Fetcher, decode_html
 from .models import ROUND_KEYS, ROUND_NAME_TO_KEY
 
-_PAGE_RE = re.compile(r'href="((?:\d{4}\w?|final)\.htm)"', re.I)
+# 年によりURL形式が異なる: 0830.htm / 0902.html / 0830/index.htm / final.html / final/index.html
+_PAGE_RE = re.compile(r'href="((?:\d{4}\w*|final)(?:/index)?\.html?)"', re.I)
 _AGENCY_RE = re.compile(r"^(.*?)[（(]([^（()）]+)[)）]$")
 _ROUND_IN_H1_RE = re.compile(r"(１回戦|1回戦|２回戦|2回戦|３回戦|3回戦|準々決勝|準決勝|敗者復活戦|決勝戦|決勝)")
 
@@ -30,9 +32,15 @@ def crawl_archive(fetcher: Fetcher, years: list[int] | None = None):
         index_url = ARCHIVE_INDEX_URL.format(year=year)
         index_html = decode_html(fetcher.get(index_url, cache_dir / "index.htm"))
         pages = sorted(set(_PAGE_RE.findall(index_html)))
+        # 2010年のようにインデックスから未リンクの final.htm が存在する年がある
+        if not any(p.startswith("final") for p in pages):
+            pages.append("final.htm")
         print(f"[crawl-archive {year}] {len(pages)}ページ")
         for page in pages:
-            fetcher.get(f"{BASE_URL}/archive/{year}/{page}", cache_dir / page)
+            try:
+                fetcher.get(f"{BASE_URL}/archive/{year}/{page}", cache_dir / page.replace("/", "_"))
+            except httpx.HTTPStatusError as e:
+                print(f"[crawl-archive {year}] {page}: {e.response.status_code} スキップ")
 
 
 def split_name_agency(cell_text: str) -> tuple[str, str | None]:
@@ -62,23 +70,52 @@ def parse_result_page(html: str) -> tuple[str | None, list[tuple[str, str | None
     is_marked = "赤字が合格者" in page_text
     is_pass_list = "合格者一覧" in page_text
 
-    if not (is_marked or is_pass_list):
-        return round_key, []
+    # 赤字は <font color="#FF0000"> のほか、CSSクラス(.style1 {color:#FF0000} 等)の年もある
+    red_classes = set(re.findall(r"\.([\w-]+)\s*\{[^}]*color\s*:\s*#?FF0000", html, re.I))
+
+    def is_red(td) -> bool:
+        if td.find("font", attrs={"color": re.compile("#?FF0000", re.I)}):
+            return True
+        if red_classes:
+            for el in td.find_all(class_=True):
+                if red_classes & set(el.get("class", [])):
+                    return True
+        if td.find(attrs={"style": re.compile(r"color\s*:\s*#?FF0000", re.I)}):
+            return True
+        return False
 
     rows: list[tuple[str, str | None, bool | None]] = []
     for table in soup.find_all("table"):
+        first_tr = table.find("tr")
+        header = [td.get_text(strip=True) for td in first_tr.find_all("td")] if first_tr else []
+
+        if len(header) >= 2 and any("合格者" in h for h in header):
+            # 2003〜2005年形式: 出場者/名前 | 合格者(花マーク画像) [| インタビュー]
+            pass_col = next(i for i, h in enumerate(header) if "合格者" in h)
+            for tr in table.find_all("tr")[1:]:
+                tds = tr.find_all("td")
+                if len(tds) <= pass_col:
+                    continue
+                name, agency = split_name_agency(tds[0].get_text())
+                if not name:
+                    continue
+                rows.append((name, agency, tds[pass_col].find("img") is not None))
+            continue
+
+        if not (is_marked or is_pass_list):
+            continue
         for tr in table.find_all("tr"):
             tds = tr.find_all("td")
-            if len(tds) != 1:
-                continue  # 結果テーブルは1列。得点表などはスキップ
-            td = tds[0]
+            # 1列(名前のみ) または 2列(グループ|名前, 2007年形式)。得点表などはスキップ
+            if len(tds) not in (1, 2):
+                continue
+            td = tds[-1]
             text = td.get_text()
             name, agency = split_name_agency(text)
-            if not name or name in ("名前",):
+            if not name or name in ("名前", "グループ"):
                 continue
             if is_marked:
-                red = td.find("font", attrs={"color": re.compile("#?FF0000", re.I)})
-                rows.append((name, agency, red is not None))
+                rows.append((name, agency, is_red(td)))
             else:
                 rows.append((name, agency, True))
     return round_key, rows
@@ -122,8 +159,8 @@ def _parse_year(year: int, cache_dir) -> dict | None:
     failed: dict[str, dict[str, str | None]] = {}
     marked_rounds: set[str] = set()
 
-    for path in sorted(cache_dir.glob("*.htm")):
-        if path.name in ("index.htm", "final.htm"):
+    for path in sorted(cache_dir.glob("*.htm*")):
+        if path.name.startswith(("index", "final")):
             continue
         round_key, rows = parse_result_page(decode_html(path.read_bytes()))
         if not round_key or not rows:
@@ -134,9 +171,16 @@ def _parse_year(year: int, cache_dir) -> dict | None:
         for name, agency, ok in rows:
             (passed if ok else failed).setdefault(round_key, {})[name] = agency
 
-    final_path = cache_dir / "final.htm"
+    final_path = next(
+        (
+            cache_dir / name
+            for name in ("final.htm", "final.html", "final_index.html", "final_index.htm")
+            if (cache_dir / name).exists()
+        ),
+        None,
+    )
     finals_data = None
-    if final_path.exists():
+    if final_path:
         finals_data = parse_archive_finals(year, decode_html(final_path.read_bytes()))
         if finals_data:
             finals_dir = WORK_DIR / "finals"

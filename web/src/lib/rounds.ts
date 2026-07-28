@@ -26,6 +26,8 @@ export const RESULT_DISPLAY: Record<ResultKey, { sym: string; label: string }> =
   fail: { sym: '×', label: '敗退' },
   fail_inferred: { sym: '×', label: '敗退' },
   champion: { sym: '★', label: '優勝' },
+  absent: { sym: '－', label: '欠席' },
+  scheduled: { sym: '…', label: '出場予定' },
   unknown: { sym: '—', label: '' },
 }
 

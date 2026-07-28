@@ -35,8 +35,15 @@ _VOTE_LABELS = {"得票数", "票数", "得票"}
 
 
 def _clean(text: str) -> str:
+    """空白をすべて除去(ヘッダ比較用。縦書き<br>の審査員名を連結する)。"""
     text = re.sub(r"\[[^\]]*\]", "", text)  # [注 1] などの脚注
     return re.sub(r"[\s　\xa0]+", "", text)
+
+
+def _squash(text: str) -> str:
+    """空白を1つに正規化(コンビ名用。「NON STYLE」の空白を保持する)。"""
+    text = re.sub(r"\[[^\]]*\]", "", text)
+    return re.sub(r"[\s　\xa0]+", " ", text).strip()
 
 
 def _table_to_grid(table) -> list[list[str]]:
@@ -52,7 +59,7 @@ def _table_to_grid(table) -> list[list[str]]:
                 ruby.decompose()
             while (r, c) in cells_at:
                 c += 1
-            text = _clean(cell.get_text())
+            text = _squash(cell.get_text())
             rowspan = int(cell.get("rowspan", 1) or 1)
             colspan = int(cell.get("colspan", 1) or 1)
             for dr in range(rowspan):
@@ -81,12 +88,17 @@ def parse_finals_page(year: int, html: str) -> dict | None:
         grid = _table_to_grid(table)
         if len(grid) < 2:
             continue
-        header = grid[0]
-        if "コンビ名" not in header:
-            continue
-        name_col = header.index("コンビ名")
+        # ヘッダ比較は空白除去後の文字列で行う(「名 前」「縦書き審査員名」対策)
+        header = [_clean(h) for h in grid[0]]
         vote_col = next((i for i, h in enumerate(header) if h in _VOTE_LABELS), None)
         total_col = next((i for i, h in enumerate(header) if h in _TOTAL_LABELS), None)
+        if "コンビ名" in header:
+            name_col = header.index("コンビ名")
+        elif total_col is not None and header[0] == "" and len(header) >= 3:
+            # 2009年公式final.htm形式: 先頭セルが空白でコンビ名列にヘッダがない
+            name_col = 0
+        else:
+            continue
 
         if vote_col is not None and final_round is None:
             rows = []

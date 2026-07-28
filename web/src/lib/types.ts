@@ -7,7 +7,15 @@ export type RoundKey =
   | 'playoff'
   | 'final'
 
-export type ResultKey = 'pass' | 'fail' | 'seed_pass' | 'champion' | 'fail_inferred' | 'unknown'
+export type ResultKey =
+  | 'pass'
+  | 'fail'
+  | 'seed_pass'
+  | 'champion'
+  | 'fail_inferred'
+  | 'absent'
+  | 'scheduled'
+  | 'unknown'
 
 export interface YearEntry {
   id: number | null
