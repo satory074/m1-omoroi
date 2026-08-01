@@ -28,7 +28,7 @@ export default function CombiPage() {
         {[
           combi.belong,
           combi.formedRaw && `結成 ${combi.formedRaw}`,
-          hits && `Wikipedia閲覧数 年間${formatHits(hits.n)}回 (${hits.at}時点)`,
+          hits && `YouTube関連動画再生数 ${formatHits(hits.n)}回 (${hits.at}時点)`,
         ]
           .filter(Boolean)
           .join(' ・ ')}

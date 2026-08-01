@@ -19,6 +19,8 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Crawl season diff
         working-directory: scraper
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: |
           uv sync
           uv run m1 crawl-list --year 2026 --refresh --detect-changed
@@ -30,8 +32,12 @@ jobs:
           uv run m1 crawl-combi --ids work/changed_2026.json --force
           # 変化したコンビだけ再取得し、コミット済みの正本(combi.jsonl.gz)にマージする
           uv run m1 parse-combi
-          # 新たに準々決勝へ進んだコンビの注目度(Wikipedia閲覧数)を追加取得
-          uv run m1 fetch-popularity
+          # 新たに準々決勝へ進んだコンビの注目度(YouTube再生数)を追加取得
+          if [ -n "$YOUTUBE_API_KEY" ]; then
+            uv run m1 fetch-popularity
+          else
+            echo "YOUTUBE_API_KEY未設定のため注目度の更新をスキップ"
+          fi
           uv run m1 build
       - name: Commit data changes
         run: |

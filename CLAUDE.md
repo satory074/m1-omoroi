@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-M-1グランプリのファンサイト。年度×回戦の合格者/敗退者一覧、Google検索ヒット件数ソート、コンビ詳細、記録ランキング、統計、決勝得点表。GitHub Pagesで公開: https://satory074.github.io/m1-omoroi/
+M-1グランプリのファンサイト。年度×回戦の合格者/敗退者一覧、注目度(YouTube再生数)ソート、コンビ詳細、記録ランキング、統計、決勝得点表。GitHub Pagesで公開: https://satory074.github.io/m1-omoroi/
 
 ## 構成
 
-- `scraper/` — Python (**uv必須**)。公式サイト m-1gp.com / Wikipedia / Google CSE からデータ収集し `data/` にJSONを生成
+- `scraper/` — Python (**uv必須**)。公式サイト m-1gp.com / Wikipedia / YouTube Data API からデータ収集し `data/` にJSONを生成
 - `data/` — 配信用JSONの正本(コミット対象)。スキーマは `scraper/src/m1scraper/build_json.py` 参照
 - `web/` — Vite + React + TS のSPA。ビルド前に `scripts/copy-data.mjs` が `../data` → `public/data` へコピー
 
@@ -17,7 +17,7 @@ uv run m1 crawl-combi [--limit N]    # 詳細ページ取得 → cache/combi/ (�
 uv run m1 parse-combi                # キャッシュ全件パース → work/combi.jsonl
 uv run m1 crawl-archive / parse-archive  # 2001〜2010 旧アーカイブ
 uv run m1 crawl-finals               # Wikipedia決勝得点表
-uv run m1 fetch-popularity           # Wikipedia閲覧数(注目度)。APIキー不要
+uv run m1 fetch-popularity [--limit N]  # YouTube再生数(注目度)。要 YOUTUBE_API_KEY。約95組/日
 uv run m1 build                      # work/* → ../data/* 生成 + 整合性検証
 uv run pytest
 
@@ -32,7 +32,8 @@ npm run dev / npm run build
 - 2001〜2010は `archive/{year}/` の日付別ページ(合格者のみ → 敗退者は前回戦との差分導出、1回戦敗退者は不明)
 - 生HTMLは `scraper/cache/` にキャッシュ(gitignore、~2GB)。再パースはクロール不要
 - レート制限: 2〜4req/s厳守
-- 注目度ソートはWikipedia閲覧数(直近1年)。当初のGoogle CSEヒット件数案は、GoogleがCSEの「ウェブ全体を検索」を2027-01に廃止予定のため断念した経緯あり
+- 注目度ソートはYouTube Data APIで「コンビ名 漫才」検索した上位10本の再生数合計(youtube_popularity.py)。環境変数 `YOUTUBE_API_KEY` が必要で、search.listが100units/回のため無料枠(10,000units/日)では約95組/日 → 全434組の初回取得は5日に分割(レジューム対応)
+- 指標の変遷: Google CSEヒット件数(ウェブ全体検索が2027-01廃止予定で断念) → Wikipedia閲覧数(記事のある348組しかカバーできず変更) → M-1公式ネタ動画再生数(シーズン終了後に全動画非公開化と判明し断念) → 現在のYouTube検索ベース
 
 ## 注意
 

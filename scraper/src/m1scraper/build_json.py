@@ -7,7 +7,7 @@
   combi/{NN}.json      詳細シャード (NN = id % 100)
   rankings.json        記録ランキング(事前集計)
   stats.json           年度別統計(事前集計)
-  popularity.json      CSEヒット件数 (work/popularity.json があれば)
+  popularity.json      YouTube再生数による注目度 (work/popularity.json があれば)
   finals/{year}.json   決勝得点表 (work/finals/ があれば)
 """
 

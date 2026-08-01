@@ -172,11 +172,11 @@ export default function YearPage() {
         <select value={sort} onChange={(e) => setParam('sort', e.target.value)} aria-label="並び順">
           <option value="no">エントリーNo順</option>
           <option value="kana">五十音順</option>
-          <option value="hits">注目度順 (Wikipedia閲覧数)</option>
+          <option value="hits">注目度順 (YouTube再生数)</option>
         </select>
         {sort === 'hits' && (
           <p className="hit-note">
-            注目度は各コンビのWikipedia記事の直近1年の閲覧数です(準々決勝以上の進出経験があるコンビが対象)。記事がないコンビは五十音順で後ろに並びます。
+            注目度はコンビ名でYouTube検索した上位動画の再生数合計です(準々決勝以上の進出経験があるコンビが対象)。データがないコンビは五十音順で後ろに並びます。
           </p>
         )}
       </div>

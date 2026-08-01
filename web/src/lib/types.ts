@@ -69,7 +69,7 @@ export interface CombiDetail {
 }
 
 export interface Popularity {
-  hits: Record<string, { n: number; at: string }>
+  hits: Record<string, { n: number; at: string; v?: number }>
 }
 
 export interface RankingItem {
