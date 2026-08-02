@@ -11,6 +11,9 @@
 - 対象: 3回戦以上に出場経験のあるコンビ(約1,300組)
 - search.list は100units/回、無料枠10,000units/日 → 約95組/日。
   枠の目安に達したら保存して中断し、翌日の再実行でレジュームする
+- ローリング更新: 未取得の組を優先し、残りは取得日の古い順に再取得する。
+  GitHub Actions (update-popularity.yml) が毎日実行するため、
+  全組が約2週間周期で自動的に更新され続ける
 - APIキー必須: 環境変数 YOUTUBE_API_KEY (GCPで YouTube Data API v3 を有効化して発行)
 - work/popularity.json はコミット対象(CIビルドでも使われる)
 """
@@ -58,6 +61,16 @@ def select_targets() -> list[dict]:
         ):
             targets.append({"id": rec["id"], "name": rec["name"]})
     return targets
+
+
+def plan_todo(targets: list[dict], hits: dict) -> list[dict]:
+    """未取得の組を先頭に、取得済みの組を取得日の古い順で並べる。"""
+    missing = [t for t in targets if str(t["id"]) not in hits]
+    stale = sorted(
+        (t for t in targets if str(t["id"]) in hits),
+        key=lambda t: hits[str(t["id"])]["at"],
+    )
+    return missing + stale
 
 
 def _raise_if_quota_exceeded(resp: httpx.Response) -> None:
@@ -150,10 +163,14 @@ def fetch_popularity(limit: int | None = None):
             data = prev
 
     targets = select_targets()
-    todo = [t for t in targets if str(t["id"]) not in data["hits"]]
+    todo = plan_todo(targets, data["hits"])
     if limit:
         todo = todo[:limit]
-    print(f"[fetch-popularity] 対象 {len(targets)}組 / 今回 {len(todo)}組 (YouTube再生数)")
+    n_missing = sum(1 for t in targets if str(t["id"]) not in data["hits"])
+    print(
+        f"[fetch-popularity] 対象 {len(targets)}組"
+        f" (未取得 {n_missing} / 更新待ち {len(targets) - n_missing}) (YouTube再生数)"
+    )
 
     today = date.today().isoformat()
     units = 0

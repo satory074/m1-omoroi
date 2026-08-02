@@ -8,6 +8,7 @@ from m1scraper.youtube_popularity import (
     QuotaExceeded,
     _mentions_name,
     fetch_view_counts,
+    plan_todo,
     search_video_ids,
     select_targets,
 )
@@ -158,6 +159,16 @@ def test_select_targets_third_round_or_higher(tmp_path, monkeypatch):
     monkeypatch.setattr(youtube_popularity, "WORK_DIR", tmp_path)
 
     assert [t["id"] for t in select_targets()] == [1, 3]
+
+
+def test_plan_todo_missing_first_then_oldest():
+    targets = [{"id": i, "name": f"c{i}"} for i in (1, 2, 3, 4)]
+    hits = {
+        "2": {"n": 10, "at": "2026-08-10"},
+        "3": {"n": 20, "at": "2026-08-01"},
+    }
+    # 未取得(1, 4)が先、取得済みは古い順(3 → 2)
+    assert [t["id"] for t in plan_todo(targets, hits)] == [1, 4, 3, 2]
 
 
 def test_plain_403_is_not_quota_error():
