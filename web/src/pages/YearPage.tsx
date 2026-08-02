@@ -1,5 +1,5 @@
-import { useMemo, useRef } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 
 import { useMeta, usePopularity, useYear } from '../lib/api'
@@ -10,6 +10,7 @@ type ResultFilter = 'all' | 'pass' | 'fail'
 type SortKey = 'no' | 'kana' | 'hits'
 
 function YearStrip({ years, current }: { years: number[]; current: number }) {
+  const { search } = useLocation()
   const items: (number | 'gap')[] = []
   const sorted = [...years].sort((a, b) => b - a)
   sorted.forEach((y, i) => {
@@ -24,7 +25,11 @@ function YearStrip({ years, current }: { years: number[]; current: number }) {
             休止
           </span>
         ) : (
-          <Link key={item} to={`/years/${item}`} className={item === current ? 'active' : ''}>
+          <Link
+            key={item}
+            to={{ pathname: `/years/${item}`, search }}
+            className={item === current ? 'active' : ''}
+          >
             {item}
           </Link>
         ),
@@ -38,9 +43,9 @@ export default function YearPage() {
   const year = Number(yearParam)
   const [params, setParams] = useSearchParams()
 
-  const round = (params.get('round') as RoundKey) || 'first'
+  const roundParam = (params.get('round') as RoundKey) || 'first'
   const resultFilter = (params.get('result') as ResultFilter) || 'all'
-  const sort = (params.get('sort') as SortKey) || 'no'
+  const sort = (params.get('sort') as SortKey) || 'hits'
   const q = params.get('q') || ''
 
   const { data: meta } = useMeta()
@@ -54,6 +59,15 @@ export default function YearPage() {
     setParams(next, { replace: true })
   }
 
+  // 検索inputはローカルstateで制御する。URL由来のqを直接valueに渡すと、
+  // setSearchParamsがstartTransitionで遅延されるためIME変換中に値が巻き戻って入力が壊れる
+  const [qInput, setQInput] = useState(q)
+  const searchRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    // 年切替や戻る/進むでURLが変わったときのみ反映。入力中(フォーカス中)は上書きしない
+    if (document.activeElement !== searchRef.current) setQInput(q)
+  }, [q])
+
   const roundCounts = useMemo(() => {
     const counts = new Map<RoundKey, number>()
     if (!yearFile) return counts
@@ -64,6 +78,9 @@ export default function YearPage() {
     }
     return counts
   }, [yearFile])
+
+  // 年切替で引き継いだ回戦がその年に存在しない場合は1回戦へフォールバック
+  const round = !yearFile || (roundCounts.get(roundParam) ?? 0) > 0 ? roundParam : 'first'
 
   const rows = useMemo(() => {
     if (!yearFile) return []
@@ -163,10 +180,14 @@ export default function YearPage() {
           ))}
         </div>
         <input
+          ref={searchRef}
           type="search"
           placeholder="コンビ名で探す"
-          value={q}
-          onChange={(e) => setParam('q', e.target.value)}
+          value={qInput}
+          onChange={(e) => {
+            setQInput(e.target.value)
+            setParam('q', e.target.value)
+          }}
           aria-label="コンビ名で探す"
         />
         <select value={sort} onChange={(e) => setParam('sort', e.target.value)} aria-label="並び順">
