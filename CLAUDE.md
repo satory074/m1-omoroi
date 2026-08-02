@@ -32,7 +32,7 @@ npm run dev / npm run build
 - 2001〜2010は `archive/{year}/` の日付別ページ(合格者のみ → 敗退者は前回戦との差分導出、1回戦敗退者は不明)
 - 生HTMLは `scraper/cache/` にキャッシュ(gitignore、~2GB)。再パースはクロール不要
 - レート制限: 2〜4req/s厳守
-- 注目度ソートはYouTube Data APIで「コンビ名 漫才」検索した上位10本の再生数合計(youtube_popularity.py)。環境変数 `YOUTUBE_API_KEY` が必要で、search.listが100units/回のため無料枠(10,000units/日)では約95組/日 → 全434組の初回取得は5日に分割(レジューム対応)
+- 注目度ソートはYouTube Data APIで「コンビ名 漫才」検索した上位10本のうち、タイトル/説明文/チャンネル名/タグにコンビ名を含む動画の再生数合計(youtube_popularity.py)。このフィルタは必須 — 無いと動画の少ない組の検索結果が無関係な高再生動画で埋まり順位が壊れる。環境変数 `YOUTUBE_API_KEY` が必要で、search.listが100units/回のため無料枠(10,000units/日)では約95組/日 → 全434組の初回取得は5日に分割(レジューム対応)。work側hitsの `ids` は検索結果全件で、フィルタ規則変更時はsearch再消費なしで再集計可能(buildで配信JSONからは除去)
 - 指標の変遷: Google CSEヒット件数(ウェブ全体検索が2027-01廃止予定で断念) → Wikipedia閲覧数(記事のある348組しかカバーできず変更) → M-1公式ネタ動画再生数(シーズン終了後に全動画非公開化と判明し断念) → 現在のYouTube検索ベース
 
 ## 注意

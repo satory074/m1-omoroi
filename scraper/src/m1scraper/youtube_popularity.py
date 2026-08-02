@@ -3,8 +3,10 @@
 指標の変遷: Google CSEヒット件数(CSEのウェブ全体検索が2027-01廃止予定で断念)
 → Wikipedia閲覧数(記事のある348組しかカバーできない)
 → M-1公式ネタ動画の再生数(シーズン終了後に全動画が非公開化されるため断念)
-→ 現方式: YouTube Data API v3 で「コンビ名 漫才」を検索し、上位10本の再生数を合計する。
-  「漫才」の限定語で同名の別対象への誤ヒットはほぼ解消される(一般名詞コンビ名で検証済み)。
+→ 現方式: YouTube Data API v3 で「コンビ名 漫才」を検索し、上位10本のうち
+  タイトル・説明文・チャンネル名・タグのいずれかにコンビ名を含む動画の再生数を合計する。
+  このフィルタがないと、動画の少ないマイナーコンビで検索結果が無関係な
+  高再生動画で埋まり、合計が桁違いに膨らむ(まっかちん5,200万回など)。
 
 - 対象: 準々決勝以上に進出経験のあるコンビ(数百組)
 - search.list は100units/回、無料枠10,000units/日 → 約95組/日。
@@ -16,13 +18,14 @@
 import json
 import os
 import time
+import unicodedata
 from datetime import date
 
 import httpx
 
 from .config import USER_AGENT, WORK_DIR
 
-SOURCE = "youtube-search-views"
+SOURCE = "youtube-search-views-v2"
 SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos"
 SEARCH_SUFFIX = " 漫才"
@@ -88,14 +91,29 @@ def search_video_ids(client: httpx.Client, api_key: str, name: str) -> list[str]
     ]
 
 
-def fetch_view_counts(client: httpx.Client, api_key: str, video_ids: list[str]) -> list[int]:
-    """動画IDごとの再生数。非公開化等で統計が取れないものは除外される。"""
+def _normalize(s: str) -> str:
+    return unicodedata.normalize("NFKC", s).casefold().replace(" ", "")
+
+
+def _mentions_name(item: dict, name: str) -> bool:
+    sn = item.get("snippet", {})
+    haystack = " ".join(
+        [sn.get("title", ""), sn.get("description", ""), sn.get("channelTitle", "")]
+        + sn.get("tags", [])
+    )
+    return _normalize(name) in _normalize(haystack)
+
+
+def fetch_view_counts(
+    client: httpx.Client, api_key: str, video_ids: list[str], name: str
+) -> list[int]:
+    """コンビ名を含む動画の再生数のみ。統計非公開の動画は除外される。"""
     views = []
     for i in range(0, len(video_ids), 50):
         resp = client.get(
             VIDEOS_URL,
             params={
-                "part": "statistics",
+                "part": "statistics,snippet",
                 "id": ",".join(video_ids[i : i + 50]),
                 "key": api_key,
             },
@@ -104,7 +122,7 @@ def fetch_view_counts(client: httpx.Client, api_key: str, video_ids: list[str]) 
         resp.raise_for_status()
         for item in resp.json().get("items", []):
             count = item.get("statistics", {}).get("viewCount")
-            if count is not None:
+            if count is not None and _mentions_name(item, name):
                 views.append(int(count))
     return views
 
@@ -144,7 +162,7 @@ def fetch_popularity(limit: int | None = None):
             try:
                 video_ids = search_video_ids(client, api_key, t["name"])
                 units += 100
-                views = fetch_view_counts(client, api_key, video_ids)
+                views = fetch_view_counts(client, api_key, video_ids, t["name"])
                 units += (len(video_ids) + 49) // 50
             except QuotaExceeded:
                 print("[fetch-popularity] APIクォータ超過。翌日再実行してください")
@@ -153,7 +171,14 @@ def fetch_popularity(limit: int | None = None):
                 print(f"[fetch-popularity] {t['name']}: 取得失敗 ({e}) スキップ")
                 time.sleep(2)
                 continue
-            data["hits"][str(t["id"])] = {"n": sum(views), "at": today, "v": len(views)}
+            # ids は検索結果全件(フィルタ前)。フィルタ規則の変更時に
+            # videos.list だけで再集計できるよう保持する(searchの100unitsを再消費しない)
+            data["hits"][str(t["id"])] = {
+                "n": sum(views),
+                "at": today,
+                "v": len(views),
+                "ids": video_ids,
+            }
             done += 1
             if n % 25 == 0 or n == len(todo):
                 pop_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
