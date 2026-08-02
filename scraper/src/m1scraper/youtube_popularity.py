@@ -58,6 +58,10 @@ def select_targets() -> list[dict]:
 
 
 def _raise_if_quota_exceeded(resp: httpx.Response) -> None:
+    # 枠切れ時は 403 quotaExceeded のほか 429 も返る。どちらも即中断して翌日に回す
+    # (1組ずつスキップ扱いにすると全434組へ無駄なリクエストを撃ち続けてしまう)
+    if resp.status_code == 429:
+        raise QuotaExceeded
     if resp.status_code != 403:
         return
     try:

@@ -57,6 +57,15 @@ def test_search_quota_exceeded():
             search_video_ids(client, "KEY", "カベポスター")
 
 
+def test_429_is_quota_error():
+    def handler(request):
+        return httpx.Response(429, json={"error": {"code": 429}})
+
+    with _client(handler) as client:
+        with pytest.raises(QuotaExceeded):
+            search_video_ids(client, "KEY", "ミキ")
+
+
 def test_mentions_name_fields_and_normalization():
     # タイトル一致
     assert _mentions_name(_video(1, title="真空ジェシカ 寄り添いサーカス"), "真空ジェシカ")
