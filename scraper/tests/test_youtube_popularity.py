@@ -1,11 +1,15 @@
+import json
+
 import httpx
 import pytest
 
+from m1scraper import youtube_popularity
 from m1scraper.youtube_popularity import (
     QuotaExceeded,
     _mentions_name,
     fetch_view_counts,
     search_video_ids,
+    select_targets,
 )
 
 
@@ -139,6 +143,21 @@ def test_fetch_view_counts_skips_missing_statistics():
 
     with _client(handler) as client:
         assert fetch_view_counts(client, "KEY", ["a", "b"], "吉田たち") == [1000]
+
+
+def test_select_targets_third_round_or_higher(tmp_path, monkeypatch):
+    records = [
+        {"id": 1, "name": "3回戦止まり", "history": {"2024": {"results": {"third": "fail"}}}},
+        {"id": 2, "name": "2回戦止まり", "history": {"2024": {"results": {"second": "fail"}}}},
+        {"id": 3, "name": "決勝進出", "history": {"2023": {"results": {"final": "pass"}}}},
+        {"id": 4, "name": "成績なし", "history": {}},
+    ]
+    (tmp_path / "combi.jsonl").write_text(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records), encoding="utf-8"
+    )
+    monkeypatch.setattr(youtube_popularity, "WORK_DIR", tmp_path)
+
+    assert [t["id"] for t in select_targets()] == [1, 3]
 
 
 def test_plain_403_is_not_quota_error():

@@ -8,7 +8,7 @@
   このフィルタがないと、動画の少ないマイナーコンビで検索結果が無関係な
   高再生動画で埋まり、合計が桁違いに膨らむ(まっかちん5,200万回など)。
 
-- 対象: 準々決勝以上に進出経験のあるコンビ(数百組)
+- 対象: 3回戦以上に出場経験のあるコンビ(約1,300組)
 - search.list は100units/回、無料枠10,000units/日 → 約95組/日。
   枠の目安に達したら保存して中断し、翌日の再実行でレジュームする
 - APIキー必須: 環境変数 YOUTUBE_API_KEY (GCPで YouTube Data API v3 を有効化して発行)
@@ -40,8 +40,11 @@ class QuotaExceeded(Exception):
     """YouTube APIの1日クォータ超過(403 quotaExceeded)。"""
 
 
+TARGET_ROUNDS = ("third", "quarterfinal", "semifinal", "playoff", "final")
+
+
 def select_targets() -> list[dict]:
-    """準々決勝以上の経験があるコンビを抽出。"""
+    """3回戦以上の出場経験があるコンビを抽出。"""
     combi_path = WORK_DIR / "combi.jsonl"
     if not combi_path.exists():
         raise SystemExit(f"{combi_path} がありません。先に `m1 parse-combi` を実行してください")
@@ -51,7 +54,7 @@ def select_targets() -> list[dict]:
         if any(
             rk in entry["results"]
             for entry in rec["history"].values()
-            for rk in ("quarterfinal", "semifinal", "final")
+            for rk in TARGET_ROUNDS
         ):
             targets.append({"id": rec["id"], "name": rec["name"]})
     return targets
