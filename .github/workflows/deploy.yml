@@ -7,6 +7,11 @@ on:
       - 'web/**'
       - 'data/**'
       - '.github/workflows/deploy.yml'
+  # 自動更新ワークフローは github-actions[bot](GITHUB_TOKEN)で push するため
+  # push イベントでは deploy が発火しない(GitHubの再帰防止)。完了を購読して補う
+  workflow_run:
+    workflows: ["Update popularity", "Update season data"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -20,6 +25,8 @@ concurrency:
 
 jobs:
   build:
+    # workflow_run 経由では更新側が成功した時だけデプロイする(失敗完了では走らせない)
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

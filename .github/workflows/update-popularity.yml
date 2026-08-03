@@ -39,6 +39,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add scraper/work/popularity.json data/popularity.json
+          # build は data/meta.json 等も再生成するが注目度更新では popularity.json のみ反映する。
+          # 未stageの再生成物が残ると後続の git pull --rebase が失敗するため破棄する
+          git checkout -- .
           if git diff --cached --quiet; then
             echo "変更なし"
           else
