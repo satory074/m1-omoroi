@@ -61,6 +61,13 @@ def parse_combi_page(combi_id: int, html: str) -> dict:
     name_el = soup.select_one(".name-txt-full")
     kana_el = soup.select_one(".name-txt-kana")
 
+    # 宣材写真はog:imageに絶対URLで入っている。デフォルト画像(img_emptyPic)は写真なし扱い。
+    # 配信JSONの肥大を抑えるためサイト共通プレフィックスを除いた相対パスで保存する
+    photo = None
+    og = soup.find("meta", attrs={"property": "og:image"})
+    if og and og.get("content") and "image_cms" in og["content"]:
+        photo = og["content"].removeprefix("https://www.m-1gp.com/combi/")
+
     formed_raw = None
     belong = None
     profile = soup.select_one(".profile-info dl")
@@ -95,6 +102,7 @@ def parse_combi_page(combi_id: int, html: str) -> dict:
         "formedRaw": formed_raw,
         "belong": belong,
         "members": members,
+        "photo": photo,
         "history": history,
     }
 

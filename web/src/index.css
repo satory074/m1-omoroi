@@ -346,7 +346,7 @@ button {
 }
 
 .board-row {
-  height: 44px;
+  height: 48px;
   border-bottom: 1px solid var(--paper-2);
   font-size: 14.5px;
 }
@@ -360,11 +360,34 @@ button {
 }
 
 .board-row .name {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
   font-weight: 700;
   text-decoration: none;
+}
+
+.board-row .name .name-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.board-avatar {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 31px; /* 宣材写真(706x496)と同比率 */
+  border-radius: 3px;
+  background: var(--paper-2);
+  overflow: hidden;
+}
+
+.board-avatar-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .board-row .name:hover {
@@ -454,6 +477,39 @@ button {
 }
 
 /* ============ コンビ詳細 ============ */
+.combi-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.combi-photo-wrap {
+  flex: 0 0 auto;
+  margin: 20px 0 0;
+}
+
+.combi-photo {
+  display: block;
+  width: 156px;
+  aspect-ratio: 706 / 496; /* 公式宣材写真の実寸比 */
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper-2);
+}
+
+.photo-credit {
+  margin-top: 3px;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .combi-photo {
+    width: 112px;
+  }
+}
+
 .combi-name {
   display: flex;
   align-items: baseline;

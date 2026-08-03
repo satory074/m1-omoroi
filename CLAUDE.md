@@ -28,6 +28,7 @@ npm run dev / npm run build
 ## データソースの要点
 
 - コンビ詳細 `https://www.m-1gp.com/combi/{id}.html` の `<meta name="description">` に全年度成績が埋込み(combi_parser.pyが正規表現でパース)
+- 宣材写真は同ページの `og:image` から抽出(`photo` フィールド、`https://www.m-1gp.com/combi/` を除いた相対パスで保存)。デフォルト画像 `img_emptyPic` は写真なし扱い。表示は公式サーバーへの直リンク(複製・再配信しない)で、削除済みはonErrorで非表示
 - 列挙は `list.php` 全41,018組・20件/頁。公式DBは2015年以降のみ
 - 2001〜2010は `archive/{year}/` の日付別ページ(合格者のみ → 敗退者は前回戦との差分導出、1回戦敗退者は不明)
 - 生HTMLは `scraper/cache/` にキャッシュ(gitignore、~2GB)。再パースはクロール不要

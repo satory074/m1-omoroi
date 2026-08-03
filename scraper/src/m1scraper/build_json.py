@@ -58,6 +58,8 @@ def build_years(records: list[dict]) -> dict[int, dict]:
             }
             if entry.get("raw"):
                 row["raw"] = entry["raw"]
+            if rec.get("photo"):
+                row["photo"] = rec["photo"]
             years[int(year_str)].append(row)
 
     out = {}
@@ -189,12 +191,15 @@ def build():
     # 旧アーカイブ年度(work/archive_years.json)をマージし、名前でコンビIDを紐付け
     archive_path = WORK_DIR / "archive_years.json"
     if archive_path.exists():
+        photo_by_id = {r["id"]: r["photo"] for r in records if r.get("photo")}
         archive_years = json.loads(archive_path.read_text(encoding="utf-8"))
         for year_str, yf in archive_years.items():
             linked = 0
             for e in yf["entries"]:
                 e["id"] = link(e["name"], int(year_str))
                 linked += e["id"] is not None
+                if e["id"] in photo_by_id:
+                    e["photo"] = photo_by_id[e["id"]]
             year_files[int(year_str)] = yf
             print(f"[build] {year_str}: アーカイブ {len(yf['entries'])}組 (ID紐付け {linked}組)")
 
@@ -219,6 +224,7 @@ def build():
             "formedRaw": rec.get("formedRaw"),
             "belong": rec.get("belong"),
             "members": rec.get("members", []),
+            "photo": rec.get("photo"),
             "history": rec["history"],
             "officialUrl": f"https://www.m-1gp.com/combi/{rec['id']}.html",
         }

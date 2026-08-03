@@ -46,13 +46,27 @@ class QuotaExceeded(Exception):
 TARGET_ROUNDS = ("third", "quarterfinal", "semifinal", "playoff", "final")
 
 
+def _iter_combi_records():
+    """work/combi.jsonl か、CIでコミット対象の圧縮版 combi.jsonl.gz を読む。"""
+    path = WORK_DIR / "combi.jsonl"
+    if path.exists():
+        with path.open(encoding="utf-8") as f:
+            yield from f
+        return
+    gz_path = WORK_DIR / "combi.jsonl.gz"
+    if gz_path.exists():
+        import gzip
+
+        with gzip.open(gz_path, "rt", encoding="utf-8") as f:
+            yield from f
+        return
+    raise SystemExit(f"{path} がありません。先に `m1 parse-combi` を実行してください")
+
+
 def select_targets() -> list[dict]:
     """3回戦以上の出場経験があるコンビを抽出。"""
-    combi_path = WORK_DIR / "combi.jsonl"
-    if not combi_path.exists():
-        raise SystemExit(f"{combi_path} がありません。先に `m1 parse-combi` を実行してください")
     targets = []
-    for line in combi_path.open(encoding="utf-8"):
+    for line in _iter_combi_records():
         rec = json.loads(line)
         if any(
             rk in entry["results"]

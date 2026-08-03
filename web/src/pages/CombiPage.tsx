@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 
+import CombiPhoto from '../components/CombiPhoto'
 import { useCombiDetail, usePopularity } from '../lib/api'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits } from '../lib/rounds'
 import type { ResultKey } from '../lib/types'
@@ -20,19 +21,31 @@ export default function CombiPage() {
 
   return (
     <>
-      <h1 className="page-title combi-name">
-        {combi.name}
-        {combi.kana && combi.kana !== combi.name && <span className="combi-kana">{combi.kana}</span>}
-      </h1>
-      <p className="page-lede">
-        {[
-          combi.belong,
-          combi.formedRaw && `結成 ${combi.formedRaw}`,
-          hits && `YouTube関連動画再生数 ${formatHits(hits.n)}回 (${hits.at}時点)`,
-        ]
-          .filter(Boolean)
-          .join(' ・ ')}
-      </p>
+      <div className="combi-header">
+        {combi.photo && (
+          <figure className="combi-photo-wrap" data-photo-scope>
+            <CombiPhoto photo={combi.photo} alt={combi.name} className="combi-photo" eager />
+            <figcaption className="photo-credit">写真: M-1グランプリ公式サイト</figcaption>
+          </figure>
+        )}
+        <div>
+          <h1 className="page-title combi-name">
+            {combi.name}
+            {combi.kana && combi.kana !== combi.name && (
+              <span className="combi-kana">{combi.kana}</span>
+            )}
+          </h1>
+          <p className="page-lede">
+            {[
+              combi.belong,
+              combi.formedRaw && `結成 ${combi.formedRaw}`,
+              hits && `YouTube関連動画再生数 ${formatHits(hits.n)}回 (${hits.at}時点)`,
+            ]
+              .filter(Boolean)
+              .join(' ・ ')}
+          </p>
+        </div>
+      </div>
 
       {combi.members.length > 0 && (
         <div className="member-cards">

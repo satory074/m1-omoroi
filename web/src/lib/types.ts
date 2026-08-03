@@ -25,6 +25,7 @@ export interface YearEntry {
   results: Partial<Record<RoundKey, ResultKey>>
   raw?: Partial<Record<RoundKey, string>>
   agency?: string
+  photo?: string
 }
 
 export interface YearFile {
@@ -61,6 +62,7 @@ export interface CombiDetail {
   formedRaw: string | null
   belong: string | null
   members: CombiMember[]
+  photo?: string | null
   history: Record<
     string,
     { no: number | null; results: Partial<Record<RoundKey, ResultKey>>; raw?: Record<string, string> }

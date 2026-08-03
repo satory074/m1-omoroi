@@ -14,6 +14,7 @@ def test_parse_combi_page_oswald():
     assert rec["formed"] == 2014
     assert rec["belong"] == "プロ（吉本興業）"
     assert [m["name"] for m in rec["members"]] == ["畠中悠", "伊藤俊介"]
+    assert rec["photo"] == "image_cms/2400/2389_combi_.jpg"
 
     # 2015〜2026 の全年度が取れている
     assert set(rec["history"]) >= {str(y) for y in range(2015, 2027)}
@@ -46,6 +47,15 @@ def test_parse_history_champion_and_unknown():
     assert h["2024"]["results"]["final"] == "champion"
     assert h["2023"]["results"]["first"] == "unknown"
     assert h["2023"]["raw"]["first"] == "謎の結果"
+
+
+def test_parse_combi_page_default_photo_is_none():
+    html = """<html><head>
+    <meta name="description" content="出場コンビ テスト [2024年 エントリーNo.1] １回戦：敗退">
+    <meta property="og:image" content="https://www.m-1gp.com/combi/img/detail/img_emptyPic.jpg">
+    </head><body><p class="name-txt-full">テスト</p></body></html>"""
+    rec = parse_combi_page(1, html)
+    assert rec["photo"] is None
 
 
 def test_parse_history_year_without_rounds():

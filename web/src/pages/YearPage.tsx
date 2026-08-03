@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 
+import CombiPhoto from '../components/CombiPhoto'
 import { useMeta, usePopularity, useYear } from '../lib/api'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits, isPassing } from '../lib/rounds'
 import type { ResultKey, RoundKey, YearEntry } from '../lib/types'
@@ -119,7 +120,7 @@ export default function YearPage() {
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 44,
+    estimateSize: () => 48,
     overscan: 12,
   })
 
@@ -237,10 +238,16 @@ export default function YearPage() {
                     <span className="no">{e.no != null ? e.no : '—'}</span>
                     {e.id != null ? (
                       <Link className="name" to={`/combi/${e.id}`}>
-                        {e.name}
+                        <span className="board-avatar">
+                          <CombiPhoto photo={e.photo} alt="" className="board-avatar-img" />
+                        </span>
+                        <span className="name-text">{e.name}</span>
                       </Link>
                     ) : (
-                      <span className="name">{e.name}</span>
+                      <span className="name">
+                        <span className="board-avatar" />
+                        <span className="name-text">{e.name}</span>
+                      </span>
                     )}
                     <span className={`result ${res}`}>
                       <span className="sym" aria-hidden>
