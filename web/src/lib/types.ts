@@ -22,6 +22,7 @@ export interface YearEntry {
   no: number | null
   name: string
   kana: string | null
+  formed?: number | null
   results: Partial<Record<RoundKey, ResultKey>>
   raw?: Partial<Record<RoundKey, string>>
   agency?: string

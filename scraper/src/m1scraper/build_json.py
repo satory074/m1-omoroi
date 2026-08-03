@@ -56,6 +56,8 @@ def build_years(records: list[dict]) -> dict[int, dict]:
                 "kana": rec["kana"],
                 "results": entry["results"],
             }
+            if rec.get("formed") is not None:
+                row["formed"] = rec["formed"]
             if entry.get("raw"):
                 row["raw"] = entry["raw"]
             if rec.get("photo"):
@@ -192,6 +194,7 @@ def build():
     archive_path = WORK_DIR / "archive_years.json"
     if archive_path.exists():
         photo_by_id = {r["id"]: r["photo"] for r in records if r.get("photo")}
+        formed_by_id = {r["id"]: r["formed"] for r in records if r.get("formed") is not None}
         archive_years = json.loads(archive_path.read_text(encoding="utf-8"))
         for year_str, yf in archive_years.items():
             linked = 0
@@ -200,6 +203,8 @@ def build():
                 linked += e["id"] is not None
                 if e["id"] in photo_by_id:
                     e["photo"] = photo_by_id[e["id"]]
+                if e["id"] in formed_by_id:
+                    e["formed"] = formed_by_id[e["id"]]
             year_files[int(year_str)] = yf
             print(f"[build] {year_str}: アーカイブ {len(yf['entries'])}組 (ID紐付け {linked}組)")
 

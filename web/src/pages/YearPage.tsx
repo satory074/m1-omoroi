@@ -4,6 +4,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 
 import CombiPhoto from '../components/CombiPhoto'
 import { useMeta, usePopularity, useYear } from '../lib/api'
+import { formationInfo } from '../lib/eligibility'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits, isPassing } from '../lib/rounds'
 import type { ResultKey, RoundKey, YearEntry } from '../lib/types'
 
@@ -223,6 +224,16 @@ export default function YearPage() {
                 const res = e.results[round] as ResultKey
                 const disp = RESULT_DISPLAY[res]
                 const hits = e.id != null ? popularity?.hits[String(e.id)]?.n : undefined
+                const fi = formationInfo(year, e.formed)
+                const chip = fi && (
+                  <span
+                    className={`formed-chip${fi.isLastYear ? ' lastyear' : ''}`}
+                    title={fi.isLastYear ? 'ラストイヤー(出場資格の最終年)' : undefined}
+                  >
+                    {fi.isLastYear && '⚡'}
+                    {fi.years}年目
+                  </span>
+                )
                 return (
                   <div
                     key={v.key}
@@ -242,11 +253,13 @@ export default function YearPage() {
                           <CombiPhoto photo={e.photo} alt="" className="board-avatar-img" />
                         </span>
                         <span className="name-text">{e.name}</span>
+                        {chip}
                       </Link>
                     ) : (
                       <span className="name">
                         <span className="board-avatar" />
                         <span className="name-text">{e.name}</span>
+                        {chip}
                       </span>
                     )}
                     <span className={`result ${res}`}>

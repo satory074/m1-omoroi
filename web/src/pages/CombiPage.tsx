@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import CombiPhoto from '../components/CombiPhoto'
 import { useCombiDetail, usePopularity } from '../lib/api'
+import { formationInfo } from '../lib/eligibility'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits } from '../lib/rounds'
 import type { ResultKey } from '../lib/types'
 
@@ -77,10 +78,20 @@ export default function CombiPage() {
           <tbody>
             {years.map((y) => {
               const h = combi.history[String(y)]
+              const fi = formationInfo(y, combi.formed)
               return (
                 <tr key={y}>
                   <td className="year">
                     <Link to={`/years/${y}`}>{y}</Link>
+                    {fi && (
+                      <span
+                        className={`formed-chip${fi.isLastYear ? ' lastyear' : ''}`}
+                        title={fi.isLastYear ? 'ラストイヤー(出場資格の最終年)' : undefined}
+                      >
+                        {fi.isLastYear && '⚡'}
+                        {fi.years}年目
+                      </span>
+                    )}
                   </td>
                   <td className="no">{h.no ?? '—'}</td>
                   {ROUND_ORDER.map((rk) => {

@@ -369,6 +369,7 @@ button {
 }
 
 .board-row .name .name-text {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -406,6 +407,34 @@ button {
   padding: 48px 16px;
   text-align: center;
   color: var(--muted);
+}
+
+/* ============ 結成年数チップ(N年目 / ⚡ラストイヤー) ============ */
+.formed-chip {
+  flex: 0 0 auto;
+  display: inline-block;
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--muted);
+  background: var(--paper-2);
+  border-radius: 999px;
+  padding: 3px 6px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.formed-chip.lastyear {
+  color: var(--red-dark);
+  background: var(--gold-bg);
+}
+
+/* 詳細ページの履歴テーブルでは年の下に置く */
+.history td.year .formed-chip {
+  display: block;
+  margin-top: 4px;
+  font-weight: 700;
 }
 
 @media (max-width: 640px) {
