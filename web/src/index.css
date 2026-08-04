@@ -313,6 +313,71 @@ button {
   color: var(--muted);
 }
 
+/* ============ コンビ名の全年度タイプアヘッド検索 ============ */
+.combi-search {
+  position: relative;
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+
+.combi-search input[type='search'] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.combi-search-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(18, 16, 16, 0.16);
+}
+
+.combi-search-option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.combi-search-option.active {
+  background: var(--paper-2);
+}
+
+.combi-search-name {
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combi-search-years {
+  flex: none;
+  font-family: var(--font-num);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.combi-search-empty,
+.combi-search-more {
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 /* ============ 一覧テーブル(合格発表の紙) ============ */
 .board {
   border: 1px solid var(--line);

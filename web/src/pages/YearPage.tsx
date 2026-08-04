@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 
 import CombiPhoto from '../components/CombiPhoto'
+import CombiSearch from '../components/CombiSearch'
 import { useMeta, usePopularity, useYear } from '../lib/api'
 import { formationInfo } from '../lib/eligibility'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits, isPassing } from '../lib/rounds'
@@ -48,7 +49,6 @@ export default function YearPage() {
   const roundParam = (params.get('round') as RoundKey) || 'first'
   const resultFilter = (params.get('result') as ResultFilter) || 'all'
   const sort = (params.get('sort') as SortKey) || 'hits'
-  const q = params.get('q') || ''
 
   const { data: meta } = useMeta()
   const { data: yearFile, isLoading, isError } = useYear(Number.isFinite(year) ? year : null)
@@ -60,15 +60,6 @@ export default function YearPage() {
     else next.delete(key)
     setParams(next, { replace: true })
   }
-
-  // 検索inputはローカルstateで制御する。URL由来のqを直接valueに渡すと、
-  // setSearchParamsがstartTransitionで遅延されるためIME変換中に値が巻き戻って入力が壊れる
-  const [qInput, setQInput] = useState(q)
-  const searchRef = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    // 年切替や戻る/進むでURLが変わったときのみ反映。入力中(フォーカス中)は上書きしない
-    if (document.activeElement !== searchRef.current) setQInput(q)
-  }, [q])
 
   const roundCounts = useMemo(() => {
     const counts = new Map<RoundKey, number>()
@@ -90,10 +81,6 @@ export default function YearPage() {
     if (resultFilter === 'pass') list = list.filter((e) => isPassing(e.results[round]))
     if (resultFilter === 'fail')
       list = list.filter((e) => e.results[round] === 'fail' || e.results[round] === 'fail_inferred')
-    if (q.trim()) {
-      const needle = q.trim()
-      list = list.filter((e) => e.name.includes(needle) || (e.kana ?? '').includes(needle))
-    }
     const kanaCmp = (a: YearEntry, b: YearEntry) =>
       (a.kana || a.name).localeCompare(b.kana || b.name, 'ja')
     const sorted = [...list]
@@ -115,7 +102,7 @@ export default function YearPage() {
       )
     }
     return sorted
-  }, [yearFile, round, resultFilter, q, sort, popularity])
+  }, [yearFile, round, resultFilter, sort, popularity])
 
   const parentRef = useRef<HTMLDivElement>(null)
   const virtualizer = useVirtualizer({
@@ -181,17 +168,7 @@ export default function YearPage() {
             </button>
           ))}
         </div>
-        <input
-          ref={searchRef}
-          type="search"
-          placeholder="コンビ名で探す"
-          value={qInput}
-          onChange={(e) => {
-            setQInput(e.target.value)
-            setParam('q', e.target.value)
-          }}
-          aria-label="コンビ名で探す"
-        />
+        <CombiSearch />
         <select value={sort} onChange={(e) => setParam('sort', e.target.value)} aria-label="並び順">
           <option value="no">エントリーNo順</option>
           <option value="kana">五十音順</option>
