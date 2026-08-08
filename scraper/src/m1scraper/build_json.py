@@ -7,6 +7,8 @@
   combi/{NN}.json      詳細シャード (NN = id % 100)
   rankings.json        記録ランキング(事前集計)
   stats.json           年度別統計(事前集計)
+  champions.json       歴代王者(優勝者)の集計
+  advancers.json       準々決勝以上進出コンビ(最高到達ラウンド別の集計)
   popularity.json      YouTube再生数による注目度 (work/popularity.json があれば)
   finals/{year}.json   決勝得点表 (work/finals/ があれば)
 """
@@ -230,6 +232,54 @@ def build_champions(
     return {"champions": out}
 
 
+ADVANCER_TIERS = ["quarterfinal", "semifinal", "final"]  # 昇順(final が最上位)
+
+
+def build_advancers(records: list[dict]) -> dict:
+    """準々決勝以上に到達したコンビを最高到達ラウンド別に集計する。
+
+    最高到達ラウンド(準々決勝/準決勝/決勝)で相互排他に3グループへ分割する
+    (決勝到達組は決勝グループのみ)。準々決勝の独立ラウンドは毎年あるわけでは
+    ないため「到達」は3キーの有無で判定する(合否は問わない)。
+    出身地・生年は公式コンビDB(2015年以降)/レガシー由来のため、それ以外は欠損のまま。
+    age は「初めてその最高ラウンドに到達した年 − 生年」で算出する。
+    records は merge_archive_history 後を渡すこと(2001〜2010の出場も含める)。
+    """
+    tiers: dict[str, list] = {r: [] for r in ADVANCER_TIERS}
+    for rec in records:
+        reached: dict[str, list[int]] = {r: [] for r in ADVANCER_TIERS}
+        for year_str, entry in rec.get("history", {}).items():
+            res = entry.get("results", {})
+            for r in ADVANCER_TIERS:
+                if r in res:
+                    reached[r].append(int(year_str))
+        max_r = next((r for r in reversed(ADVANCER_TIERS) if reached[r]), None)
+        if max_r is None:
+            continue
+        years = sorted(reached[max_r])
+        first_year = years[0]
+        members = []
+        for m in rec.get("members", []):
+            birth = m.get("birth")
+            age = first_year - int(birth[:4]) if birth and birth[:4].isdigit() else None
+            members.append({"name": m.get("name"), "from": m.get("from"), "age": age})
+        tiers[max_r].append(
+            {
+                "id": rec["id"],
+                "name": rec["name"],
+                "formed": rec.get("formed"),
+                "firstYear": first_year,
+                "reachCount": len(years),
+                "members": members,
+            }
+        )
+    for r in ADVANCER_TIERS:
+        tiers[r].sort(key=lambda c: (c["firstYear"], c["name"]))
+    # 上位ラウンドから並べる: 決勝 → 準決勝 → 準々決勝
+    order = ["final", "semifinal", "quarterfinal"]
+    return {"tiers": [{"round": r, "combis": tiers[r]} for r in order]}
+
+
 def merge_archive_history(records: list[dict], year_files: dict[int, dict]) -> int:
     """official-archive 年度(2001〜2010)の id 付き entry を、該当コンビの history に統合する。
 
@@ -330,6 +380,9 @@ def build():
     merged = merge_archive_history(records, year_files)
     print(f"[build] アーカイブ参加を {merged} 行 combi履歴へ統合")
 
+    # 準々決勝以上の進出コンビを最高到達ラウンド別に集計(2001〜2010のマージ済み history を含める)
+    advancers = build_advancers(records)
+
     if DATA_DIR.exists():
         shutil.rmtree(DATA_DIR)
 
@@ -399,6 +452,7 @@ def build():
         DATA_DIR / "champions.json",
         build_champions(all_finals, combi_by_id, champ_overrides),
     )
+    _write(DATA_DIR / "advancers.json", advancers)
 
     _write(
         DATA_DIR / "meta.json",

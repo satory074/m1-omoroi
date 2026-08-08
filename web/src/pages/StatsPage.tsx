@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Bar,
   BarChart,
@@ -10,9 +12,9 @@ import {
   YAxis,
 } from 'recharts'
 
-import { useChampions, useStats } from '../lib/api'
+import { useAdvancers, useChampions, useStats } from '../lib/api'
 import { ROUND_LABEL, ROUND_ORDER } from '../lib/rounds'
-import type { YearStats } from '../lib/types'
+import type { RoundKey, YearStats } from '../lib/types'
 
 // datavizスキルで検証済みのカテゴリカルパレット(赤=1回戦, 金=2回戦, 青=3回戦)
 const SERIES = [
@@ -324,6 +326,218 @@ export default function StatsPage() {
           <p className="legend">年齢は決勝(12月)時点の満年齢。2人組なので延べ {champMemberTotal} 人</p>
         </>
       )}
+
+      <AdvancerRecords />
+    </>
+  )
+}
+
+const NAME_CAP = 6 // 都道府県別の「該当コンビ」列で名前を並べる上限
+const ROW_CAP = 30 // 長い表(結成年別/年齢別/到達回数)の表示件数上限
+
+/** 準々決勝以上に到達したコンビを最高到達ラウンド別に集計して表示する。
+ *  advancers.json が無い環境では何も描画しない。 */
+function AdvancerRecords() {
+  const { data } = useAdvancers()
+  const [round, setRound] = useState<RoundKey>('final')
+  const tiers = data?.tiers ?? []
+  if (tiers.length === 0) return null
+
+  const tier = tiers.find((t) => t.round === round) ?? tiers[0]
+  const combis = tier.combis
+  const label = ROUND_LABEL[tier.round]
+
+  // A. 都道府県別(メンバー単位。出身地が判明する組のみ)
+  const prefMap = new Map<string, { count: number; names: string[] }>()
+  for (const c of combis) {
+    for (const m of c.members) {
+      if (!m.from) continue
+      const e = prefMap.get(m.from) ?? { count: 0, names: [] }
+      e.count += 1
+      if (!e.names.includes(c.name)) e.names.push(c.name)
+      prefMap.set(m.from, e)
+    }
+  }
+  const prefRows = [...prefMap.entries()]
+    .map(([pref, e]) => ({ pref, count: e.count, names: e.names }))
+    .sort((a, b) => b.count - a.count || a.pref.localeCompare(b.pref, 'ja'))
+  const prefMemberTotal = prefRows.reduce((s, r) => s + r.count, 0)
+
+  // B. 結成年別(新しい順)。結成年が判明する組のみ、上位 ROW_CAP 件
+  const formedAll = combis
+    .filter((c) => c.formed != null)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      formed: c.formed as number,
+      firstYear: c.firstYear,
+      span: c.firstYear - (c.formed as number),
+    }))
+    .sort((a, b) => b.formed - a.formed || b.firstYear - a.firstYear)
+  const formedRows = formedAll.slice(0, ROW_CAP)
+
+  // C. 初到達時の年齢(メンバー単位。若い順)。生年が判明する組のみ、上位 ROW_CAP 件
+  const ageAll = combis
+    .flatMap((c) =>
+      c.members.map((m) => ({ id: c.id, name: m.name ?? '', combi: c.name, firstYear: c.firstYear, age: m.age })),
+    )
+    .filter((r): r is { id: number; name: string; combi: string; firstYear: number; age: number } => r.age != null)
+    .sort((a, b) => a.age - b.age || a.firstYear - b.firstYear)
+  const minAge = ageAll.length ? ageAll[0].age : null
+  const maxAge = ageAll.length ? ageAll[ageAll.length - 1].age : null
+  const ageRows = ageAll.slice(0, ROW_CAP)
+
+  // D. 到達回数ランキング(最高到達ラウンドに届いた年数。多い順)
+  const reachRows = [...combis]
+    .sort((a, b) => b.reachCount - a.reachCount || a.name.localeCompare(b.name, 'ja'))
+    .slice(0, ROW_CAP)
+
+  return (
+    <>
+      <h1 className="page-title" style={{ marginTop: 40 }}>
+        準々決勝以上の記録
+      </h1>
+      <p className="page-lede">
+        コンビを最高到達ラウンド(決勝／準決勝／準々決勝)で分けて集計。2001〜2010は出身地・生年が揃わない組が多く、集計は判明分のみです。
+      </p>
+
+      <div style={{ margin: '4px 0 20px' }}>
+        <div className="seg" role="group" aria-label="最高到達ラウンドの切り替え">
+          {tiers.map((t) => (
+            <button key={t.round} className={t.round === round ? 'active' : ''} onClick={() => setRound(t.round)}>
+              {ROUND_LABEL[t.round]}（{t.combis.length}）
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <h2 className="section-title">都道府県別({label}到達コンビ)</h2>
+      <p className="section-note">メンバーの出身地を都道府県ごとに集計(2人組なので延べ人数)</p>
+      <div className="history-wrap">
+        <table className="history">
+          <thead>
+            <tr>
+              <th>都道府県</th>
+              <th>コンビ(のべ)</th>
+              <th>該当コンビ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {prefRows.map((r) => (
+              <tr key={r.pref}>
+                <td className="year" style={{ fontSize: 14 }}>
+                  {r.pref}
+                </td>
+                <td className="no total">{r.count}</td>
+                <td style={{ whiteSpace: 'normal' }}>
+                  {r.names.slice(0, NAME_CAP).join('、')}
+                  {r.names.length > NAME_CAP ? ` 他${r.names.length - NAME_CAP}組` : ''}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="legend">出身地の判明する延べ {prefMemberTotal} 人を集計(不明の組は除外)</p>
+
+      <h2 className="section-title">結成年別({label}到達・新しい順)</h2>
+      <p className="section-note">結成から日が浅いうちに{label}へ到達した組ほど上位</p>
+      <div className="history-wrap">
+        <table className="history">
+          <thead>
+            <tr>
+              <th>コンビ</th>
+              <th>結成年</th>
+              <th>{label}初到達</th>
+              <th>結成→到達</th>
+            </tr>
+          </thead>
+          <tbody>
+            {formedRows.map((r) => (
+              <tr key={`${r.id}-${r.firstYear}`}>
+                <td className="year" style={{ fontSize: 14 }}>
+                  <Link to={`/combi/${r.id}`}>{r.name}</Link>
+                </td>
+                <td className="no">{r.formed}</td>
+                <td className="no">{r.firstYear}</td>
+                <td className="no total">{r.span}年</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="legend">
+        「結成→到達」は初到達年−結成年。結成年の判明する {formedAll.length} 組のうち新しい順に上位 {formedRows.length} 組を表示
+      </p>
+
+      <h2 className="section-title">{label}初到達時の年齢(若い順)</h2>
+      {minAge != null && maxAge != null && (
+        <p className="section-note">
+          最年少 {ageAll[0].age}歳({ageAll[0].name}・{ageAll[0].combi}／{ageAll[0].firstYear}年) ／ 最年長{' '}
+          {ageAll[ageAll.length - 1].age}歳({ageAll[ageAll.length - 1].name}・{ageAll[ageAll.length - 1].combi}／
+          {ageAll[ageAll.length - 1].firstYear}年)
+        </p>
+      )}
+      <div className="history-wrap">
+        <table className="history">
+          <thead>
+            <tr>
+              <th>メンバー</th>
+              <th>コンビ</th>
+              <th>{label}初到達</th>
+              <th>到達時の年齢</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ageRows.map((r) => {
+              const hot = r.age === minAge || r.age === maxAge
+              return (
+                <tr key={`${r.id}-${r.name}-${r.firstYear}`}>
+                  <td className="year" style={{ fontSize: 14 }}>
+                    {r.name}
+                  </td>
+                  <td>
+                    <Link to={`/combi/${r.id}`}>{r.combi}</Link>
+                  </td>
+                  <td className="no">{r.firstYear}</td>
+                  <td className={hot ? 'cell champion' : 'no'}>{r.age}歳</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="legend">
+        年齢は初到達年時点の満年齢の概算。生年の判明する延べ {ageAll.length} 人のうち若い順に上位 {ageRows.length} 人を表示
+      </p>
+
+      <h2 className="section-title">{label}到達回数ランキング</h2>
+      <p className="section-note">{label}に到達した年数が多い組(最高到達が{label}のコンビが対象)</p>
+      <div className="history-wrap">
+        <table className="history">
+          <thead>
+            <tr>
+              <th>順位</th>
+              <th>コンビ</th>
+              <th>{label}到達回数</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reachRows.map((r, i) => (
+              <tr key={r.id}>
+                <td className="no">{i + 1}</td>
+                <td className="year" style={{ fontSize: 14 }}>
+                  <Link to={`/combi/${r.id}`}>{r.name}</Link>
+                </td>
+                <td className="no total">{r.reachCount}回</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="legend">
+        最高到達が{label}のコンビ 全{combis.length}組のうち上位 {reachRows.length} 組を表示
+      </p>
     </>
   )
 }

@@ -120,6 +120,31 @@ export interface Champions {
   champions: Champion[]
 }
 
+export interface AdvancerMember {
+  name: string | null
+  from: string | null
+  age: number | null
+}
+
+/** 準々決勝以上に到達したコンビ。age は最高ラウンド初到達年 − 生年 */
+export interface Advancer {
+  id: number
+  name: string
+  formed: number | null
+  firstYear: number
+  reachCount: number
+  members: AdvancerMember[]
+}
+
+export interface AdvancerTier {
+  round: RoundKey
+  combis: Advancer[]
+}
+
+export interface Advancers {
+  tiers: AdvancerTier[]
+}
+
 export interface FinalsScore {
   order?: number
   combiId?: number | null

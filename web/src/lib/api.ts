@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import type {
+  Advancers,
   Champions,
   CombiDetail,
   CombiIndexRow,
@@ -89,6 +90,14 @@ export function useChampions() {
   return useQuery({
     queryKey: ['champions'],
     queryFn: () => fetchJsonOrNull<Champions>('champions.json'),
+    ...STATIC,
+  })
+}
+
+export function useAdvancers() {
+  return useQuery({
+    queryKey: ['advancers'],
+    queryFn: () => fetchJsonOrNull<Advancers>('advancers.json'),
     ...STATIC,
   })
 }
