@@ -158,6 +158,41 @@ def build_stats(year_files: dict[int, dict]) -> dict:
     return {"byYear": by_year}
 
 
+def build_champions(
+    finals_list: list[dict], combi_by_id: dict[int, dict], overrides: dict[str, dict]
+) -> dict:
+    """歴代王者(優勝者)のメタデータを集計する。
+
+    出身地・結成年・生年月日は公式コンビDB(2015年以降のみ)由来のため、
+    2001〜2010の王者は overrides/champions_meta.json で補完する。
+    年齢は決勝(12月)時点の満年齢とみなし「優勝年 − 生年」で算出する
+    (歴代王者はいずれも誕生日が決勝より前のため誤差なし)。
+    """
+    out = []
+    for finals in sorted(finals_list, key=lambda f: f["year"]):
+        year = finals["year"]
+        champ = next((r for r in finals.get("finalRound", []) if r.get("champion")), None)
+        if not champ:
+            continue
+
+        rec = combi_by_id.get(champ.get("combiId")) if champ.get("combiId") is not None else None
+        ov = overrides.get(str(year), {})
+        formed = rec.get("formed") if rec else None
+        if formed is None:
+            formed = ov.get("formed")
+        members_src = (rec.get("members") if rec else None) or ov.get("members") or []
+
+        members = []
+        for m in members_src:
+            birth = m.get("birth")
+            age = year - int(birth[:4]) if birth and birth[:4].isdigit() else None
+            members.append({"name": m.get("name"), "from": m.get("from"), "age": age})
+
+        out.append({"year": year, "name": champ["name"], "formed": formed, "members": members})
+
+    return {"champions": out}
+
+
 def _make_linker(records: list[dict]):
     """コンビ名 → ID の紐付け。一意に決まる場合のみ返す(誤リンクより未リンクを優先)。"""
     by_name: dict[str, list[dict]] = defaultdict(list)
@@ -250,6 +285,7 @@ def build():
 
     finals_dir = WORK_DIR / "finals"
     finals_years = []
+    all_finals = []
     if finals_dir.exists():
         for f in sorted(finals_dir.glob("*.json")):
             override = OVERRIDES_DIR / "finals" / f.name
@@ -259,6 +295,19 @@ def build():
                 row["combiId"] = link(row["name"], finals["year"])
             _write(DATA_DIR / "finals" / f.name, finals)
             finals_years.append(int(f.stem))
+            all_finals.append(finals)
+
+    # 歴代王者(優勝者)の集計。出身地/結成年/生年月日は公式コンビDB(2015年以降)由来のため、
+    # 2001〜2010は overrides/champions_meta.json で補完する
+    combi_by_id = {r["id"]: r for r in records}
+    champ_meta_path = OVERRIDES_DIR / "champions_meta.json"
+    champ_overrides = (
+        json.loads(champ_meta_path.read_text(encoding="utf-8")) if champ_meta_path.exists() else {}
+    )
+    _write(
+        DATA_DIR / "champions.json",
+        build_champions(all_finals, combi_by_id, champ_overrides),
+    )
 
     _write(
         DATA_DIR / "meta.json",

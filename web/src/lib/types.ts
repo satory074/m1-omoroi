@@ -100,6 +100,23 @@ export interface Stats {
   byYear: YearStats[]
 }
 
+export interface ChampionMember {
+  name: string | null
+  from: string | null
+  age: number | null
+}
+
+export interface Champion {
+  year: number
+  name: string
+  formed: number | null
+  members: ChampionMember[]
+}
+
+export interface Champions {
+  champions: Champion[]
+}
+
 export interface FinalsScore {
   order?: number
   combiId?: number | null

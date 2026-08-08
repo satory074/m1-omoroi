@@ -35,6 +35,7 @@ npm run dev / npm run build
 - レート制限: 2〜4req/s厳守
 - 注目度ソートはYouTube Data APIで「コンビ名 漫才」検索した上位10本のうち、タイトル/説明文/チャンネル名/タグにコンビ名を含む動画の再生数合計(youtube_popularity.py)。このフィルタは必須 — 無いと動画の少ない組の検索結果が無関係な高再生動画で埋まり順位が壊れる。対象は3回戦以上の出場経験があるコンビ(約1,284組)。環境変数 `YOUTUBE_API_KEY` が必要で、search.listが100units/回のため無料枠(10,000units/日)では約95組/日。無料枠は日本時間16時頃(太平洋時間0時)リセット。update-popularity.yml が毎日18時(JST)に未取得優先→取得日の古い順で約95組ずつローリング更新し(全組約14日周期)、data/へのコミットで deploy.yml が発火してサイトにも自動反映される。手動実行は初回投入や緊急時のみ。work側hitsの `ids` は検索結果全件で、フィルタ規則変更時はsearch再消費なしで再集計可能(buildで配信JSONからは除去)
 - 指標の変遷: Google CSEヒット件数(ウェブ全体検索が2027-01廃止予定で断念) → Wikipedia閲覧数(記事のある348組しかカバーできず変更) → M-1公式ネタ動画再生数(シーズン終了後に全動画非公開化と判明し断念) → 現在のYouTube検索ベース
+- 歴代王者統計 `data/champions.json` (build_json.py `build_champions`): 各 `finals/{year}.json` の `finalRound[].champion` から優勝者を特定し、`combi` レコードの `formed`/`members[].from`/`members[].birth` を付与。年齢は「優勝年 − 生年」(全王者の誕生日は12月の決勝より前)。統計ページの都道府県別/結成年別/年齢別テーブルが消費。2001〜2010は公式コンビDB(2015年以降のみ)に該当が無く `combiId=null` のため、`scraper/overrides/champions_meta.json`(年→{formed, members[{name,from,birth}]}、出典=Wikipedia)で補完
 
 ## 注意
 
