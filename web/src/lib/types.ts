@@ -68,7 +68,10 @@ export interface CombiDetail {
     string,
     { no: number | null; results: Partial<Record<RoundKey, ResultKey>>; raw?: Record<string, string> }
   >
-  officialUrl: string
+  officialUrl?: string
+  /** 合成コンビ(2001〜2010・公式コンビDB未収録)は officialUrl の代わりに Wikipedia を持つ */
+  wikipedia?: string | null
+  legacy?: boolean
 }
 
 export interface Popularity {

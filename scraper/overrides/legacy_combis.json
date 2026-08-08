@@ -1,0 +1,2653 @@
+[
+ {
+  "id": 900001,
+  "name": "DonDokoDon",
+  "kana": "どんどこどん",
+  "formed": 1994,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "山口智充",
+    "kana": "やまぐちともみつ",
+    "birth": "1969年03月14日",
+    "from": "大阪府"
+   },
+   {
+    "name": "平畠啓史",
+    "kana": "ひらはたけいじ",
+    "birth": "1968年08月14日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/DonDokoDon"
+ },
+ {
+  "id": 900002,
+  "name": "NON STYLE",
+  "kana": "のんすたいる",
+  "formed": 2000,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "石田明",
+    "kana": "いしだあきら",
+    "birth": "1980年02月20日",
+    "from": "大阪府"
+   },
+   {
+    "name": "井上裕介",
+    "kana": "いのうえゆうすけ",
+    "birth": "1980年03月01日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/NON_STYLE"
+ },
+ {
+  "id": 900003,
+  "name": "おぎやはぎ",
+  "kana": "おぎやはぎ",
+  "formed": 1995,
+  "belong": "プロダクション人力舎",
+  "members": [
+   {
+    "name": "小木博明",
+    "kana": "おぎひろあき",
+    "birth": "1971年08月16日",
+    "from": "東京都"
+   },
+   {
+    "name": "矢作兼",
+    "kana": "やはぎけん",
+    "birth": "1971年09月11日",
+    "from": "東京都"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/おぎやはぎ"
+ },
+ {
+  "id": 900004,
+  "name": "ますだおかだ",
+  "kana": "ますだおかだ",
+  "formed": 1993,
+  "belong": "松竹芸能",
+  "members": [
+   {
+    "name": "増田英彦",
+    "kana": "ますだひでひこ",
+    "birth": "1970年02月09日",
+    "from": "大阪府"
+   },
+   {
+    "name": "岡田圭右",
+    "kana": "おかだけいすけ",
+    "birth": "1968年11月17日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ますだおかだ"
+ },
+ {
+  "id": 900005,
+  "name": "りあるキッズ",
+  "kana": "りあるきっず",
+  "formed": 1996,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "安田善紀",
+    "kana": "やすだよしのり",
+    "birth": "1985年09月20日",
+    "from": "奈良県"
+   },
+   {
+    "name": "ゆうき",
+    "kana": "ゆうき",
+    "birth": "1985年07月30日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/りあるキッズ"
+ },
+ {
+  "id": 900006,
+  "name": "アメリカザリガニ",
+  "kana": "あめりかざりがに",
+  "formed": 1994,
+  "belong": "松竹芸能",
+  "members": [
+   {
+    "name": "柳原哲也",
+    "kana": "やなぎはらてつや",
+    "birth": "1972年09月01日",
+    "from": "滋賀県"
+   },
+   {
+    "name": "平井善之",
+    "kana": "ひらいよしゆき",
+    "birth": "1973年03月12日",
+    "from": "兵庫県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/アメリカザリガニ_(お笑いコンビ)"
+ },
+ {
+  "id": 900007,
+  "name": "アンタッチャブル",
+  "kana": "あんたっちゃぶる",
+  "formed": 1994,
+  "belong": "プロダクション人力舎",
+  "members": [
+   {
+    "name": "山崎弘也",
+    "kana": "やまざきひろなり",
+    "birth": "1976年01月14日",
+    "from": "埼玉県"
+   },
+   {
+    "name": "柴田英嗣",
+    "kana": "しばたひでつぐ",
+    "birth": "1975年07月15日",
+    "from": "静岡県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/アンタッチャブル_(お笑いコンビ)"
+ },
+ {
+  "id": 900008,
+  "name": "キングコング",
+  "kana": "きんぐこんぐ",
+  "formed": 1999,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "西野亮廣",
+    "kana": "にしのあきひろ",
+    "birth": "1980年07月03日",
+    "from": "兵庫県"
+   },
+   {
+    "name": "梶原雄太",
+    "kana": "かじわらゆうた",
+    "birth": "1980年08月07日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/キングコング_(お笑いコンビ)"
+ },
+ {
+  "id": 900009,
+  "name": "タカアンドトシ",
+  "kana": "たかあんどとし",
+  "formed": 1994,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "タカ",
+    "kana": "たか",
+    "birth": "1976年04月03日",
+    "from": "北海道"
+   },
+   {
+    "name": "トシ",
+    "kana": "とし",
+    "birth": "1976年07月17日",
+    "from": "北海道"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/タカアンドトシ"
+ },
+ {
+  "id": 900010,
+  "name": "ダイノジ",
+  "kana": "だいのじ",
+  "formed": 1994,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "大地洋輔",
+    "kana": "おおちようすけ",
+    "birth": "1972年07月13日",
+    "from": "大分県"
+   },
+   {
+    "name": "大谷ノブ彦",
+    "kana": "おおたにのぶひこ",
+    "birth": "1972年06月08日",
+    "from": "大分県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ダイノジ"
+ },
+ {
+  "id": 900011,
+  "name": "チュートリアル",
+  "kana": "ちゅーとりある",
+  "formed": 1998,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "徳井義実",
+    "kana": "とくいよしみ",
+    "birth": "1975年04月16日",
+    "from": "京都府"
+   },
+   {
+    "name": "福田充徳",
+    "kana": "ふくだみつのり",
+    "birth": "1975年08月11日",
+    "from": "京都府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/チュートリアル_(お笑いコンビ)"
+ },
+ {
+  "id": 900012,
+  "name": "トータルテンボス",
+  "kana": "とーたるてんぼす",
+  "formed": 1997,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "藤田憲右",
+    "kana": "ふじたけんすけ",
+    "birth": "1975年12月30日",
+    "from": "静岡県"
+   },
+   {
+    "name": "大村朋宏",
+    "kana": "おおむらともひろ",
+    "birth": "1975年04月03日",
+    "from": "静岡県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/トータルテンボス"
+ },
+ {
+  "id": 900013,
+  "name": "ハリガネロック",
+  "kana": "はりがねろっく",
+  "formed": 1995,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "ユウキロック",
+    "kana": "ゆうきろっく",
+    "birth": "1972年04月16日",
+    "from": "大阪府"
+   },
+   {
+    "name": "大上邦博",
+    "kana": "おおうえくにひろ",
+    "birth": "1973年08月07日",
+    "from": "奈良県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ハリガネロック"
+ },
+ {
+  "id": 900014,
+  "name": "パンクブーブー",
+  "kana": "ぱんくぶーぶー",
+  "formed": 2001,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "佐藤哲夫",
+    "kana": "さとうてつお",
+    "birth": "1976年04月03日",
+    "from": "大分県"
+   },
+   {
+    "name": "黒瀬純",
+    "kana": "くろせじゅん",
+    "birth": "1975年05月08日",
+    "from": "福岡県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/パンクブーブー"
+ },
+ {
+  "id": 900015,
+  "name": "ピース",
+  "kana": "ぴーす",
+  "formed": 2003,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "又吉直樹",
+    "kana": "またよしなおき",
+    "birth": "1980年06月02日",
+    "from": "大阪府"
+   },
+   {
+    "name": "綾部祐二",
+    "kana": "あやべゆうじ",
+    "birth": "1977年12月13日",
+    "from": "茨城県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ピース_(お笑い)"
+ },
+ {
+  "id": 900016,
+  "name": "フットボールアワー",
+  "kana": "ふっとぼーるあわー",
+  "formed": 1999,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "岩尾望",
+    "kana": "いわおのぞむ",
+    "birth": "1975年12月19日",
+    "from": "大阪府"
+   },
+   {
+    "name": "後藤輝基",
+    "kana": "ごとうてるもと",
+    "birth": "1974年06月18日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/フットボールアワー"
+ },
+ {
+  "id": 900017,
+  "name": "ブラックマヨネーズ",
+  "kana": "ぶらっくまよねーず",
+  "formed": 1997,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "小杉竜一",
+    "kana": "こすぎりゅういち",
+    "birth": "1973年07月05日",
+    "from": "京都府"
+   },
+   {
+    "name": "吉田敬",
+    "kana": "よしだたかし",
+    "birth": "1973年06月27日",
+    "from": "京都府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ブラックマヨネーズ"
+ },
+ {
+  "id": 900018,
+  "name": "ライセンス",
+  "kana": "らいせんす",
+  "formed": 1996,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "藤原一裕",
+    "kana": "ふじわらかずひろ",
+    "birth": "1977年09月20日",
+    "from": "奈良県"
+   },
+   {
+    "name": "井本貴史",
+    "kana": "いのもとたかふみ",
+    "birth": "1978年01月27日",
+    "from": "奈良県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ライセンス_(お笑いコンビ)"
+ },
+ {
+  "id": 900019,
+  "name": "中川家",
+  "kana": "なかがわけ",
+  "formed": 1992,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "中川剛",
+    "kana": "なかがわつよし",
+    "birth": "1970年12月04日",
+    "from": "大阪府"
+   },
+   {
+    "name": "中川礼二",
+    "kana": "なかがわれいじ",
+    "birth": "1972年01月19日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/中川家"
+ },
+ {
+  "id": 900020,
+  "name": "千鳥",
+  "kana": "ちどり",
+  "formed": 2000,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "大悟",
+    "kana": "だいご",
+    "birth": "1980年03月25日",
+    "from": "岡山県"
+   },
+   {
+    "name": "ノブ",
+    "kana": "のぶ",
+    "birth": "1979年12月30日",
+    "from": "岡山県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/千鳥_(お笑いコンビ)"
+ },
+ {
+  "id": 900021,
+  "name": "笑い飯",
+  "kana": "わらいめし",
+  "formed": 2000,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "哲夫",
+    "kana": "てつお",
+    "birth": "1974年12月25日",
+    "from": "奈良県"
+   },
+   {
+    "name": "西田幸治",
+    "kana": "にしだこうじ",
+    "birth": "1974年05月28日",
+    "from": "奈良県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/笑い飯"
+ },
+ {
+  "id": 900022,
+  "name": "麒麟",
+  "kana": "きりん",
+  "formed": 1999,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "田村裕",
+    "kana": "たむらひろし",
+    "birth": "1979年09月03日",
+    "from": "大阪府"
+   },
+   {
+    "name": "川島明",
+    "kana": "かわしまあきら",
+    "birth": "1979年02月03日",
+    "from": "京都府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/麒麟_(お笑いコンビ)"
+ },
+ {
+  "id": 900023,
+  "name": "2丁拳銃",
+  "kana": "にちょうけんじゅう",
+  "formed": 1993,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "小堀裕之",
+    "kana": "こほりひろゆき",
+    "birth": "1974年01月09日",
+    "from": "奈良県"
+   },
+   {
+    "name": "川谷修士",
+    "kana": "かわたにしゅうじ",
+    "birth": "1974年05月17日",
+    "from": "兵庫県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/2丁拳銃"
+ },
+ {
+  "id": 900024,
+  "name": "アジアン",
+  "kana": "あじあん",
+  "formed": 2002,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "隅田美保",
+    "kana": "すみだみほ",
+    "birth": "1975年11月29日",
+    "from": "兵庫県"
+   },
+   {
+    "name": "馬場園梓",
+    "kana": "ばばぞのあづさ",
+    "birth": "1981年03月01日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/アジアン"
+ },
+ {
+  "id": 900025,
+  "name": "スピードワゴン",
+  "kana": "すぴーどわごん",
+  "formed": 1998,
+  "belong": "ホリプロコム",
+  "members": [
+   {
+    "name": "井戸田潤",
+    "kana": "いとだじゅん",
+    "birth": "1972年12月13日",
+    "from": "愛知県"
+   },
+   {
+    "name": "小沢一敬",
+    "kana": "おざわかずひろ",
+    "birth": "1973年10月10日",
+    "from": "愛知県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/スピードワゴン"
+ },
+ {
+  "id": 900026,
+  "name": "テツandトモ",
+  "kana": "てつあんどとも",
+  "formed": 1998,
+  "belong": "ニチエンプロダクション",
+  "members": [
+   {
+    "name": "テツ",
+    "kana": "てつ",
+    "birth": "1970年05月09日",
+    "from": "滋賀県"
+   },
+   {
+    "name": "トモ",
+    "kana": "とも",
+    "birth": "1970年05月10日",
+    "from": "山形県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/テツandトモ"
+ },
+ {
+  "id": 900027,
+  "name": "品川庄司",
+  "kana": "しながわしょうじ",
+  "formed": 1995,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "品川祐",
+    "kana": "しながわひろし",
+    "birth": "1972年04月26日",
+    "from": "東京都"
+   },
+   {
+    "name": "庄司智春",
+    "kana": "しょうじともはる",
+    "birth": "1976年01月01日",
+    "from": "東京都"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/品川庄司"
+ },
+ {
+  "id": 900028,
+  "name": "サンドウィッチマン",
+  "kana": "さんどうぃっちまん",
+  "formed": 1998,
+  "belong": "グレープカンパニー",
+  "members": [
+   {
+    "name": "伊達みきお",
+    "kana": "だてみきお",
+    "birth": "1974年09月05日",
+    "from": "宮城県"
+   },
+   {
+    "name": "富澤たけし",
+    "kana": "とみざわたけし",
+    "birth": "1974年04月30日",
+    "from": "宮城県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/サンドウィッチマン_(お笑いコンビ)"
+ },
+ {
+  "id": 900029,
+  "name": "ザ・パンチ",
+  "kana": "ざ・ぱんち",
+  "formed": 1998,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "パンチ浜崎",
+    "kana": "ぱんちはまさき",
+    "birth": "1981年01月16日",
+    "from": "東京都"
+   },
+   {
+    "name": "ノーパンチ松尾",
+    "kana": "のーぱんちまつお",
+    "birth": "1980年07月30日",
+    "from": "東京都"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ザ・パンチ"
+ },
+ {
+  "id": 900030,
+  "name": "ザブングル",
+  "kana": "ざぶんぐる",
+  "formed": 1999,
+  "belong": "ワタナベエンターテインメント",
+  "members": [
+   {
+    "name": "松尾陽介",
+    "kana": "まつおようすけ",
+    "birth": "1977年01月28日",
+    "from": "愛知県"
+   },
+   {
+    "name": "加藤歩",
+    "kana": "かとうあゆむ",
+    "birth": "1974年10月26日",
+    "from": "三重県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ザブングル_(お笑いコンビ)"
+ },
+ {
+  "id": 900032,
+  "name": "ハリセンボン",
+  "kana": "はりせんぼん",
+  "formed": 2003,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "近藤春菜",
+    "kana": "こんどうはるな",
+    "birth": "1983年02月23日",
+    "from": "東京都"
+   },
+   {
+    "name": "箕輪はるか",
+    "kana": "みのわはるか",
+    "birth": "1980年01月01日",
+    "from": "東京都"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ハリセンボン_(お笑いコンビ)"
+ },
+ {
+  "id": 900033,
+  "name": "オードリー",
+  "kana": "おーどりー",
+  "formed": 2000,
+  "belong": "ケイダッシュステージ",
+  "members": [
+   {
+    "name": "若林正恭",
+    "kana": "わかばやしまさやす",
+    "birth": "1978年09月20日",
+    "from": "東京都"
+   },
+   {
+    "name": "春日俊彰",
+    "kana": "かすがとしあき",
+    "birth": "1979年02月09日",
+    "from": "埼玉県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/オードリー_(お笑いコンビ)"
+ },
+ {
+  "id": 900034,
+  "name": "ジパング上陸作戦",
+  "kana": "じぱんぐじょうりくさくせん",
+  "formed": 1999,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "チャド・マレーン",
+    "kana": "ちゃど・まれーん",
+    "birth": "1979年11月28日",
+    "from": null
+   },
+   {
+    "name": "ティ・カトウ",
+    "kana": "てぃ・かとう",
+    "birth": "1975年10月09日",
+    "from": "愛知県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ジパング上陸作戦"
+ },
+ {
+  "id": 900035,
+  "name": "ノンスモーキン",
+  "kana": "のんすもーきん",
+  "formed": 1999,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "菊池大助",
+    "kana": "きくちだいすけ",
+    "birth": "1977年12月10日",
+    "from": "新潟県"
+   },
+   {
+    "name": "中尾伸吾",
+    "kana": "なかおしんご",
+    "birth": "1979年05月13日",
+    "from": "千葉県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ノンスモーキン"
+ },
+ {
+  "id": 900036,
+  "name": "マシンガンズ",
+  "kana": "ましんがんず",
+  "formed": 1998,
+  "belong": "太田プロダクション",
+  "members": [
+   {
+    "name": "滝沢秀一",
+    "kana": "たきざわしゅういち",
+    "birth": "1976年09月14日",
+    "from": "新潟県"
+   },
+   {
+    "name": "西堀亮",
+    "kana": "にしほりりょう",
+    "birth": "1974年10月04日",
+    "from": "北海道"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/マシンガンズ"
+ },
+ {
+  "id": 900037,
+  "name": "天津",
+  "kana": "てんしん",
+  "formed": 1999,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "木村卓寛",
+    "kana": "きむらたくひろ",
+    "birth": "1976年05月22日",
+    "from": "兵庫県"
+   },
+   {
+    "name": "向清太朗",
+    "kana": "むかいせいたろう",
+    "birth": "1980年02月27日",
+    "from": "広島県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/天津_(お笑いコンビ)"
+ },
+ {
+  "id": 900038,
+  "name": "ハマカーン",
+  "kana": "はまかーん",
+  "formed": 2000,
+  "belong": "ケイダッシュステージ",
+  "members": [
+   {
+    "name": "浜谷健司",
+    "kana": "はまたにけんじ",
+    "birth": "1977年11月19日",
+    "from": "埼玉県"
+   },
+   {
+    "name": "神田伸一郎",
+    "kana": "かんだしんいちろう",
+    "birth": "1977年03月12日",
+    "from": "神奈川県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ハマカーン"
+ },
+ {
+  "id": 900040,
+  "name": "ベリー・ベリー",
+  "kana": "べりーべりー",
+  "formed": 2002,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "河中美二",
+    "kana": "かわなかよしつぐ",
+    "birth": "1980年03月29日",
+    "from": null
+   },
+   {
+    "name": "上田歩武",
+    "kana": "うえだあゆむ",
+    "birth": "1980年11月12日",
+    "from": null
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ベリー・ベリー"
+ },
+ {
+  "id": 900041,
+  "name": "エルシャラカーニ",
+  "kana": "えるしゃらかーに",
+  "formed": 1997,
+  "belong": "サンミュージックプロダクション",
+  "members": [
+   {
+    "name": "セイワ太一",
+    "kana": "せいわたいち",
+    "birth": "1971年04月06日",
+    "from": "大阪府"
+   },
+   {
+    "name": "山本しろう",
+    "kana": "やまもとしろう",
+    "birth": "1973年03月06日",
+    "from": "高知県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/エルシャラカーニ"
+ },
+ {
+  "id": 900042,
+  "name": "髭男爵",
+  "kana": "ひげだんしゃく",
+  "formed": 1999,
+  "belong": "サンミュージックプロダクション",
+  "members": [
+   {
+    "name": "山田ルイ53世",
+    "kana": "やまだるいごじゅうさんせい",
+    "birth": "1975年04月10日",
+    "from": "兵庫県"
+   },
+   {
+    "name": "ひぐち君",
+    "kana": "ひぐちくん",
+    "birth": "1974年02月12日",
+    "from": "福岡県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/髭男爵"
+ },
+ {
+  "id": 900044,
+  "name": "オリエンタルラジオ",
+  "kana": "おりえんたるらじお",
+  "formed": 2003,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "中田敦彦",
+    "kana": "なかたあつひこ",
+    "birth": "1982年09月27日",
+    "from": null
+   },
+   {
+    "name": "藤森慎吾",
+    "kana": "ふじもりしんご",
+    "birth": "1983年03月17日",
+    "from": "長野県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/オリエンタルラジオ"
+ },
+ {
+  "id": 900045,
+  "name": "クロンモロン",
+  "kana": "くろんもろん",
+  "formed": 2004,
+  "belong": "浅井企画",
+  "members": [
+   {
+    "name": "高垣雄海",
+    "kana": "たかがきゆうあ",
+    "birth": "1988年05月16日",
+    "from": "東京都"
+   },
+   {
+    "name": "渡邉星",
+    "kana": "わたなべひかる",
+    "birth": "1988年11月30日",
+    "from": "東京都"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/クロンモロン"
+ },
+ {
+  "id": 900049,
+  "name": "ソーセージ",
+  "kana": "そーせーじ",
+  "formed": 2008,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "藤本聖",
+    "kana": "ふじもとたかし",
+    "birth": "1984年07月12日",
+    "from": "山口県"
+   },
+   {
+    "name": "秋山賢太",
+    "kana": "あきやまけんた",
+    "birth": "1983年06月24日",
+    "from": "兵庫県"
+   },
+   {
+    "name": "山名文和",
+    "kana": "やまなふみかず",
+    "birth": "1980年07月03日",
+    "from": "滋賀県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ソーセージ_(お笑い)"
+ },
+ {
+  "id": 900050,
+  "name": "パプア。",
+  "kana": "ぱぷあ",
+  "formed": 2008,
+  "belong": null,
+  "members": [
+   {
+    "name": "山城大毅",
+    "kana": "やましろひろき",
+    "birth": "1985年11月27日",
+    "from": null
+   },
+   {
+    "name": "延藤ミッツェル五朗",
+    "kana": "のぶとうみっつぇるごろう",
+    "birth": "1985年05月01日",
+    "from": null
+   }
+  ],
+  "wikipedia": null
+ },
+ {
+  "id": 900051,
+  "name": "Wエンジン",
+  "kana": "だぶるえんじん",
+  "formed": 2000,
+  "belong": "ワタナベエンターテインメント",
+  "members": [
+   {
+    "name": "チャンカワイ",
+    "kana": "ちゃんかわい",
+    "birth": "1980年06月15日",
+    "from": "奈良県"
+   },
+   {
+    "name": "えとう窓口",
+    "kana": "えとうまどぐち",
+    "birth": "1973年04月23日",
+    "from": "大分県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/Wエンジン"
+ },
+ {
+  "id": 900053,
+  "name": "18KIN",
+  "kana": "じゅうはちきん",
+  "formed": 1997,
+  "belong": "ワタナベエンターテインメント",
+  "members": [
+   {
+    "name": "大滝裕一",
+    "kana": "おおたきゆういち",
+    "birth": "1973年10月19日",
+    "from": "東京都"
+   },
+   {
+    "name": "今泉稔",
+    "kana": "いまいずみみのる",
+    "birth": "1973年10月15日",
+    "from": "東京都"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/18KIN"
+ },
+ {
+  "id": 900054,
+  "name": "COWCOW",
+  "kana": "かうかう",
+  "formed": 1993,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "多田健二",
+    "kana": "ただけんじ",
+    "birth": "1974年08月08日",
+    "from": "大阪府"
+   },
+   {
+    "name": "善し",
+    "kana": "よし",
+    "birth": "1974年10月19日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/COWCOW"
+ },
+ {
+  "id": 900055,
+  "name": "OverDrive",
+  "kana": "おーばーどらいぶ",
+  "formed": 1996,
+  "belong": "松竹芸能",
+  "members": [
+   {
+    "name": "石野敦士",
+    "kana": "いしのあつし",
+    "birth": "1976年03月02日",
+    "from": "兵庫県"
+   },
+   {
+    "name": "緒方雅史",
+    "kana": "おがたまさし",
+    "birth": "1974年03月01日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/Over_Drive_(お笑いコンビ)"
+ },
+ {
+  "id": 900056,
+  "name": "せんたくばさみ",
+  "kana": "せんたくばさみ",
+  "formed": 1996,
+  "belong": "松竹芸能",
+  "members": [
+   {
+    "name": "能勢ヒロシ",
+    "kana": "のせひろし",
+    "birth": "1973年08月09日",
+    "from": "高知県"
+   },
+   {
+    "name": "加藤統士",
+    "kana": "かとうもとし",
+    "birth": "1973年08月27日",
+    "from": "高知県"
+   },
+   {
+    "name": "吉本英和",
+    "kana": "よしもとひでかず",
+    "birth": "1974年01月26日",
+    "from": "高知県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/せんたくばさみ_(お笑いコンビ)"
+ },
+ {
+  "id": 900057,
+  "name": "アップダウン",
+  "kana": "あっぷだうん",
+  "formed": 1996,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "阿部浩貴",
+    "kana": "あべひろき",
+    "birth": "1977年04月20日",
+    "from": "北海道"
+   },
+   {
+    "name": "竹森巧",
+    "kana": "たけもりたくみ",
+    "birth": "1978年03月21日",
+    "from": "北海道"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/アップダウン"
+ },
+ {
+  "id": 900058,
+  "name": "インパルス",
+  "kana": "いんぱるす",
+  "formed": 1998,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "板倉俊之",
+    "kana": "いたくらとしゆき",
+    "birth": "1978年01月30日",
+    "from": "埼玉県"
+   },
+   {
+    "name": "堤下敦",
+    "kana": "つつみしたあつし",
+    "birth": "1977年09月09日",
+    "from": "神奈川県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/インパルス_(お笑いコンビ)"
+ },
+ {
+  "id": 900059,
+  "name": "イー☆リャン",
+  "kana": "いーりゃん",
+  "formed": 2001,
+  "belong": "オフィス北野",
+  "members": [
+   {
+    "name": "イー",
+    "kana": "いー",
+    "birth": "1974年12月26日",
+    "from": "大阪府"
+   },
+   {
+    "name": "リャン",
+    "kana": "りゃん",
+    "birth": "1977年08月02日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/イー☆リャン"
+ },
+ {
+  "id": 900060,
+  "name": "カリカ",
+  "kana": "かりか",
+  "formed": 1997,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "林よしはる",
+    "kana": "はやしよしはる",
+    "birth": "1976年12月12日",
+    "from": "千葉県"
+   },
+   {
+    "name": "家城啓之",
+    "kana": "やしろひろゆき",
+    "birth": "1976年07月19日",
+    "from": "千葉県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ニューカリカ"
+ },
+ {
+  "id": 900061,
+  "name": "クワバタオハラ",
+  "kana": "くわばたおはら",
+  "formed": 2000,
+  "belong": "ホリプロコム",
+  "members": [
+   {
+    "name": "くわばたりえ",
+    "kana": "くわばたりえ",
+    "birth": "1976年03月24日",
+    "from": "大阪府"
+   },
+   {
+    "name": "小原正子",
+    "kana": "おはらまさこ",
+    "birth": "1975年10月23日",
+    "from": "兵庫県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/クワバタオハラ"
+ },
+ {
+  "id": 900062,
+  "name": "サカイスト",
+  "kana": "さかいすと",
+  "formed": 1998,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "伝ペー",
+    "kana": "でんぺー",
+    "birth": "1977年01月07日",
+    "from": "東京都"
+   },
+   {
+    "name": "まさよし",
+    "kana": "まさよし",
+    "birth": "1979年08月10日",
+    "from": "東京都"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/サカイスト"
+ },
+ {
+  "id": 900063,
+  "name": "サバンナ",
+  "kana": "さばんな",
+  "formed": 1994,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "高橋茂雄",
+    "kana": "たかはししげお",
+    "birth": "1976年01月28日",
+    "from": "京都府"
+   },
+   {
+    "name": "八木真澄",
+    "kana": "やぎますみ",
+    "birth": "1974年08月04日",
+    "from": "京都府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/サバンナ_(お笑いコンビ)"
+ },
+ {
+  "id": 900064,
+  "name": "シャンプーハット",
+  "kana": "しゃんぷーはっと",
+  "formed": 1994,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "こいで",
+    "kana": "こいで",
+    "birth": "1976年02月01日",
+    "from": "大阪府"
+   },
+   {
+    "name": "てつじ",
+    "kana": "てつじ",
+    "birth": "1975年08月07日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/シャンプーハット_(お笑いコンビ)"
+ },
+ {
+  "id": 900065,
+  "name": "ストリーク",
+  "kana": "すとりーく",
+  "formed": 1995,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "山田大介",
+    "kana": "やまだだいすけ",
+    "birth": "1976年08月31日",
+    "from": "大阪府"
+   },
+   {
+    "name": "吉本峰之",
+    "kana": "よしもとみねゆき",
+    "birth": "1977年02月19日",
+    "from": "滋賀県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ストリーク"
+ },
+ {
+  "id": 900066,
+  "name": "チャイルドマシーン",
+  "kana": "ちゃいるどましーん",
+  "formed": 1995,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "樅野太紀",
+    "kana": "もみのたいき",
+    "birth": "1974年10月13日",
+    "from": "岡山県"
+   },
+   {
+    "name": "山本吉貴",
+    "kana": "やまもとよしたか",
+    "birth": "1976年04月25日",
+    "from": "京都府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/チャイルドマシーン"
+ },
+ {
+  "id": 900067,
+  "name": "バッドボーイズ",
+  "kana": "ばっどぼーいず",
+  "formed": 1997,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "佐田正樹",
+    "kana": "さたまさき",
+    "birth": "1978年09月13日",
+    "from": "福岡県"
+   },
+   {
+    "name": "大溝清人",
+    "kana": "おおみぞきよと",
+    "birth": "1978年09月03日",
+    "from": "福岡県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/バッドボーイズ_(お笑いコンビ)"
+ },
+ {
+  "id": 900068,
+  "name": "ビッキーズ",
+  "kana": "びっきーず",
+  "formed": 1996,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "木部信彦",
+    "kana": "きべのぶひこ",
+    "birth": "1972年02月24日",
+    "from": "大阪府"
+   },
+   {
+    "name": "須知裕雅",
+    "kana": "すちひろまさ",
+    "birth": "1972年01月26日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ビッキーズ"
+ },
+ {
+  "id": 900069,
+  "name": "ランディーズ",
+  "kana": "らんでぃーず",
+  "formed": 1995,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "中川貴志",
+    "kana": "なかがわたかし",
+    "birth": "1975年07月04日",
+    "from": "大阪府"
+   },
+   {
+    "name": "高井俊彦",
+    "kana": "たかいとしひこ",
+    "birth": "1975年08月27日",
+    "from": "奈良県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ランディーズ"
+ },
+ {
+  "id": 900070,
+  "name": "ルート33",
+  "kana": "るーとさんじゅうさん",
+  "formed": 1995,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "堂土貴",
+    "kana": "どうどたかし",
+    "birth": "1973年08月20日",
+    "from": "奈良県"
+   },
+   {
+    "name": "増田裕之",
+    "kana": "ますだひろゆき",
+    "birth": "1974年07月25日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ルート33"
+ },
+ {
+  "id": 900071,
+  "name": "レギュラー",
+  "kana": "れぎゅらー",
+  "formed": 1998,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "西川晃啓",
+    "kana": "にしかわあきひろ",
+    "birth": "1979年08月11日",
+    "from": "京都府"
+   },
+   {
+    "name": "松本康太",
+    "kana": "まつもとこうた",
+    "birth": "1979年05月16日",
+    "from": "京都府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/レギュラー_(お笑いコンビ)"
+ },
+ {
+  "id": 900072,
+  "name": "ロザン",
+  "kana": "ろざん",
+  "formed": 1996,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "宇治原史規",
+    "kana": "うじはらふみのり",
+    "birth": "1976年04月20日",
+    "from": "大阪府"
+   },
+   {
+    "name": "菅広文",
+    "kana": "すがひろふみ",
+    "birth": "1976年10月29日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ロザン"
+ },
+ {
+  "id": 900073,
+  "name": "四次元ナイフ",
+  "kana": "よじげんないふ",
+  "formed": 1997,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "山内祥聖",
+    "kana": "やまうちよしまさ",
+    "birth": "1974年04月06日",
+    "from": "兵庫県"
+   },
+   {
+    "name": "山本大介",
+    "kana": "やまもとだいすけ",
+    "birth": "1975年04月18日",
+    "from": "徳島県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/四次元ナイフ"
+ },
+ {
+  "id": 900074,
+  "name": "青空",
+  "kana": "あおぞら",
+  "formed": 1997,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "岡友美",
+    "kana": "おかともみ",
+    "birth": "1977年12月27日",
+    "from": "奈良県"
+   },
+   {
+    "name": "須藤理恵",
+    "kana": "すどうりえ",
+    "birth": "1977年12月31日",
+    "from": "京都府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/青空_(お笑いコンビ)"
+ },
+ {
+  "id": 900075,
+  "name": "飛石連休",
+  "kana": "とびいしれんきゅう",
+  "formed": 1999,
+  "belong": "サンミュージックプロダクション",
+  "members": [
+   {
+    "name": "藤井宏和",
+    "kana": "ふじいひろかず",
+    "birth": "1972年03月12日",
+    "from": "大阪府"
+   },
+   {
+    "name": "岩見欣正",
+    "kana": "いわみよしまさ",
+    "birth": "1979年05月20日",
+    "from": "和歌山県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/飛石連休_(お笑いコンビ)"
+ },
+ {
+  "id": 900077,
+  "name": "キャン×キャン",
+  "kana": "きゃんきゃん",
+  "formed": 1999,
+  "belong": "ライジングプロダクション",
+  "members": [
+   {
+    "name": "長浜之人",
+    "kana": "ながはまゆきひと",
+    "birth": "1977年07月05日",
+    "from": "沖縄県"
+   },
+   {
+    "name": "玉城俊幸",
+    "kana": "たまきとしゆき",
+    "birth": "1979年07月01日",
+    "from": "沖縄県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/キャン×キャン",
+  "aliases": [
+   "キャンXキャン"
+  ]
+ },
+ {
+  "id": 900078,
+  "name": "コア",
+  "kana": "こあ",
+  "formed": 2000,
+  "belong": "ワタナベエンターテインメント",
+  "members": [
+   {
+    "name": "梶本貴史",
+    "kana": "かじもとたかふみ",
+    "birth": "1977年07月01日",
+    "from": "徳島県"
+   },
+   {
+    "name": "吉井崇",
+    "kana": "よしいたかし",
+    "birth": "1975年11月12日",
+    "from": "奈良県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/シェーン_(お笑い)"
+ },
+ {
+  "id": 900079,
+  "name": "プー&ムー",
+  "kana": "ぷーあんどむー",
+  "formed": 1992,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "松田成史",
+    "kana": "まつだしげふみ",
+    "birth": "1972年01月17日",
+    "from": "熊本県"
+   },
+   {
+    "name": "井上修",
+    "kana": "いのうえおさむ",
+    "birth": "1971年05月29日",
+    "from": "熊本県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/プー&ムー"
+ },
+ {
+  "id": 900080,
+  "name": "ポテト少年団",
+  "kana": "ぽてとしょうねんだん",
+  "formed": 1999,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "中谷貴寛",
+    "kana": "なかたにたかひろ",
+    "birth": "1976年02月05日",
+    "from": "大阪府"
+   },
+   {
+    "name": "菊地智義",
+    "kana": "きくちともよし",
+    "birth": "1973年07月24日",
+    "from": "神奈川県"
+   },
+   {
+    "name": "内藤輝彦",
+    "kana": "ないとうてるひこ",
+    "birth": "1973年06月27日",
+    "from": "神奈川県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ポテト少年団"
+ },
+ {
+  "id": 900081,
+  "name": "ミルククラウン",
+  "kana": "みるくくらうん",
+  "formed": 2001,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "菊地正和",
+    "kana": "きくちまさかず",
+    "birth": "1982年02月17日",
+    "from": "北海道"
+   },
+   {
+    "name": "竹内健人",
+    "kana": "たけうちけんと",
+    "birth": "1980年08月08日",
+    "from": "愛知県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ミルククラウン_(お笑いコンビ)"
+ },
+ {
+  "id": 900082,
+  "name": "ロシアンモンキー",
+  "kana": "ろしあんもんきー",
+  "formed": 2000,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "川口清行",
+    "kana": "かわぐちきよゆき",
+    "birth": "1977年09月25日",
+    "from": "大阪府"
+   },
+   {
+    "name": "中須智一",
+    "kana": "なかすともかず",
+    "birth": "1978年03月06日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ロシアンモンキー"
+ },
+ {
+  "id": 900084,
+  "name": "おしどり",
+  "kana": "おしどり",
+  "formed": 2003,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "吉岡雅子",
+    "kana": "よしおかまさこ",
+    "birth": "1975年04月08日",
+    "from": "兵庫県"
+   },
+   {
+    "name": "吉岡賢治",
+    "kana": "よしおかけんじ",
+    "birth": null,
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/おしどり_(お笑い)"
+ },
+ {
+  "id": 900085,
+  "name": "どりあんず",
+  "kana": "どりあんず",
+  "formed": 1997,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "平井俊輔",
+    "kana": "ひらいしゅんすけ",
+    "birth": "1979年03月11日",
+    "from": "福岡県"
+   },
+   {
+    "name": "堤太輝",
+    "kana": "つつみたいき",
+    "birth": "1978年10月01日",
+    "from": "福岡県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/どりあんず"
+ },
+ {
+  "id": 900086,
+  "name": "にのうらご",
+  "kana": "にのうらご",
+  "formed": 2003,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "西森洋一",
+    "kana": "にしもりよういち",
+    "birth": "1979年01月21日",
+    "from": "大阪府"
+   },
+   {
+    "name": "大林健二",
+    "kana": "おおばやしけんじ",
+    "birth": "1983年04月06日",
+    "from": "大阪府"
+   },
+   {
+    "name": "荒牧周平",
+    "kana": "あらまきしゅうへい",
+    "birth": "1976年06月29日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/にのうらご"
+ },
+ {
+  "id": 900087,
+  "name": "アームストロング",
+  "kana": "あーむすとろんぐ",
+  "formed": 2000,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "栗山直人",
+    "kana": "くりやまなおと",
+    "birth": "1981年08月04日",
+    "from": "北海道"
+   },
+   {
+    "name": "安村昇剛",
+    "kana": "やすむらしょうごう",
+    "birth": "1982年03月15日",
+    "from": "北海道"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/アームストロング_(お笑いコンビ)"
+ },
+ {
+  "id": 900088,
+  "name": "オオカミ少年",
+  "kana": "おおかみしょうねん",
+  "formed": 2003,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "片岡正徳",
+    "kana": "かたおかまさのり",
+    "birth": "1978年04月13日",
+    "from": "愛知県"
+   },
+   {
+    "name": "浜口裕章",
+    "kana": "はまぐちひろあき",
+    "birth": "1978年09月03日",
+    "from": "愛知県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/オオカミ少年_(お笑い)"
+ },
+ {
+  "id": 900090,
+  "name": "キングオブコメディ",
+  "kana": "きんぐおぶこめでぃ",
+  "formed": 2000,
+  "belong": "プロダクション人力舎",
+  "members": [
+   {
+    "name": "高橋健一",
+    "kana": "たかはしけんいち",
+    "birth": "1971年03月30日",
+    "from": "東京都"
+   },
+   {
+    "name": "今野浩喜",
+    "kana": "こんのひろき",
+    "birth": "1978年12月12日",
+    "from": "埼玉県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/キングオブコメディ"
+ },
+ {
+  "id": 900091,
+  "name": "ザ・たっち",
+  "kana": "ざ・たっち",
+  "formed": 2003,
+  "belong": "ホリプロコム",
+  "members": [
+   {
+    "name": "角田拓也",
+    "kana": "かくたたくや",
+    "birth": "1982年11月10日",
+    "from": "栃木県"
+   },
+   {
+    "name": "角田和也",
+    "kana": "かくたかずや",
+    "birth": "1982年11月10日",
+    "from": "栃木県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ザ・たっち"
+ },
+ {
+  "id": 900093,
+  "name": "ゼミナールキッチン",
+  "kana": "ぜみなーるきっちん",
+  "formed": 2001,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "田中光",
+    "kana": "たなかひかる",
+    "birth": "1982年02月13日",
+    "from": "京都府"
+   },
+   {
+    "name": "渡辺竜介",
+    "kana": "わたなべりゅうすけ",
+    "birth": "1981年09月17日",
+    "from": "京都府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ゼミナールキッチン"
+ },
+ {
+  "id": 900094,
+  "name": "チョップリン",
+  "kana": "ちょっぷりん",
+  "formed": 1999,
+  "belong": "松竹芸能",
+  "members": [
+   {
+    "name": "小林幸太郎",
+    "kana": "こばやしこうたろう",
+    "birth": "1975年09月30日",
+    "from": "兵庫県"
+   },
+   {
+    "name": "西野恭之介",
+    "kana": "にしのきょうのすけ",
+    "birth": "1976年02月23日",
+    "from": "兵庫県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/チョップリン"
+ },
+ {
+  "id": 900097,
+  "name": "レイカーズ",
+  "kana": "れいかーず",
+  "formed": null,
+  "belong": "松竹芸能",
+  "members": [
+   {
+    "name": "舟岡昭浩",
+    "kana": "ふなおかあきひろ",
+    "birth": "1975年10月14日",
+    "from": "滋賀県"
+   },
+   {
+    "name": "森美剛",
+    "kana": "もりよしたか",
+    "birth": "1974年07月07日",
+    "from": null
+   }
+  ],
+  "wikipedia": null
+ },
+ {
+  "id": 900098,
+  "name": "レイザーラモン",
+  "kana": "れいざーらもん",
+  "formed": 1997,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "住谷正樹",
+    "kana": "すみたにまさき",
+    "birth": "1975年12月18日",
+    "from": "兵庫県"
+   },
+   {
+    "name": "出渕誠",
+    "kana": "いずぶちまこと",
+    "birth": "1974年06月08日",
+    "from": "愛媛県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/レイザーラモン"
+ },
+ {
+  "id": 900099,
+  "name": "村本本田",
+  "kana": "むらもとほんだ",
+  "formed": null,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "村本大輔",
+    "kana": "むらもとだいすけ",
+    "birth": "1980年11月25日",
+    "from": "福井県"
+   },
+   {
+    "name": "本田一馬",
+    "kana": null,
+    "birth": null,
+    "from": null
+   }
+  ],
+  "wikipedia": null
+ },
+ {
+  "id": 900101,
+  "name": "さくらんぼブービー",
+  "kana": "さくらんぼぶーびー",
+  "formed": 1999,
+  "belong": "サンミュージックプロダクション",
+  "members": [
+   {
+    "name": "鍛治輝光",
+    "kana": "かじてるみつ",
+    "birth": "1977年12月22日",
+    "from": "千葉県"
+   },
+   {
+    "name": "木村圭太",
+    "kana": "きむらけいた",
+    "birth": "1977年08月30日",
+    "from": "千葉県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/さくらんぼブービー"
+ },
+ {
+  "id": 900102,
+  "name": "はだか電球",
+  "kana": "はだかでんきゅう",
+  "formed": 2004,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "後藤征平",
+    "kana": "ごとうしょうへい",
+    "birth": "1984年04月21日",
+    "from": "大分県"
+   },
+   {
+    "name": "山下吉宗",
+    "kana": "やましたよしむね",
+    "birth": "1984年04月15日",
+    "from": "大分県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/はだか電球_(お笑いコンビ)"
+ },
+ {
+  "id": 900104,
+  "name": "ガブ&ぴーち",
+  "kana": "がぶあんどぴーち",
+  "formed": 2003,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "伊勢崎泰啓",
+    "kana": "いせざきやすひろ",
+    "birth": "1982年06月07日",
+    "from": "千葉県"
+   },
+   {
+    "name": "三好秀典",
+    "kana": "みよしひでのり",
+    "birth": "1982年05月18日",
+    "from": "千葉県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ガブ&ぴーち"
+ },
+ {
+  "id": 900106,
+  "name": "ジャリズム",
+  "kana": "じゃりずむ",
+  "formed": 1991,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "渡辺あつむ",
+    "kana": "わたなべあつむ",
+    "birth": "1969年08月27日",
+    "from": "滋賀県"
+   },
+   {
+    "name": "山下しげのり",
+    "kana": "やましたしげのり",
+    "birth": "1968年10月29日",
+    "from": "香川県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ジャリズム"
+ },
+ {
+  "id": 900107,
+  "name": "ハム",
+  "kana": "はむ",
+  "formed": 2004,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "川見直通",
+    "kana": "かわみなおみち",
+    "birth": "1986年01月15日",
+    "from": "奈良県"
+   },
+   {
+    "name": "諸見里大介",
+    "kana": "もろみざとだいすけ",
+    "birth": "1982年07月21日",
+    "from": "沖縄県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ハム_(お笑いコンビ)"
+ },
+ {
+  "id": 900108,
+  "name": "ルサンチマン",
+  "kana": "るさんちまん",
+  "formed": 2004,
+  "belong": "オフィス北野",
+  "members": [
+   {
+    "name": "パジャマお兄さん",
+    "kana": "ぱじゃまおにいさん",
+    "birth": "1981年01月28日",
+    "from": "徳島県"
+   },
+   {
+    "name": "よしお",
+    "kana": "よしお",
+    "birth": "1980年12月11日",
+    "from": "徳島県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ルサンチマン_(お笑いコンビ)"
+ },
+ {
+  "id": 900109,
+  "name": "レム色",
+  "kana": "れむいろ",
+  "formed": 2003,
+  "belong": "げんしじん事務所",
+  "members": [
+   {
+    "name": "渡辺剛太",
+    "kana": "わたなべごうた",
+    "birth": "1980年10月27日",
+    "from": "東京都"
+   },
+   {
+    "name": "唐沢拓磨",
+    "kana": "からさわたくま",
+    "birth": "1981年03月15日",
+    "from": "東京都"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/レム色"
+ },
+ {
+  "id": 900110,
+  "name": "大脇里村ゼミナール",
+  "kana": "おおわきさとむらぜみなーる",
+  "formed": 2004,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "大脇拓平",
+    "kana": "おおわきたくへい",
+    "birth": "1980年02月29日",
+    "from": null
+   },
+   {
+    "name": "里村仁志",
+    "kana": "さとむらひとし",
+    "birth": "1978年05月20日",
+    "from": null
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/大脇里村ゼミナール"
+ },
+ {
+  "id": 900111,
+  "name": "平成ノブシコブシ",
+  "kana": "へいせいのぶしこぶし",
+  "formed": 2000,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "吉村崇",
+    "kana": "よしむらたかし",
+    "birth": "1980年07月09日",
+    "from": "北海道"
+   },
+   {
+    "name": "徳井健太",
+    "kana": "とくいけんた",
+    "birth": "1980年09月16日",
+    "from": "北海道"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/平成ノブシコブシ"
+ },
+ {
+  "id": 900112,
+  "name": "日刊ナンセンス",
+  "kana": "にっかんなんせんす",
+  "formed": 2003,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "工村友臣",
+    "kana": "くむらともおみ",
+    "birth": "1979年11月06日",
+    "from": "三重県"
+   },
+   {
+    "name": "村野井学",
+    "kana": "むらのいまなぶ",
+    "birth": "1981年09月13日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/日刊ナンセンス"
+ },
+ {
+  "id": 900113,
+  "name": "難波横山",
+  "kana": "なんばよこやま",
+  "formed": 2002,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "難波麻人",
+    "kana": "なんばあさと",
+    "birth": "1980年04月08日",
+    "from": "大阪府"
+   },
+   {
+    "name": "横山友勝",
+    "kana": "よこやまともかつ",
+    "birth": "1980年06月01日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/なんばよこやま"
+ },
+ {
+  "id": 900115,
+  "name": "さんだあず",
+  "kana": "さんだあず",
+  "formed": 1999,
+  "belong": null,
+  "members": [
+   {
+    "name": "山田和史",
+    "kana": "やまだかずし",
+    "birth": null,
+    "from": "北海道"
+   },
+   {
+    "name": "山田敬文",
+    "kana": "やまだたかふみ",
+    "birth": null,
+    "from": null
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/さんだあず"
+ },
+ {
+  "id": 900117,
+  "name": "ヒカリゴケ",
+  "kana": "ひかりごけ",
+  "formed": 2005,
+  "belong": "松竹芸能",
+  "members": [
+   {
+    "name": "片山裕介",
+    "kana": "かたやまゆうすけ",
+    "birth": "1980年05月29日",
+    "from": "大阪府"
+   },
+   {
+    "name": "国沢一誠",
+    "kana": "くにさわいっせい",
+    "birth": "1984年05月30日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ヒカリゴケ_(お笑いコンビ)"
+ },
+ {
+  "id": 900118,
+  "name": "庵",
+  "kana": "いおり",
+  "formed": 2003,
+  "belong": "慈プロダクション",
+  "members": [
+   {
+    "name": "ボギー吉村",
+    "kana": "ぼぎーよしむら",
+    "birth": "1977年05月15日",
+    "from": "福岡県"
+   },
+   {
+    "name": "英哲",
+    "kana": "えいてつ",
+    "birth": "1980年06月13日",
+    "from": "東京都"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/庵。"
+ },
+ {
+  "id": 900119,
+  "name": "鼻エンジン",
+  "kana": "はなえんじん",
+  "formed": 2005,
+  "belong": "ソニー・ミュージックアーティスツ",
+  "members": [
+   {
+    "name": "松丘慎吾",
+    "kana": "まつおかしんご",
+    "birth": "1970年02月19日",
+    "from": "京都府"
+   },
+   {
+    "name": "村田渚",
+    "kana": "むらたなぎさ",
+    "birth": "1971年07月29日",
+    "from": "三重県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/鼻エンジン"
+ },
+ {
+  "id": 900120,
+  "name": "5番6番",
+  "kana": "ごばんろくばん",
+  "formed": 1998,
+  "belong": "タイタン",
+  "members": [
+   {
+    "name": "樋口和之",
+    "kana": "ひぐちかずゆき",
+    "birth": "1977年01月25日",
+    "from": "茨城県"
+   },
+   {
+    "name": "猿橋英之",
+    "kana": "さるはしひでゆき",
+    "birth": "1976年12月25日",
+    "from": "茨城県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/5番6番"
+ },
+ {
+  "id": 900121,
+  "name": "BODY",
+  "kana": "ぼでぃ",
+  "formed": 2005,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "増谷キートン",
+    "kana": "ますやきーとん",
+    "birth": "1973年07月11日",
+    "from": "東京都"
+   },
+   {
+    "name": "椿鬼奴",
+    "kana": "つばきおにやっこ",
+    "birth": "1972年04月15日",
+    "from": "東京都"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/BODY_(お笑いコンビ)"
+ },
+ {
+  "id": 900123,
+  "name": "デニッシュ",
+  "kana": "でにっしゅ",
+  "formed": 2006,
+  "belong": "ワタナベエンターテインメント",
+  "members": [
+   {
+    "name": "中村力",
+    "kana": "なかむらつとむ",
+    "birth": "1979年07月19日",
+    "from": "埼玉県"
+   },
+   {
+    "name": "宮下覚",
+    "kana": "みやしたがく",
+    "birth": "1978年11月12日",
+    "from": "岩手県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/デニッシュ_(お笑いコンビ)"
+ },
+ {
+  "id": 900124,
+  "name": "勝山梶",
+  "kana": "かつやまかじ",
+  "formed": 2005,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "勝山慎司",
+    "kana": "かつやましんじ",
+    "birth": "1980年06月11日",
+    "from": "福岡県"
+   },
+   {
+    "name": "梶剛",
+    "kana": "かじつよし",
+    "birth": "1981年03月28日",
+    "from": "香川県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/勝山梶"
+ },
+ {
+  "id": 900126,
+  "name": "鬼ケ島",
+  "kana": "おにがしま",
+  "formed": 2004,
+  "belong": "プロダクション人力舎",
+  "members": [
+   {
+    "name": "アイアム野田",
+    "kana": "あいあむのだ",
+    "birth": "1977年07月12日",
+    "from": "愛知県"
+   },
+   {
+    "name": "おおかわら",
+    "kana": "おおかわら",
+    "birth": "1977年05月31日",
+    "from": "埼玉県"
+   },
+   {
+    "name": "アイアム和田",
+    "kana": "あいあむわだ",
+    "birth": "1978年08月17日",
+    "from": "神奈川県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/鬼ヶ島_(お笑いトリオ)"
+ },
+ {
+  "id": 900127,
+  "name": "まえだまえだ",
+  "kana": "まえだまえだ",
+  "formed": 2007,
+  "belong": "松竹芸能",
+  "members": [
+   {
+    "name": "前田航基",
+    "kana": "まえだこうき",
+    "birth": "1998年12月13日",
+    "from": "大阪府"
+   },
+   {
+    "name": "前田旺志郎",
+    "kana": "まえだおうしろう",
+    "birth": "2000年12月07日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/まえだまえだ"
+ },
+ {
+  "id": 900128,
+  "name": "座長座長",
+  "kana": "ざちょうざちょう",
+  "formed": null,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "小籔千豊",
+    "kana": "こやぶかずとよ",
+    "birth": "1973年09月11日",
+    "from": "大阪府"
+   },
+   {
+    "name": "川畑泰史",
+    "kana": "かわばたやすし",
+    "birth": "1967年06月22日",
+    "from": "京都府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/座長座長"
+ },
+ {
+  "id": 900129,
+  "name": "志ん茶",
+  "kana": "しんちゃ",
+  "formed": null,
+  "belong": null,
+  "members": [
+   {
+    "name": "福島暢啓",
+    "kana": "ふくしまのぶひろ",
+    "birth": "1987年02月06日",
+    "from": "宮崎県"
+   },
+   {
+    "name": "児玉貢昭",
+    "kana": null,
+    "birth": null,
+    "from": null
+   }
+  ],
+  "wikipedia": null
+ },
+ {
+  "id": 900130,
+  "name": "朝倉小松崎",
+  "kana": "あさくらこまつざき",
+  "formed": 2007,
+  "belong": "サンミュージックプロダクション",
+  "members": [
+   {
+    "name": "朝倉隼人",
+    "kana": "あさくらはやと",
+    "birth": "1985年08月06日",
+    "from": "千葉県"
+   },
+   {
+    "name": "小松崎和也",
+    "kana": "こまつざきかずや",
+    "birth": "1986年02月14日",
+    "from": "千葉県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/朝倉小松崎"
+ },
+ {
+  "id": 900132,
+  "name": "ウーマンラッシュアワー",
+  "kana": "うーまんらっしゅあわー",
+  "formed": 2008,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "村本大輔",
+    "kana": "むらもとだいすけ",
+    "birth": "1980年11月25日",
+    "from": "福井県"
+   },
+   {
+    "name": "中川パラダイス",
+    "kana": "なかがわぱらだいす",
+    "birth": "1981年03月14日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ウーマンラッシュアワー"
+ },
+ {
+  "id": 900135,
+  "name": "なりきんショージ",
+  "kana": "なりきんしょーじ",
+  "formed": 2009,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "村上ショージ",
+    "kana": "むらかみしょーじ",
+    "birth": "1955年05月28日",
+    "from": "愛媛県"
+   },
+   {
+    "name": "千葉公平",
+    "kana": "ちばこうへい",
+    "birth": "1975年10月24日",
+    "from": "千葉県"
+   }
+  ],
+  "wikipedia": null
+ },
+ {
+  "id": 900136,
+  "name": "はりけ~んず",
+  "kana": "はりけーんず",
+  "formed": 1990,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "前田登",
+    "kana": "まえだのぼる",
+    "birth": "1970年06月04日",
+    "from": "大阪府"
+   },
+   {
+    "name": "新井義幸",
+    "kana": "あらいよしゆき",
+    "birth": "1971年01月07日",
+    "from": "京都府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/はりけ〜んず"
+ },
+ {
+  "id": 900138,
+  "name": "ガスマスクガール",
+  "kana": "がすますくがーる",
+  "formed": 2008,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "畠山達也",
+    "kana": "はたけやまたつや",
+    "birth": "1984年11月24日",
+    "from": "岩手県"
+   },
+   {
+    "name": "山元康輔",
+    "kana": "やまもとこうすけ",
+    "birth": "1987年01月26日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/ガスマスクガール"
+ },
+ {
+  "id": 900139,
+  "name": "チャド・マレーン",
+  "kana": "ちゃど・まれーん",
+  "formed": 1999,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "チャド・マレーン",
+    "kana": "ちゃど・まれーん",
+    "birth": "1979年11月28日",
+    "from": null
+   },
+   {
+    "name": "ティ・カトウ",
+    "kana": "てぃ・かとう",
+    "birth": "1975年10月09日",
+    "from": "愛知県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/チャド・マレーン"
+ },
+ {
+  "id": 900140,
+  "name": "メメ",
+  "kana": "めめ",
+  "formed": 2007,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "高橋八代枝",
+    "kana": "たかはしやよえ",
+    "birth": "1988年09月26日",
+    "from": "宮城県"
+   },
+   {
+    "name": "堀幸代",
+    "kana": "ほりさちよ",
+    "birth": "1984年05月03日",
+    "from": "広島県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/メメ"
+ },
+ {
+  "id": 900142,
+  "name": "マキシマムパーパーサム",
+  "kana": "まきしまむぱーぱーさむ",
+  "formed": 2004,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "長澤喜稔",
+    "kana": "ながさわのぶとし",
+    "birth": "1980年01月25日",
+    "from": "岩手県"
+   },
+   {
+    "name": "山本剛",
+    "kana": "やまもとつよし",
+    "birth": "1979年05月31日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/マキシマムパーパーサム"
+ },
+ {
+  "id": 900144,
+  "name": "どぶろっく",
+  "kana": "どぶろっく",
+  "formed": 2004,
+  "belong": "浅井企画",
+  "members": [
+   {
+    "name": "森慎太郎",
+    "kana": "もりしんたろう",
+    "birth": "1978年10月07日",
+    "from": "佐賀県"
+   },
+   {
+    "name": "江口直人",
+    "kana": "えぐちなおと",
+    "birth": "1978年04月04日",
+    "from": "佐賀県"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/どぶろっく"
+ },
+ {
+  "id": 900145,
+  "name": "天使と悪魔",
+  "kana": "てんしとあくま",
+  "formed": 2008,
+  "belong": "吉本興業",
+  "members": [
+   {
+    "name": "かんざき",
+    "kana": "かんざき",
+    "birth": "1981年09月29日",
+    "from": "大阪府"
+   },
+   {
+    "name": "川口敦典",
+    "kana": "かわぐちあつのり",
+    "birth": "1983年06月22日",
+    "from": "大阪府"
+   }
+  ],
+  "wikipedia": "https://ja.wikipedia.org/wiki/てんしとあくま"
+ }
+]

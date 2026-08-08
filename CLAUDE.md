@@ -31,6 +31,7 @@ npm run dev / npm run build
 - 宣材写真は同ページの `og:image` から抽出(`photo` フィールド、`https://www.m-1gp.com/combi/` を除いた相対パスで保存)。デフォルト画像 `img_emptyPic` は写真なし扱い。表示は公式サーバーへの直リンク(複製・再配信しない)で、削除済みはonErrorで非表示
 - 列挙は `list.php` 全41,018組・20件/頁。公式DBは2015年以降のみ
 - 2001〜2010は `archive/{year}/` の日付別ページ(合格者のみ → 敗退者は前回戦との差分導出、1回戦敗退者は不明)
+- コンビ詳細ページの `history` は公式コンビDB由来で2015年以降のみ。2001〜2010の出場は `build_json.py` の `merge_archive_history` が years/(アーカイブ)から各コンビの `history` に逆マージして表示する(id紐付けができた組のみ)
 - 生HTMLは `scraper/cache/` にキャッシュ(gitignore、~2GB)。再パースはクロール不要
 - レート制限: 2〜4req/s厳守
 - 注目度ソートはYouTube Data APIで「コンビ名 漫才」検索した上位10本のうち、タイトル/説明文/チャンネル名/タグにコンビ名を含む動画の再生数合計(youtube_popularity.py)。このフィルタは必須 — 無いと動画の少ない組の検索結果が無関係な高再生動画で埋まり順位が壊れる。対象は3回戦以上の出場経験があるコンビ(約1,284組)。環境変数 `YOUTUBE_API_KEY` が必要で、search.listが100units/回のため無料枠(10,000units/日)では約95組/日。無料枠は日本時間16時頃(太平洋時間0時)リセット。update-popularity.yml が毎日18時(JST)に未取得優先→取得日の古い順で約95組ずつローリング更新し(全組約14日周期)、data/へのコミットで deploy.yml が発火してサイトにも自動反映される。手動実行は初回投入や緊急時のみ。work側hitsの `ids` は検索結果全件で、フィルタ規則変更時はsearch再消費なしで再集計可能(buildで配信JSONからは除去)
@@ -40,4 +41,7 @@ npm run dev / npm run build
 ## 注意
 
 - `data/` を直接手編集しない(buildで上書きされる)。手動補正は `scraper/overrides/` に置く
+  - `champions_meta.json` — 2001〜2010王者の出身地/結成年/生年月日(公式コンビDB未収録分の補完)
+  - `legacy_combis.json` — 2001〜2010に準々決勝以上へ進出したが公式コンビDBに無い著名コンビ(千鳥・笑い飯等)の合成レコード。予約ID 900001+。`records` に投入され名寄せ→アーカイブ履歴逆マージ→詳細ページ生成。出典はWikipedia。`legacy:true`/`wikipedia` を持ち、`aliases` で全半角/綴り違いのアーカイブ名も紐付ける
+  - `name_links.json` — アーカイブ名/旧名 → 既存DBコンビID。改名(鎌鼬→かまいたち、ぷくぷく隊→ヤング等)や全半角違いで名寄せが外れた組の2001〜2010出場を実ページへ紐付ける(合成コンビの重複ページ回避)。`link()` は生名・NFKC正規化名の両方で照合
 - 結果enum: pass / fail / seed_pass / fail_inferred / unknown (models.py)

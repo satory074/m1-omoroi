@@ -64,6 +64,11 @@ export default function CombiPage() {
       )}
 
       <h2 className="section-title">出場と結果</h2>
+      {combi.legacy && (
+        <p className="section-note">
+          ※ 2001〜2010の公式アーカイブに基づく記録(1回戦敗退の年は公式記録が残っていないため含まれません)
+        </p>
+      )}
       <div className="history-wrap">
         <table className="history">
           <thead>
@@ -115,11 +120,21 @@ export default function CombiPage() {
         ◎ シード通過 / ○ 通過 / × 敗退 / ★ 優勝
       </p>
 
-      <p>
-        <a className="official-link" href={combi.officialUrl} target="_blank" rel="noreferrer">
-          公式サイトのコンビ情報を見る →
-        </a>
-      </p>
+      {combi.legacy
+        ? combi.wikipedia && (
+            <p>
+              <a className="official-link" href={combi.wikipedia} target="_blank" rel="noreferrer">
+                Wikipediaでコンビ情報を見る →
+              </a>
+            </p>
+          )
+        : combi.officialUrl && (
+            <p>
+              <a className="official-link" href={combi.officialUrl} target="_blank" rel="noreferrer">
+                公式サイトのコンビ情報を見る →
+              </a>
+            </p>
+          )}
     </>
   )
 }

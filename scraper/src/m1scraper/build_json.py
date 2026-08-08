@@ -13,6 +13,7 @@
 
 import json
 import shutil
+import unicodedata
 from collections import defaultdict
 from datetime import datetime, timezone
 
@@ -23,6 +24,42 @@ SCHEMA_VERSION = 1
 SHARD_COUNT = 100
 
 PASSING = {"pass", "seed_pass", "champion"}
+
+
+def _norm_name(name: str) -> str:
+    """全角/半角の表記揺れを吸収した名寄せキー(NFKC正規化)。"""
+    return unicodedata.normalize("NFKC", name).strip()
+
+
+def _load_legacy_combis() -> list[dict]:
+    """overrides/legacy_combis.json の合成コンビレコード(2001〜2010の著名組)を読む。
+
+    公式コンビDB(2015年以降)に無い組を詳細ページ化するための手動データ。
+    history は空で投入し、merge_archive_history がアーカイブ年で満たす。
+    """
+    path = OVERRIDES_DIR / "legacy_combis.json"
+    if not path.exists():
+        return []
+    out = []
+    for c in json.loads(path.read_text(encoding="utf-8")):
+        out.append(
+            {
+                "id": c["id"],
+                "name": c["name"],
+                "kana": c.get("kana"),
+                "formed": c.get("formed"),
+                "formedRaw": c.get("formedRaw"),
+                "belong": c.get("belong"),
+                "members": c.get("members", []),
+                "photo": None,
+                "history": {},
+                "wikipedia": c.get("wikipedia"),
+                "legacy": True,
+                # アーカイブ名の別表記(全半角/綴り違い)。名寄せ用でシャードには出さない
+                "aliases": c.get("aliases", []),
+            }
+        )
+    return out
 
 
 def _load_combi_records() -> list[dict]:
@@ -193,6 +230,30 @@ def build_champions(
     return {"champions": out}
 
 
+def merge_archive_history(records: list[dict], year_files: dict[int, dict]) -> int:
+    """official-archive 年度(2001〜2010)の id 付き entry を、該当コンビの history に統合する。
+
+    公式コンビDB由来の history は2015年以降しか無いため、アーカイブ参加を逆マージして
+    コンビ詳細ページに pre-2015 の出場行を表示できるようにする。戻り値は追記した行数。
+    """
+    by_id = {r["id"]: r for r in records}
+    added = 0
+    for year, yf in year_files.items():
+        if yf.get("source") != "official-archive":
+            continue
+        for e in yf["entries"]:
+            rec = by_id.get(e.get("id"))
+            if rec is None:
+                continue
+            # アーカイブ(2001〜2010)とDB(2015+)は年が重ならない
+            rec.setdefault("history", {})[str(year)] = {
+                "no": e.get("no"),
+                "results": e["results"],
+            }
+            added += 1
+    return added
+
+
 def _make_linker(records: list[dict]):
     """コンビ名 → ID の紐付け。一意に決まる場合のみ返す(誤リンクより未リンクを優先)。"""
     by_name: dict[str, list[dict]] = defaultdict(list)
@@ -205,11 +266,11 @@ def _make_linker(records: list[dict]):
         overrides = json.loads(overrides_path.read_text(encoding="utf-8"))
 
     def link(name: str, year: int | None = None) -> int | None:
-        key = f"{year}:{name}" if year is not None else name
-        if key in overrides:
-            return overrides[key]
-        if name in overrides:
-            return overrides[name]
+        nm = _norm_name(name)
+        # 手動リンク(name_links.json)は生名・正規化名の両方で照合(全半角/改名の吸収)
+        for key in (f"{year}:{name}", name, f"{year}:{nm}", nm):
+            if key in overrides:
+                return overrides[key]
         cands = by_name.get(name, [])
         if year is not None:
             cands = [r for r in cands if not r.get("formed") or r["formed"] <= year]
@@ -221,6 +282,18 @@ def _make_linker(records: list[dict]):
 def build():
     records = _load_combi_records()
     print(f"[build] コンビ {len(records)}件")
+
+    # 2001〜2010の著名コンビ(公式DB未収録)を合成レコードとして投入。
+    # _make_linker より前に追加することで、アーカイブ参加が名前で紐付き、
+    # merge_archive_history で history が満たされ、シャード/索引に詳細ページが生成される。
+    legacy_records = _load_legacy_combis()
+    records.extend(legacy_records)
+    legacy_by_norm = {_norm_name(r["name"]): r for r in legacy_records}
+    for r in legacy_records:
+        for alias in r.get("aliases", []):
+            legacy_by_norm.setdefault(_norm_name(alias), r)
+    if legacy_records:
+        print(f"[build] 合成コンビ(2001〜2010) {len(legacy_records)}件を投入")
 
     year_files = build_years(records)
     link = _make_linker(records)
@@ -235,6 +308,12 @@ def build():
             linked = 0
             for e in yf["entries"]:
                 e["id"] = link(e["name"], int(year_str))
+                # 名前が全半角違いで link() が外した場合、合成コンビには正規化名で紐付ける
+                # (結成年より前の年=同名別コンビ/アーカイブのノイズは弾く)
+                if e["id"] is None:
+                    lr = legacy_by_norm.get(_norm_name(e["name"]))
+                    if lr is not None and (not lr.get("formed") or lr["formed"] <= int(year_str)):
+                        e["id"] = lr["id"]
                 linked += e["id"] is not None
                 if e["id"] in photo_by_id:
                     e["photo"] = photo_by_id[e["id"]]
@@ -244,6 +323,12 @@ def build():
             print(f"[build] {year_str}: アーカイブ {len(yf['entries'])}組 (ID紐付け {linked}組)")
 
     validate_years({y: yf for y, yf in year_files.items() if yf["source"] == "official-db"})
+
+    # ランキングはアーカイブ統合前に集計(「2015年以降の通算記録」の意味を維持)
+    rankings = build_rankings(records)
+    # 2001〜2010のアーカイブ参加を該当コンビの history に逆マージ(詳細ページで pre-2015 を表示)
+    merged = merge_archive_history(records, year_files)
+    print(f"[build] アーカイブ参加を {merged} 行 combi履歴へ統合")
 
     if DATA_DIR.exists():
         shutil.rmtree(DATA_DIR)
@@ -257,7 +342,7 @@ def build():
     for rec in sorted(records, key=lambda r: r["id"]):
         entered_years = sorted(int(y) for y in rec["history"])
         index.append([rec["id"], rec["name"], rec["kana"], entered_years])
-        shards[rec["id"] % SHARD_COUNT][str(rec["id"])] = {
+        shard = {
             "name": rec["name"],
             "kana": rec["kana"],
             "formed": rec.get("formed"),
@@ -266,13 +351,19 @@ def build():
             "members": rec.get("members", []),
             "photo": rec.get("photo"),
             "history": rec["history"],
-            "officialUrl": f"https://www.m-1gp.com/combi/{rec['id']}.html",
         }
+        if rec.get("legacy"):
+            # 合成コンビ(2001〜2010)は公式コンビページが無いのでWikipediaへ誘導
+            shard["legacy"] = True
+            shard["wikipedia"] = rec.get("wikipedia")
+        else:
+            shard["officialUrl"] = f"https://www.m-1gp.com/combi/{rec['id']}.html"
+        shards[rec["id"] % SHARD_COUNT][str(rec["id"])] = shard
     _write(DATA_DIR / "combi" / "index.json", index)
     for nn, shard in shards.items():
         _write(DATA_DIR / "combi" / f"{nn}.json", shard)
 
-    _write(DATA_DIR / "rankings.json", build_rankings(records))
+    _write(DATA_DIR / "rankings.json", rankings)
     _write(DATA_DIR / "stats.json", build_stats(year_files))
 
     pop_path = WORK_DIR / "popularity.json"
