@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts'
 
+import JapanGridMap from '../components/JapanGridMap'
 import { useAdvancers, useChampions, useStats } from '../lib/api'
 import { ROUND_LABEL, ROUND_ORDER } from '../lib/rounds'
 import type { RoundKey, YearStats } from '../lib/types'
@@ -233,32 +234,10 @@ export default function StatsPage() {
           </p>
 
           <h2 className="section-title">都道府県別の王者</h2>
-          <p className="section-note">王者メンバーの出身地を都道府県ごとに集計(2人組なので延べ人数)</p>
-          <div className="history-wrap">
-            <table className="history">
-              <thead>
-                <tr>
-                  <th>都道府県</th>
-                  <th>王者(のべ人数)</th>
-                  <th>該当王者</th>
-                </tr>
-              </thead>
-              <tbody>
-                {prefRows.map((r) => (
-                  <tr key={r.pref}>
-                    <td className="year" style={{ fontSize: 14 }}>
-                      {r.pref}
-                    </td>
-                    <td className="no total">{r.count}</td>
-                    <td style={{ whiteSpace: 'normal' }}>
-                      {r.names.slice(0, NAME_CAP).join('、')}
-                      {r.names.length > NAME_CAP ? ` 他${r.names.length - NAME_CAP}組` : ''}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <p className="section-note">
+            王者メンバーの出身地を都道府県ごとに集計(2人組なので延べ人数)。県のマスをタップすると該当王者を表示
+          </p>
+          <JapanGridMap rows={prefRows} unit="人" nameLabel="該当王者" />
           <p className="legend">
             同郷コンビは同じ県に2人分、連覇(令和ロマン)は各回を計上。合計 {champMemberTotal} 人
           </p>
@@ -335,7 +314,6 @@ export default function StatsPage() {
   )
 }
 
-const NAME_CAP = 6 // 都道府県別の「該当コンビ」列で名前を並べる上限
 const ROW_CAP = 30 // 長い表(結成年別/年齢別/到達回数)の表示件数上限
 
 /** 準々決勝以上に到達したコンビを最高到達ラウンド別に集計して表示する。
@@ -415,32 +393,10 @@ function AdvancerRecords() {
       </div>
 
       <h2 className="section-title">都道府県別({label}到達コンビ)</h2>
-      <p className="section-note">メンバーの出身地を都道府県ごとに集計(2人組なので延べ人数)</p>
-      <div className="history-wrap">
-        <table className="history">
-          <thead>
-            <tr>
-              <th>都道府県</th>
-              <th>コンビ(のべ人数)</th>
-              <th>該当コンビ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {prefRows.map((r) => (
-              <tr key={r.pref}>
-                <td className="year" style={{ fontSize: 14 }}>
-                  {r.pref}
-                </td>
-                <td className="no total">{r.count}</td>
-                <td style={{ whiteSpace: 'normal' }}>
-                  {r.names.slice(0, NAME_CAP).join('、')}
-                  {r.names.length > NAME_CAP ? ` 他${r.names.length - NAME_CAP}組` : ''}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <p className="section-note">
+        メンバーの出身地を都道府県ごとに集計(2人組なので延べ人数)。県のマスをタップすると該当コンビを表示
+      </p>
+      <JapanGridMap rows={prefRows} unit="人" nameLabel="該当コンビ" />
       <p className="legend">出身地の判明する延べ {prefMemberTotal} 人を集計(不明の組は除外)</p>
 
       <h2 className="section-title">結成年別({label}到達・新しい順)</h2>
