@@ -2,10 +2,20 @@ import { useMemo, useState } from 'react'
 
 import { GRID_COLS, GRID_ROWS, PREF_NAME_SET, PREF_TILES } from '../lib/prefectures'
 
+export interface PrefNameGroup {
+  /** 一覧の見出し(例: "👑 王者" / "決勝到達") */
+  label: string
+  names: string[]
+}
+
 export interface PrefRow {
   pref: string
   count: number
   names: string[]
+  /** マスの右上に王冠つきで表示する副カウント(例: 王者の延べ人数)。0/undefined なら非表示 */
+  badge?: number
+  /** タップ詳細を見出しつきの複数グループで出す場合に指定(names より優先して表示) */
+  groups?: PrefNameGroup[]
 }
 
 interface Props {
@@ -13,8 +23,10 @@ interface Props {
   rows: PrefRow[]
   /** 件数の単位(例: "人") */
   unit: string
-  /** 選択県の該当一覧の見出し(例: "該当王者" / "該当コンビ") */
+  /** 選択県の該当一覧の見出し(例: "該当王者" / "該当コンビ")。groups 使用時は未使用 */
   nameLabel: string
+  /** badge の説明(セルの title 用。例: "王者") */
+  badgeLabel?: string
 }
 
 // 薄い紙色(--paper-2) → M-1の朱(--red) へRGB補間する choropleth
@@ -27,7 +39,7 @@ function mix(ratio: number): string {
   return `rgb(${r}, ${g}, ${b})`
 }
 
-export default function JapanGridMap({ rows, unit, nameLabel }: Props) {
+export default function JapanGridMap({ rows, unit, nameLabel, badgeLabel = '王者' }: Props) {
   const byPref = useMemo(() => {
     const m = new Map<string, PrefRow>()
     for (const r of rows) m.set(r.pref, r)
@@ -69,6 +81,9 @@ export default function JapanGridMap({ rows, unit, nameLabel }: Props) {
   const activeRow = active ? byPref.get(active) : undefined
   const activeCount = activeRow?.count ?? 0
   const activeNames = activeRow?.names ?? []
+  const activeGroups = (activeRow?.groups ?? []).filter((g) => g.names.length > 0)
+
+  const hasBadges = rows.some((r) => (r.badge ?? 0) > 0)
 
   return (
     <div className="jpmap">
@@ -81,9 +96,11 @@ export default function JapanGridMap({ rows, unit, nameLabel }: Props) {
           }}
         >
           {PREF_TILES.map((t) => {
-            const count = byPref.get(t.name)?.count ?? 0
+            const row = byPref.get(t.name)
+            const count = row?.count ?? 0
+            const badge = row?.badge ?? 0
             const ratio = max > 0 ? count / max : 0
-            const zero = count === 0
+            const zero = count === 0 && badge === 0
             const isActive = t.name === active
             return (
               <button
@@ -96,10 +113,15 @@ export default function JapanGridMap({ rows, unit, nameLabel }: Props) {
                   background: zero ? undefined : mix(ratio),
                   color: !zero && ratio > 0.55 ? '#fff' : undefined,
                 }}
-                title={`${t.name} ${count}${unit}`}
+                title={`${t.name} ${count}${unit}${badge > 0 ? `(うち${badgeLabel}${badge}${unit})` : ''}`}
                 aria-pressed={isActive}
                 onClick={() => setSelected(t.name)}
               >
+                {badge > 0 && (
+                  <span className="jpmap-crown" aria-label={`${badgeLabel}${badge}${unit}`}>
+                    👑{badge > 1 ? badge : ''}
+                  </span>
+                )}
                 <span className="jpmap-name">{t.short}</span>
                 <span className="jpmap-num">{count}</span>
               </button>
@@ -116,7 +138,13 @@ export default function JapanGridMap({ rows, unit, nameLabel }: Props) {
               {activeCount}
               {unit}
             </span>
-            {activeNames.length > 0 ? (
+            {activeGroups.length > 0 ? (
+              activeGroups.map((g) => (
+                <div key={g.label} className="jpmap-detail-group">
+                  <span className="jpmap-detail-group-label">{g.label}</span> {g.names.join('、')}
+                </div>
+              ))
+            ) : activeNames.length > 0 ? (
               <span className="jpmap-detail-names">
                 {' '}
                 ▶ {nameLabel}: {activeNames.join('、')}
@@ -140,6 +168,7 @@ export default function JapanGridMap({ rows, unit, nameLabel }: Props) {
         </span>
         <span>
           少 → 多(数字=のべ{unit}数{max > 0 ? `・最多 ${max}${unit}` : ''})
+          {hasBadges ? ` ／ 👑=${badgeLabel}を輩出` : ''}
         </span>
       </div>
 

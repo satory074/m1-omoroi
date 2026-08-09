@@ -76,26 +76,11 @@ export default function StatsPage() {
   const champs = champions.data?.champions ?? []
   const champMemberTotal = champs.reduce((sum, c) => sum + c.members.length, 0)
 
-  // A. 都道府県別(メンバー単位。同郷コンビは同じ県に2人分、連覇は各回を計上)
-  const prefMap = new Map<string, { count: number; names: string[] }>()
-  for (const c of champs) {
-    for (const m of c.members) {
-      if (!m.from) continue
-      const e = prefMap.get(m.from) ?? { count: 0, names: [] }
-      e.count += 1
-      if (!e.names.includes(c.name)) e.names.push(c.name)
-      prefMap.set(m.from, e)
-    }
-  }
-  const prefRows = [...prefMap.entries()]
-    .map(([pref, e]) => ({ pref, count: e.count, names: e.names }))
-    .sort((a, b) => b.count - a.count || a.pref.localeCompare(b.pref, 'ja'))
-
-  // B. 結成年別(新しい順)。1タイトル=1行
+  // B. 結成年別(結成→優勝が早い順)。1タイトル=1行
   const formedRows = champs
     .filter((c) => c.formed != null)
     .map((c) => ({ name: c.name, formed: c.formed as number, year: c.year, span: c.year - (c.formed as number) }))
-    .sort((a, b) => b.formed - a.formed || b.year - a.year)
+    .sort((a, b) => a.span - b.span || a.year - b.year)
 
   // C. 優勝時の年齢(メンバー単位。若い順)
   const ageRows = champs
@@ -224,6 +209,8 @@ export default function StatsPage() {
       </div>
       <p className="legend">各セルは「通過数/出場数」</p>
 
+      <PrefectureRecords />
+
       {champs.length > 0 && (
         <>
           <h1 className="page-title" style={{ marginTop: 40 }}>
@@ -231,19 +218,11 @@ export default function StatsPage() {
           </h1>
           <p className="page-lede">
             2001〜2025年の全21回。出身地・結成年・生年月日から集計(2001〜2010の王者は公開情報で補完)。
+            出身地の分布は上の「都道府県別の記録」に統合しています。
           </p>
 
-          <h2 className="section-title">都道府県別の王者</h2>
-          <p className="section-note">
-            王者メンバーの出身地を都道府県ごとに集計(2人組なので延べ人数)。県のマスをタップすると該当王者を表示
-          </p>
-          <JapanGridMap rows={prefRows} unit="人" nameLabel="該当王者" />
-          <p className="legend">
-            同郷コンビは同じ県に2人分、連覇(令和ロマン)は各回を計上。合計 {champMemberTotal} 人
-          </p>
-
-          <h2 className="section-title">結成年別の王者(新しい順)</h2>
-          <p className="section-note">結成年が新しい(＝コンビ歴の浅い)王者から順に表示</p>
+          <h2 className="section-title">結成年別の王者(結成→優勝が早い順)</h2>
+          <p className="section-note">結成から優勝までの年数が短い王者から順に表示</p>
           <div className="history-wrap">
             <table className="history">
               <thead>
@@ -316,6 +295,95 @@ export default function StatsPage() {
 
 const ROW_CAP = 30 // 長い表(結成年別/年齢別/到達回数)の表示件数上限
 
+/** 都道府県別の統合マップ。準々決勝以上到達コンビ(全ラウンド合算)の延べ人数で色分けし、
+ *  王者の輩出数を👑バッジで重ねる。タップすると王者→決勝→準決勝→準々決勝の順で該当コンビを表示。
+ *  advancers.json / champions.json のどちらも無い環境では描画しない。 */
+function PrefectureRecords() {
+  const champions = useChampions()
+  const { data } = useAdvancers()
+  const champs = champions.data?.champions ?? []
+  const tiers = data?.tiers ?? []
+  if (tiers.length === 0 && champs.length === 0) return null
+
+  // 王者: 県 → 延べ人数と「コンビ名(優勝年)」ラベル
+  const champCount = new Map<string, number>()
+  const champYears = new Map<string, Map<string, number[]>>() // 県 → コンビ名 → 優勝年[]
+  for (const c of champs) {
+    for (const m of c.members) {
+      if (!m.from) continue
+      champCount.set(m.from, (champCount.get(m.from) ?? 0) + 1)
+      const names = champYears.get(m.from) ?? new Map<string, number[]>()
+      const years = names.get(c.name) ?? []
+      if (!years.includes(c.year)) years.push(c.year)
+      names.set(c.name, years)
+      champYears.set(m.from, names)
+    }
+  }
+  const champLabel = (pref: string): string[] =>
+    [...(champYears.get(pref) ?? new Map<string, number[]>()).entries()].map(
+      ([name, years]) => `${name}(${years.sort((a, b) => a - b).join('・')})`,
+    )
+
+  // 到達コンビ: 県 → 延べ人数(全ラウンド合算)とラウンド別コンビ名
+  const advCount = new Map<string, number>()
+  const advNames = new Map<string, Map<RoundKey, string[]>>()
+  for (const t of tiers) {
+    for (const c of t.combis) {
+      for (const m of c.members) {
+        if (!m.from) continue
+        advCount.set(m.from, (advCount.get(m.from) ?? 0) + 1)
+        const rounds = advNames.get(m.from) ?? new Map<RoundKey, string[]>()
+        const names = rounds.get(t.round) ?? []
+        if (!names.includes(c.name)) names.push(c.name)
+        rounds.set(t.round, names)
+        advNames.set(m.from, rounds)
+      }
+    }
+  }
+
+  const prefs = new Set<string>([...advCount.keys(), ...champCount.keys()])
+  const rows = [...prefs]
+    .map((pref) => {
+      const champNames = champLabel(pref)
+      const champSet = new Set([...(champYears.get(pref) ?? new Map()).keys()])
+      const rounds = advNames.get(pref) ?? new Map<RoundKey, string[]>()
+      const groups = [
+        { label: '👑 王者:', names: champNames },
+        // 王者は👑行に出すので決勝到達の行からは除いて重複を避ける
+        ...tiers.map((t) => ({
+          label: `${ROUND_LABEL[t.round]}到達:`,
+          names: (rounds.get(t.round) ?? []).filter((n) => t.round !== 'final' || !champSet.has(n)),
+        })),
+      ]
+      return {
+        pref,
+        count: advCount.get(pref) ?? 0,
+        badge: champCount.get(pref) ?? 0,
+        names: [],
+        groups,
+      }
+    })
+    .sort((a, b) => b.count - a.count || a.pref.localeCompare(b.pref, 'ja'))
+
+  const advTotal = [...advCount.values()].reduce((s, v) => s + v, 0)
+  const champTotal = [...champCount.values()].reduce((s, v) => s + v, 0)
+
+  return (
+    <>
+      <h1 className="page-title" style={{ marginTop: 40 }}>
+        都道府県別の記録
+      </h1>
+      <p className="page-lede">
+        準々決勝以上に到達したコンビと歴代王者の出身地を1枚に統合。マスの数字は準々決勝以上到達コンビの延べ人数、👑は王者の輩出数(延べ)。県のマスをタップすると王者と到達コンビを表示します。
+      </p>
+      <JapanGridMap rows={rows} unit="人" nameLabel="該当コンビ" badgeLabel="王者" />
+      <p className="legend">
+        出身地の判明する延べ {advTotal} 人を集計(うち王者 延べ {champTotal} 人。同郷コンビは同じ県に2人分、連覇は各回を計上。出身地不明は除外)
+      </p>
+    </>
+  )
+}
+
 /** 準々決勝以上に到達したコンビを最高到達ラウンド別に集計して表示する。
  *  advancers.json が無い環境では何も描画しない。 */
 function AdvancerRecords() {
@@ -328,23 +396,7 @@ function AdvancerRecords() {
   const combis = tier.combis
   const label = ROUND_LABEL[tier.round]
 
-  // A. 都道府県別(メンバー単位。出身地が判明する組のみ)
-  const prefMap = new Map<string, { count: number; names: string[] }>()
-  for (const c of combis) {
-    for (const m of c.members) {
-      if (!m.from) continue
-      const e = prefMap.get(m.from) ?? { count: 0, names: [] }
-      e.count += 1
-      if (!e.names.includes(c.name)) e.names.push(c.name)
-      prefMap.set(m.from, e)
-    }
-  }
-  const prefRows = [...prefMap.entries()]
-    .map(([pref, e]) => ({ pref, count: e.count, names: e.names }))
-    .sort((a, b) => b.count - a.count || a.pref.localeCompare(b.pref, 'ja'))
-  const prefMemberTotal = prefRows.reduce((s, r) => s + r.count, 0)
-
-  // B. 結成年別(新しい順)。結成年が判明する組のみ、上位 ROW_CAP 件
+  // B. 結成年別(結成→到達が早い順)。結成年が判明する組のみ、上位 ROW_CAP 件
   const formedAll = combis
     .filter((c) => c.formed != null)
     .map((c) => ({
@@ -354,7 +406,7 @@ function AdvancerRecords() {
       firstYear: c.firstYear,
       span: c.firstYear - (c.formed as number),
     }))
-    .sort((a, b) => b.formed - a.formed || b.firstYear - a.firstYear)
+    .sort((a, b) => a.span - b.span || a.firstYear - b.firstYear)
   const formedRows = formedAll.slice(0, ROW_CAP)
 
   // C. 初到達時の年齢(メンバー単位。若い順)。生年が判明する組のみ、上位 ROW_CAP 件
@@ -392,15 +444,8 @@ function AdvancerRecords() {
         </div>
       </div>
 
-      <h2 className="section-title">都道府県別({label}到達コンビ)</h2>
-      <p className="section-note">
-        メンバーの出身地を都道府県ごとに集計(2人組なので延べ人数)。県のマスをタップすると該当コンビを表示
-      </p>
-      <JapanGridMap rows={prefRows} unit="人" nameLabel="該当コンビ" />
-      <p className="legend">出身地の判明する延べ {prefMemberTotal} 人を集計(不明の組は除外)</p>
-
-      <h2 className="section-title">結成年別({label}到達・新しい順)</h2>
-      <p className="section-note">結成年が新しい組から順に表示</p>
+      <h2 className="section-title">結成年別({label}到達・結成→到達が早い順)</h2>
+      <p className="section-note">結成から{label}初到達までの年数が短い組から順に表示</p>
       <div className="history-wrap">
         <table className="history">
           <thead>
@@ -426,7 +471,8 @@ function AdvancerRecords() {
         </table>
       </div>
       <p className="legend">
-        「結成→到達」は初到達年−結成年。結成年の判明する {formedAll.length} 組のうち新しい順に上位 {formedRows.length} 組を表示
+        「結成→到達」は初到達年−結成年。結成年の判明する {formedAll.length} 組のうち結成→到達が早い順に上位{' '}
+        {formedRows.length} 組を表示
       </p>
 
       <h2 className="section-title">{label}初到達時の年齢(若い順)</h2>
