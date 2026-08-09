@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 
+import FinalsScoreTable from '../components/FinalsScoreTable'
 import { useFinals, useMeta } from '../lib/api'
 
 export default function FinalsPage() {
@@ -32,43 +33,17 @@ export default function FinalsPage() {
           ))}
       </div>
       <h1 className="page-title">M-1グランプリ {year} 決勝</h1>
-      <div className="history-wrap">
-        <table className="history finals-table">
-          <thead>
-            <tr>
-              <th>順</th>
-              <th>コンビ</th>
-              {finals.judges.map((j) => (
-                <th key={j}>{j}</th>
-              ))}
-              <th>合計</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[...finals.firstRound]
-              .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))
-              .map((row) => (
-              <tr key={row.name}>
-                <td className="no">{row.rank ?? ''}</td>
-                <td>
-                  {row.combiId != null ? (
-                    <Link to={`/combi/${row.combiId}`}>{row.name}</Link>
-                  ) : (
-                    row.name
-                  )}
-                </td>
-                {(row.scores ?? []).map((s, i) => (
-                  <td key={i} className="no">
-                    {s ?? ''}
-                  </td>
-                ))}
-                  <td className="no total">{row.total ?? ''}</td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="legend">順位はファーストラウンドの得点順。優勝は最終決戦の得票で決定します。</p>
+      <FinalsScoreTable key={finals.year} finals={finals} />
+      <p className="legend">
+        順位はファーストラウンドの得点順。優勝は最終決戦の得票で決定します。審査員のヘッダをクリックで並べ替え、チェックを外すとその審査員を除いた合計・順位に再集計されます。
+      </p>
+      <p className="legend">
+        点数の色: <span className="medal-gold">90点以上=金</span> / <span className="medal-silver">80〜89点=銀</span>{' '}
+        / <span className="medal-bronze">79点以下=銅</span>
+      </p>
+      {finals.year <= 2002 && (
+        <p className="legend">「会場票」は札幌・大阪・福岡の3会場の観客票の合計です(会場別の内訳は非公開)。</p>
+      )}
       {finals.finalRound && finals.finalRound.length > 0 && (
         <>
           <h2 className="section-title">最終決戦</h2>

@@ -11,6 +11,8 @@
   --red-dark: #9c0c23;
   --gold: #a5762a;
   --gold-bg: #f7efdc;
+  --silver: #7d8a99;
+  --bronze: #a6693b;
   --muted: #8a8378;
   --font-jp: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   --font-num: "Barlow Condensed", "Zen Kaku Gothic New", sans-serif;
@@ -729,6 +731,98 @@ button {
 .history td.cell.champion {
   color: var(--gold);
   background: var(--gold-bg);
+}
+
+/* ============ 決勝得点表(FinalsScoreTable) ============ */
+/* 点数の金銀銅色分け(境界 90/80)。`.no` の muted 色を上書き */
+.history td.no.gold {
+  color: var(--gold);
+  font-weight: 700;
+}
+.history td.no.silver {
+  color: var(--silver);
+  font-weight: 700;
+}
+.history td.no.bronze {
+  color: var(--bronze);
+  font-weight: 700;
+}
+.history td.no.excluded,
+.history th.excluded {
+  opacity: 0.35;
+}
+
+/* ソート用ヘッダ(順・合計) — ボタンがセル全体を埋める */
+.history th.sortable {
+  padding: 0;
+}
+.history th .th-sort {
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.history th.sortable .th-sort {
+  width: 100%;
+  padding: 8px 10px;
+}
+.history th .th-sort:hover {
+  color: var(--ink);
+}
+.history th .sort-arrow {
+  font-size: 9px;
+  color: var(--red);
+}
+
+/* 審査員列: チェックボックス + ソートボタンを縦積み */
+.history th.judge-th {
+  text-align: center;
+  vertical-align: top;
+  padding: 6px 8px;
+}
+.history th.judge-th .th-sort {
+  justify-content: center;
+  padding: 2px 0 0;
+}
+.judge-check {
+  display: block;
+  margin-bottom: 2px;
+  cursor: pointer;
+}
+.judge-check input {
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--red);
+}
+
+/* コントロール(全選択/全解除 + 選択中人数) */
+.finals-controls {
+  align-items: center;
+}
+.finals-controls-label,
+.finals-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* 凡例内の金銀銅サンプル */
+.medal-gold {
+  color: var(--gold);
+  font-weight: 700;
+}
+.medal-silver {
+  color: var(--silver);
+  font-weight: 700;
+}
+.medal-bronze {
+  color: var(--bronze);
+  font-weight: 700;
 }
 
 .legend {
