@@ -148,8 +148,12 @@ def build_rankings(records: list[dict]) -> dict:
         ranked = sorted(counter.items(), key=lambda kv: (-kv[1], names.get(kv[0], "")))[:n]
         return [{"id": cid, "name": names[cid], "value": v} for cid, v in ranked]
 
+    # 「敗退」判定は明示的な fail に加えて推定敗退(fail_inferred)も数える。
+    # ランキングはアーカイブ統合前の2015年以降データで集計するため現状 fail_inferred は
+    # 出現しないが、集計対象が変わっても「そのラウンドで負けた回数」の意味がぶれないようにしておく。
+    FAILED = ("fail", "fail_inferred")
+
     names = {r["id"]: r["name"] for r in records}
-    appearances: dict[int, int] = defaultdict(int)
     semifinal_fails: dict[int, int] = defaultdict(int)
     quarterfinal_up: dict[int, int] = defaultdict(int)
     finals: dict[int, int] = defaultdict(int)
@@ -158,18 +162,16 @@ def build_rankings(records: list[dict]) -> dict:
     for rec in records:
         for entry in rec["history"].values():
             res = entry["results"]
-            appearances[rec["id"]] += 1
-            if res.get("semifinal") == "fail":
+            if res.get("semifinal") in FAILED:
                 semifinal_fails[rec["id"]] += 1
             if "quarterfinal" in res:
                 quarterfinal_up[rec["id"]] += 1
             if "final" in res:
                 finals[rec["id"]] += 1
-            if res.get("first") == "fail":
+            if res.get("first") in FAILED:
                 first_fails[rec["id"]] += 1
 
     return {
-        "mostAppearances": top(appearances, names),
         "mostSemifinalFails": top(semifinal_fails, names),
         "mostQuarterfinals": top(quarterfinal_up, names),
         "mostFinals": top(finals, names),

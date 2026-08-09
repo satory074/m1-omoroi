@@ -239,7 +239,7 @@ export default function StatsPage() {
               <thead>
                 <tr>
                   <th>都道府県</th>
-                  <th>王者(のべ)</th>
+                  <th>王者(のべ人数)</th>
                   <th>該当王者</th>
                 </tr>
               </thead>
@@ -250,7 +250,10 @@ export default function StatsPage() {
                       {r.pref}
                     </td>
                     <td className="no total">{r.count}</td>
-                    <td style={{ whiteSpace: 'normal' }}>{r.names.join('、')}</td>
+                    <td style={{ whiteSpace: 'normal' }}>
+                      {r.names.slice(0, NAME_CAP).join('、')}
+                      {r.names.length > NAME_CAP ? ` 他${r.names.length - NAME_CAP}組` : ''}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -261,7 +264,7 @@ export default function StatsPage() {
           </p>
 
           <h2 className="section-title">結成年別の王者(新しい順)</h2>
-          <p className="section-note">結成から日が浅い(＝コンビとして若い)王者ほど上位</p>
+          <p className="section-note">結成年が新しい(＝コンビ歴の浅い)王者から順に表示</p>
           <div className="history-wrap">
             <table className="history">
               <thead>
@@ -288,7 +291,7 @@ export default function StatsPage() {
           </div>
           <p className="legend">「結成→優勝」は優勝年−結成年。同一コンビの連覇は各回を掲載</p>
 
-          <h2 className="section-title">優勝時の年齢(最年少・最年長)</h2>
+          <h2 className="section-title">優勝時の年齢(若い順)</h2>
           {minAge != null && maxAge != null && (
             <p className="section-note">
               最年少 {ageRows[0].age}歳({ageRows[0].name}・{ageRows[0].combi}／{ageRows[0].year}年) ／
@@ -418,7 +421,7 @@ function AdvancerRecords() {
           <thead>
             <tr>
               <th>都道府県</th>
-              <th>コンビ(のべ)</th>
+              <th>コンビ(のべ人数)</th>
               <th>該当コンビ</th>
             </tr>
           </thead>
@@ -441,7 +444,7 @@ function AdvancerRecords() {
       <p className="legend">出身地の判明する延べ {prefMemberTotal} 人を集計(不明の組は除外)</p>
 
       <h2 className="section-title">結成年別({label}到達・新しい順)</h2>
-      <p className="section-note">結成から日が浅いうちに{label}へ到達した組ほど上位</p>
+      <p className="section-note">結成年が新しい組から順に表示</p>
       <div className="history-wrap">
         <table className="history">
           <thead>
@@ -512,7 +515,9 @@ function AdvancerRecords() {
       </p>
 
       <h2 className="section-title">{label}到達回数ランキング</h2>
-      <p className="section-note">{label}に到達した年数が多い組(最高到達が{label}のコンビが対象)</p>
+      <p className="section-note">
+        {label}に到達した年数(2001年からの全期間)。最高到達が{label}の組のみ＝さらに上へ進んだ組は上位ラウンドで集計
+      </p>
       <div className="history-wrap">
         <table className="history">
           <thead>

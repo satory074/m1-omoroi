@@ -85,7 +85,6 @@ export interface RankingItem {
 }
 
 export interface Rankings {
-  mostAppearances: RankingItem[]
   mostSemifinalFails: RankingItem[]
   mostQuarterfinals: RankingItem[]
   mostFinals: RankingItem[]
