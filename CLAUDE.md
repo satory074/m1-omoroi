@@ -45,4 +45,5 @@ npm run dev / npm run build
   - `champions_meta.json` — 2001〜2010王者の出身地/結成年/生年月日(公式コンビDB未収録分の補完)
   - `legacy_combis.json` — 2001〜2010に準々決勝以上へ進出したが公式コンビDBに無い著名コンビ(千鳥・笑い飯等)の合成レコード。予約ID 900001+。`records` に投入され名寄せ→アーカイブ履歴逆マージ→詳細ページ生成。出典はWikipedia。`legacy:true`/`wikipedia` を持ち、`aliases` で全半角/綴り違いのアーカイブ名も紐付ける
   - `name_links.json` — アーカイブ名/旧名 → 既存DBコンビID。改名(鎌鼬→かまいたち、ぷくぷく隊→ヤング等)や全半角違いで名寄せが外れた組の2001〜2010出場を実ページへ紐付ける(合成コンビの重複ページ回避)。`link()` は生名・NFKC正規化名の両方で照合
+  - `finals/{year}.json` — 決勝得点表を丸ごと差し替える(build_json.py が `work/finals/{year}.json` より優先して読む)。2001は第1回のみの会場審査(札幌・大阪・福岡3会場×各100人)を反映するため「会場票」1列を `大阪`/`札幌`/`福岡` の3列に分割済み(judgesの先頭3つ)。3会場合計は公式の会場票と全10組で一致することを検証済み。出典=半帖庵 http://www.hanjoan.com/project/m1.htm 。UI(`FinalsScoreTable`)は judges 配列を汎用に描画するので会場列もソート/チェックボックス対象になる
 - 結果enum: pass / fail / seed_pass / fail_inferred / unknown (models.py)

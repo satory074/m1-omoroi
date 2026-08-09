@@ -41,8 +41,14 @@ export default function FinalsPage() {
         点数の色: <span className="medal-gold">90点以上=金</span> / <span className="medal-silver">80〜89点=銀</span>{' '}
         / <span className="medal-bronze">79点以下=銅</span>
       </p>
-      {finals.year <= 2002 && (
-        <p className="legend">「会場票」は札幌・大阪・福岡の3会場の観客票の合計です(会場別の内訳は非公開)。</p>
+      {finals.year === 2001 && (
+        <p className="legend">
+          第1回のみ「大阪・札幌・福岡」3会場の一般客各100人(1人1点・計300点)＋審査員7名×各100点＝満点1000点。会場別内訳の出典:{' '}
+          <a href="http://www.hanjoan.com/project/m1.htm" target="_blank" rel="noreferrer">
+            半帖庵
+          </a>
+          (3会場合計は公式の会場票と一致)。
+        </p>
       )}
       {finals.finalRound && finals.finalRound.length > 0 && (
         <>
