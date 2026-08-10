@@ -38,8 +38,8 @@ export default function FinalsPage() {
         順位はファーストラウンドの得点順。優勝は最終決戦の得票で決定します。審査員のヘッダをクリックで並べ替え、チェックを外すとその審査員を除いた合計・順位に再集計されます。
       </p>
       <p className="legend">
-        点数の色: <span className="medal-gold">90点以上=金</span> / <span className="medal-silver">80〜89点=銀</span>{' '}
-        / <span className="medal-bronze">79点以下=銅</span>
+        点数の色(本家テロップ準拠): <span className="score-legend gold">90点以上=金</span>{' '}
+        <span className="score-legend">89点以下=白</span>
       </p>
       <p className="legend">
         <span className="finalist-swatch" />背景が淡い赤の行 = 最終決戦へ進出した組(1本目の上位2〜3組)。

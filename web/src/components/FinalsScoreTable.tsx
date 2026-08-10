@@ -14,12 +14,10 @@ interface SortState {
   dir: 'asc' | 'desc'
 }
 
-// 本家テロップ準拠の閾値色分け(境界は90/80)。合計列には付けない。
-function medalClass(score: number | null | undefined): string {
+// 本家テロップ準拠の2階調(境界は90)。90点以上=金属ゴールド / 89点以下=白。合計列には付けない。
+function scoreClass(score: number | null | undefined): string {
   if (typeof score !== 'number') return ''
-  if (score >= 90) return 'gold'
-  if (score >= 80) return 'silver'
-  return 'bronze'
+  return score >= 90 ? 'gold' : ''
 }
 
 export default function FinalsScoreTable({ finals }: Props) {
@@ -180,10 +178,10 @@ export default function FinalsScoreTable({ finals }: Props) {
                   </td>
                   {judges.map((_, j) => {
                     const s = scores[j]
-                    const cls = enabled[j] ? medalClass(s) : 'excluded'
+                    const cls = enabled[j] ? scoreClass(s) : 'excluded'
                     return (
-                      <td key={j} className={`no ${cls}`}>
-                        {s ?? ''}
+                      <td key={j} className={`no score ${cls}`}>
+                        {typeof s === 'number' ? <span className="num">{s}</span> : ''}
                       </td>
                     )
                   })}

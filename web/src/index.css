@@ -12,7 +12,7 @@
   --gold: #a5762a;
   --gold-bg: #f7efdc;
   --silver: #7d8a99;
-  --bronze: #8f4a2a;
+  --bronze: #a6693b;
   --muted: #8a8378;
   --font-jp: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   --font-num: "Barlow Condensed", "Zen Kaku Gothic New", sans-serif;
@@ -733,28 +733,63 @@ button {
   background: var(--gold-bg);
 }
 
-/* ============ 決勝得点表(FinalsScoreTable) ============ */
-/* 点数の金銀銅色分け(境界 90/80)。`.no` の muted 色を上書き */
-.history td.no.gold {
-  color: var(--gold);
-  font-weight: 700;
+/* ============ 決勝得点表(FinalsScoreTable) — 本家テロップ風 ============ */
+/* 得点セルを黒背景+メタリック銀縁のチップに。本家準拠の2階調(90+=金属ゴールド / 89以下=白)。
+   チップ間の隙間を作るため finals-table のみ border を分離する。 */
+.finals-table {
+  border-collapse: separate;
+  border-spacing: 3px 4px;
 }
-.history td.no.silver {
-  color: var(--silver);
-  font-weight: 700;
+.finals-table td,
+.finals-table th {
+  border-bottom: none;
 }
-.history td.no.bronze {
-  color: var(--bronze);
-  font-weight: 700;
+.finals-table td.no.score {
+  text-align: center;
+  padding: 5px 8px;
+  background: linear-gradient(180deg, #35353c 0%, #17171b 55%, #0a0a0d 100%);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px #000, inset 0 0 0 2px rgba(196, 204, 214, 0.5);
 }
-.history td.no.excluded,
+.finals-table td.no.score .num {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  /* 89以下: 白(わずかに金属的なグラデ) */
+  background: linear-gradient(180deg, #ffffff 0%, #eef1f4 50%, #cbd2da 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.finals-table td.no.score.gold .num {
+  /* 90+: 金属ゴールド */
+  background: linear-gradient(180deg, #fff4c2 0%, #ffe27a 22%, #f4c033 48%, #d7981d 72%, #b1740f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.finals-table td.no.score.excluded {
+  opacity: 0.3;
+}
 .history th.excluded {
   opacity: 0.35;
 }
+/* 合計列: 本家の総得点(金)を踏襲して太字ゴールド */
+.finals-table td.no.total {
+  font-family: var(--font-num);
+  font-weight: 800;
+  font-size: 17px;
+  color: var(--gold);
+}
 
 /* 最終決戦へ進出した組(1本目上位2〜3組)の行を淡い赤でハイライト。
-   ソートで並び替わっても行単位で追える。金色の得点文字とは干渉しない。 */
-.history tr.finalist td {
+   ソートで並び替わっても行単位で追える。黒い得点チップ(.score)には掛けず、
+   順位・コンビ名・合計セルに色を載せて進出ラインを示す。 */
+.history tr.finalist td:not(.score) {
   background: rgba(200, 16, 46, 0.09);
 }
 
@@ -817,18 +852,19 @@ button {
   color: var(--muted);
 }
 
-/* 凡例内の金銀銅サンプル */
-.medal-gold {
-  color: var(--gold);
+/* 凡例内の得点色サンプル(得点チップと同じ黒地・本家テロップ風) */
+.score-legend {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #35353c, #0a0a0d);
+  box-shadow: inset 0 0 0 1px #000, inset 0 0 0 2px rgba(196, 204, 214, 0.5);
   font-weight: 700;
+  color: #fff;
+  margin: 0 2px;
 }
-.medal-silver {
-  color: var(--silver);
-  font-weight: 700;
-}
-.medal-bronze {
-  color: var(--bronze);
-  font-weight: 700;
+.score-legend.gold {
+  color: #f4c033;
 }
 
 /* 凡例内の「進出行」色見本(得点表の .finalist 行背景と同色) */
