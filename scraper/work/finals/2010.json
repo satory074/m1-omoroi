@@ -149,8 +149,18 @@
  "finalRound": [
   {
    "name": "笑い飯",
-   "votes": null,
+   "votes": 4,
    "champion": true
+  },
+  {
+   "name": "スリムクラブ",
+   "votes": 3,
+   "champion": false
+  },
+  {
+   "name": "パンクブーブー",
+   "votes": 0,
+   "champion": false
   }
  ],
  "source": "https://www.m-1gp.com/archive/2010/final.htm"

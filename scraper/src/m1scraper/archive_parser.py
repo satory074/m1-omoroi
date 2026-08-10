@@ -123,15 +123,24 @@ def parse_result_page(html: str) -> tuple[str | None, list[tuple[str, str | None
 
 def parse_archive_finals(year: int, html: str) -> dict | None:
     """final.htm の得点表を Wikipedia と同じスキーマにする。"""
-    from .wikipedia_finals import KNOWN_CHAMPIONS, parse_finals_page
+    from .wikipedia_finals import KNOWN_CHAMPIONS, KNOWN_FINAL_ROUNDS, parse_finals_page
 
     data = parse_finals_page(year, html)
     if data is None:
         return None
     data["source"] = f"{BASE_URL}/archive/{year}/final.htm"
-    champion = KNOWN_CHAMPIONS.get(year)
-    if not data["finalRound"] and champion:
-        data["finalRound"] = [{"name": champion, "votes": None, "champion": True}]
+    # final.htm には最終決戦の票数表が無いため、手動収集の得票(あれば)で補完する。
+    # champion判定は Wikipedia経路(parse_finals_page)と同じ「最多票かつ>0」。
+    if not data["finalRound"]:
+        rows = KNOWN_FINAL_ROUNDS.get(year)
+        if rows:
+            max_votes = max((r["votes"] or 0) for r in rows)
+            data["finalRound"] = [
+                {"name": r["name"], "votes": r["votes"], "champion": r["votes"] == max_votes and max_votes > 0}
+                for r in rows
+            ]
+        elif KNOWN_CHAMPIONS.get(year):  # 得票が未収録な年向けフォールバック(優勝者のみ)
+            data["finalRound"] = [{"name": KNOWN_CHAMPIONS[year], "votes": None, "champion": True}]
     return data
 
 

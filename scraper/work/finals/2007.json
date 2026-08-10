@@ -149,8 +149,18 @@
  "finalRound": [
   {
    "name": "サンドウィッチマン",
-   "votes": null,
+   "votes": 4,
    "champion": true
+  },
+  {
+   "name": "トータルテンボス",
+   "votes": 2,
+   "champion": false
+  },
+  {
+   "name": "キングコング",
+   "votes": 1,
+   "champion": false
   }
  ],
  "source": "https://www.m-1gp.com/archive/2007/final.htm"

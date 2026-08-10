@@ -149,8 +149,18 @@
  "finalRound": [
   {
    "name": "NON STYLE",
-   "votes": null,
+   "votes": 5,
    "champion": true
+  },
+  {
+   "name": "オードリー",
+   "votes": 2,
+   "champion": false
+  },
+  {
+   "name": "ナイツ",
+   "votes": 0,
+   "champion": false
   }
  ],
  "source": "https://www.m-1gp.com/archive/2008/final.htm"

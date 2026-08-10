@@ -12,7 +12,7 @@
   --gold: #a5762a;
   --gold-bg: #f7efdc;
   --silver: #7d8a99;
-  --bronze: #a6693b;
+  --bronze: #8f4a2a;
   --muted: #8a8378;
   --font-jp: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   --font-num: "Barlow Condensed", "Zen Kaku Gothic New", sans-serif;
@@ -752,6 +752,12 @@ button {
   opacity: 0.35;
 }
 
+/* 最終決戦へ進出した組(1本目上位2〜3組)の行を淡い赤でハイライト。
+   ソートで並び替わっても行単位で追える。金色の得点文字とは干渉しない。 */
+.history tr.finalist td {
+  background: rgba(200, 16, 46, 0.09);
+}
+
 /* ソート用ヘッダ(順・合計) — ボタンがセル全体を埋める */
 .history th.sortable {
   padding: 0;
@@ -823,6 +829,17 @@ button {
 .medal-bronze {
   color: var(--bronze);
   font-weight: 700;
+}
+
+/* 凡例内の「進出行」色見本(得点表の .finalist 行背景と同色) */
+.finalist-swatch {
+  display: inline-block;
+  width: 22px;
+  height: 12px;
+  vertical-align: -1px;
+  margin-right: 6px;
+  border: 1px solid var(--line);
+  background: rgba(200, 16, 46, 0.09);
 }
 
 .legend {

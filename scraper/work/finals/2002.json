@@ -149,8 +149,18 @@
  "finalRound": [
   {
    "name": "ますだおかだ",
-   "votes": null,
+   "votes": 5,
    "champion": true
+  },
+  {
+   "name": "フットボールアワー",
+   "votes": 2,
+   "champion": false
+  },
+  {
+   "name": "笑い飯",
+   "votes": 0,
+   "champion": false
   }
  ],
  "source": "https://www.m-1gp.com/archive/2002/final.htm"

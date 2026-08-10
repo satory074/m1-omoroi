@@ -28,6 +28,23 @@ KNOWN_CHAMPIONS = {
     2023: "令和ロマン", 2024: "令和ロマン", 2025: "たくろう",
 }
 
+# 2001〜2010の最終決戦の得票。公式アーカイブ final.htm に票数表が無いため手動補完する
+# (archive_parser.parse_archive_finals が使用)。出典=各年 Wikipedia「M-1グランプリ{year}」。
+# 各年 合計=7票(審査員7名。2001は特別審査員7名のみ投票、会場審査は最終決戦では投票せず)。
+# 配列は得票降順・同票は1本目順位が上を先に(表示の準優勝/3位が正しく並ぶ)。championは得票最多から算出。
+KNOWN_FINAL_ROUNDS: dict[int, list[dict]] = {
+    2001: [{"name": "中川家", "votes": 6}, {"name": "ハリガネロック", "votes": 1}],
+    2002: [{"name": "ますだおかだ", "votes": 5}, {"name": "フットボールアワー", "votes": 2}, {"name": "笑い飯", "votes": 0}],
+    2003: [{"name": "フットボールアワー", "votes": 4}, {"name": "笑い飯", "votes": 3}, {"name": "アンタッチャブル", "votes": 0}],
+    2004: [{"name": "アンタッチャブル", "votes": 6}, {"name": "南海キャンディーズ", "votes": 1}, {"name": "麒麟", "votes": 0}],
+    2005: [{"name": "ブラックマヨネーズ", "votes": 4}, {"name": "笑い飯", "votes": 3}, {"name": "麒麟", "votes": 0}],
+    2006: [{"name": "チュートリアル", "votes": 7}, {"name": "フットボールアワー", "votes": 0}, {"name": "麒麟", "votes": 0}],
+    2007: [{"name": "サンドウィッチマン", "votes": 4}, {"name": "トータルテンボス", "votes": 2}, {"name": "キングコング", "votes": 1}],
+    2008: [{"name": "NON STYLE", "votes": 5}, {"name": "オードリー", "votes": 2}, {"name": "ナイツ", "votes": 0}],
+    2009: [{"name": "パンクブーブー", "votes": 7}, {"name": "笑い飯", "votes": 0}, {"name": "NON STYLE", "votes": 0}],
+    2010: [{"name": "笑い飯", "votes": 4}, {"name": "スリムクラブ", "votes": 3}, {"name": "パンクブーブー", "votes": 0}],
+}
+
 _ORDER_LABELS = {"出番順", "出順", "ネタ順", "順番"}
 _RANK_LABELS = {"順位", "結果"}
 _TOTAL_LABELS = {"得点計", "得点合計", "合計", "総合得点", "合計点", "得点"}

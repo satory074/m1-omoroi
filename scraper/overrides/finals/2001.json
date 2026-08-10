@@ -197,8 +197,13 @@
   "finalRound": [
     {
       "name": "中川家",
-      "votes": null,
+      "votes": 6,
       "champion": true
+    },
+    {
+      "name": "ハリガネロック",
+      "votes": 1,
+      "champion": false
     }
   ],
   "source": "https://www.m-1gp.com/archive/2001/final.htm"

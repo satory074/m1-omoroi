@@ -25,6 +25,19 @@ function medalClass(score: number | null | undefined): string {
 export default function FinalsScoreTable({ finals }: Props) {
   const judges = finals.judges
   const rows = finals.firstRound
+  // 最終決戦(1本目上位2〜3組)へ進出した組。行をハイライトして進出ラインを可視化する。
+  // combiId優先、null時はnameで判定(同一年内でコンビ名は一意・finalRound名⊆firstRound名)
+  const finalistKeys = useMemo(() => {
+    const ids = new Set<number>()
+    const names = new Set<string>()
+    for (const r of finals.finalRound ?? []) {
+      if (r.combiId != null) ids.add(r.combiId)
+      if (r.name) names.add(r.name)
+    }
+    return { ids, names }
+  }, [finals.finalRound])
+  const isFinalist = (row: (typeof rows)[number]) =>
+    (row.combiId != null && finalistKeys.ids.has(row.combiId)) || finalistKeys.names.has(row.name)
   // 審査員ごとの集計ON/OFF(初期は全ON)。yearが変わると key で再マウントされ初期化される
   const [enabled, setEnabled] = useState<boolean[]>(() => judges.map(() => true))
   // null=既定(再計算順位の昇順)
@@ -160,7 +173,7 @@ export default function FinalsScoreTable({ finals }: Props) {
               const row = rows[i]
               const scores = row.scores ?? []
               return (
-                <tr key={row.name}>
+                <tr key={row.name} className={isFinalist(row) ? 'finalist' : undefined}>
                   <td className="no">{rankByIndex[i]}</td>
                   <td>
                     {row.combiId != null ? <Link to={`/combi/${row.combiId}`}>{row.name}</Link> : row.name}

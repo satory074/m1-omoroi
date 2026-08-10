@@ -41,6 +41,9 @@ export default function FinalsPage() {
         点数の色: <span className="medal-gold">90点以上=金</span> / <span className="medal-silver">80〜89点=銀</span>{' '}
         / <span className="medal-bronze">79点以下=銅</span>
       </p>
+      <p className="legend">
+        <span className="finalist-swatch" />背景が淡い赤の行 = 最終決戦へ進出した組(1本目の上位2〜3組)。
+      </p>
       {finals.year === 2001 && (
         <p className="legend">
           第1回のみ「大阪・札幌・福岡」3会場の一般客各100人(1人1点・計300点)＋審査員7名×各100点＝満点1000点。会場別内訳の出典:{' '}

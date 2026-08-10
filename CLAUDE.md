@@ -31,6 +31,7 @@ npm run dev / npm run build
 - 宣材写真は同ページの `og:image` から抽出(`photo` フィールド、`https://www.m-1gp.com/combi/` を除いた相対パスで保存)。デフォルト画像 `img_emptyPic` は写真なし扱い。表示は公式サーバーへの直リンク(複製・再配信しない)で、削除済みはonErrorで非表示
 - 列挙は `list.php` 全41,018組・20件/頁。公式DBは2015年以降のみ
 - 2001〜2010は `archive/{year}/` の日付別ページ(合格者のみ → 敗退者は前回戦との差分導出、1回戦敗退者は不明)
+- 決勝の最終決戦(1本目上位2〜3組の2本目後の投票)の得票 `finalRound[].votes`: 2001〜2010の公式アーカイブ `final.htm` に票数表が無いため、`wikipedia_finals.py` の `KNOWN_FINAL_ROUNDS`(2001〜2010、出典=各年Wikipedia)で手動補完。`archive_parser.parse_archive_finals` がこれを読み `champion` を最多票から算出(2001は上位2組・他は上位3組、各年合計7票)。2001は `overrides/finals/2001.json` が work を上書きするため同じ得票を override 側にも記載。フロント(`FinalsScoreTable`)は `finalRound` の進出組行を淡赤背景でハイライトし最終決戦進出ラインを可視化する
 - コンビ詳細ページの `history` は公式コンビDB由来で2015年以降のみ。2001〜2010の出場は `build_json.py` の `merge_archive_history` が years/(アーカイブ)から各コンビの `history` に逆マージして表示する(id紐付けができた組のみ)
 - 生HTMLは `scraper/cache/` にキャッシュ(gitignore、~2GB)。再パースはクロール不要
 - レート制限: 2〜4req/s厳守

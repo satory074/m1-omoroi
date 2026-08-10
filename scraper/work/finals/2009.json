@@ -149,8 +149,18 @@
  "finalRound": [
   {
    "name": "パンクブーブー",
-   "votes": null,
+   "votes": 7,
    "champion": true
+  },
+  {
+   "name": "笑い飯",
+   "votes": 0,
+   "champion": false
+  },
+  {
+   "name": "NON STYLE",
+   "votes": 0,
+   "champion": false
   }
  ],
  "source": "https://www.m-1gp.com/archive/2009/final.htm"

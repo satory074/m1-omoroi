@@ -149,8 +149,18 @@
  "finalRound": [
   {
    "name": "フットボールアワー",
-   "votes": null,
+   "votes": 4,
    "champion": true
+  },
+  {
+   "name": "笑い飯",
+   "votes": 3,
+   "champion": false
+  },
+  {
+   "name": "アンタッチャブル",
+   "votes": 0,
+   "champion": false
   }
  ],
  "source": "https://www.m-1gp.com/archive/2003/final.htm"
