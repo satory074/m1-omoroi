@@ -11,10 +11,23 @@ from bs4 import BeautifulSoup
 
 from .config import CACHE_DIR, COMBI_LIST_URL, STATE_DIR, WORK_DIR
 from .http import Fetcher, decode_html
+from .models import ROUND_NAME_TO_KEY
 
 PER_PAGE = 20
 _TOTAL_RE = re.compile(r"([\d,]+)件")
 _ID_RE = re.compile(r"(\d+)\.html")
+# list.php の最新ステータス "2026年 １回戦：敗退" から (年, 回戦名, 結果) を取る
+_STATUS_RE = re.compile(r"\s*(\d{4})年\s*(.+?)：(.+?)\s*$")
+# list.php の結果表記 → 正規化キー。詳細ページの meta とは表記が違う点に注意
+# (list は「シード通過」、meta は「シード権獲得により通過」)。未確定は scheduled で除外
+_LIST_RESULT_TO_KEY = {
+    "通過": "pass",
+    "敗退": "fail",
+    "シード通過": "seed_pass",
+    "欠席": "absent",
+    "優勝": "champion",
+    "出場予定": "scheduled",
+}
 
 
 def list_url(page: int, year: int | None = None) -> str:
@@ -113,3 +126,72 @@ def detect_changed(rows: list[dict], year: int) -> list[int]:
     )
     print(f"[detect-changed {year}] 変化: {len(changed)}件 (前回スナップショット: {len(prev)}件)")
     return changed
+
+
+def parse_list_status(status: str | None, year: int) -> tuple[str, str] | None:
+    """list.php の最新ステータスから対象年の (回戦キー, 結果キー) を返す。
+
+    対象年でない・回戦が無い(「2026年 出場予定」)・表記が未知なら None。
+    """
+    if not status:
+        return None
+    m = _STATUS_RE.match(status)
+    if not m or int(m.group(1)) != year:
+        return None
+    round_key = ROUND_NAME_TO_KEY.get(m.group(2).strip())
+    result_key = _LIST_RESULT_TO_KEY.get(m.group(3).strip())
+    if round_key is None or result_key is None:
+        return None
+    return round_key, result_key
+
+
+def _load_parsed_results(year: int) -> dict[int, dict]:
+    """combi.jsonl(無ければ .gz)から {id: {回戦: 結果}} を読む。"""
+    import gzip
+
+    jsonl = WORK_DIR / "combi.jsonl"
+    gz = WORK_DIR / "combi.jsonl.gz"
+    if jsonl.exists():
+        opener = jsonl.open("rt", encoding="utf-8")
+    elif gz.exists():
+        opener = gzip.open(gz, "rt", encoding="utf-8")
+    else:
+        raise RuntimeError("combi.jsonl(.gz) がありません。先に parse-combi を実行してください")
+    parsed: dict[int, dict] = {}
+    with opener as f:
+        for line in f:
+            rec = json.loads(line)
+            hist = rec.get("history", {}).get(str(year))
+            if hist:
+                parsed[rec["id"]] = hist.get("results", {})
+    return parsed
+
+
+def detect_stale(year: int) -> list[int]:
+    """list.php が確定結果を示すのに、パース済み詳細が追随していないIDを返す。
+
+    list.php は詳細ページ(meta description)より先に更新される。detect_changed は
+    list ステータス文字列の変化しか見ないため『list が確定 → 後から詳細が確定』した組は
+    list が既に確定済みで変化が起きず、取りこぼす。ここで詳細を実結果と突き合わせて回収する。
+    """
+    list_path = WORK_DIR / f"list_{year}.jsonl"
+    if not list_path.exists():
+        raise RuntimeError(f"{list_path} がありません。先に crawl-list --year {year} を実行してください")
+
+    parsed = _load_parsed_results(year)
+    stale: list[int] = []
+    for line in list_path.open(encoding="utf-8"):
+        row = json.loads(line)
+        st = parse_list_status(row.get("status"), year)
+        if st is None:
+            continue
+        round_key, result_key = st
+        if result_key == "scheduled":  # 未確定は対象外
+            continue
+        if parsed.get(row["id"], {}).get(round_key) != result_key:
+            stale.append(row["id"])
+
+    out = WORK_DIR / f"stale_{year}.json"
+    out.write_text(json.dumps(sorted(stale)), encoding="utf-8")
+    print(f"[detect-stale {year}] 追随漏れ: {len(stale)}件 -> {out}")
+    return stale

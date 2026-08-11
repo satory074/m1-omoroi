@@ -12,9 +12,10 @@ M-1グランプリのファンサイト。年度×回戦の合格者/敗退者�
 
 ```bash
 # スクレイパー (scraper/ で実行)
-uv run m1 crawl-list [--year YYYY]   # list.php列挙 → work/list.jsonl
-uv run m1 crawl-combi [--limit N]    # 詳細ページ取得 → cache/combi/ (レジューム可)
+uv run m1 crawl-list [--year YYYY] [--detect-changed]  # list.php列挙 → work/list[_YYYY].jsonl (+ changed_YYYY.json)
+uv run m1 crawl-combi [--ids F] [--limit N] [--force]  # 詳細ページ取得 → cache/combi/ (レジューム可)
 uv run m1 parse-combi                # キャッシュ全件パース → work/combi.jsonl
+uv run m1 detect-stale --year YYYY   # list=確定だが詳細が追随漏れのID → work/stale_YYYY.json (シーズン差分の第2パス)
 uv run m1 crawl-archive / parse-archive  # 2001〜2010 旧アーカイブ
 uv run m1 crawl-finals               # Wikipedia決勝得点表
 uv run m1 fetch-popularity [--limit N]  # YouTube再生数(注目度)。要 YOUTUBE_API_KEY。通常はCIが日次実行
@@ -30,6 +31,7 @@ npm run dev / npm run build
 - コンビ詳細 `https://www.m-1gp.com/combi/{id}.html` の `<meta name="description">` に全年度成績が埋込み(combi_parser.pyが正規表現でパース)
 - 宣材写真は同ページの `og:image` から抽出(`photo` フィールド、`https://www.m-1gp.com/combi/` を除いた相対パスで保存)。デフォルト画像 `img_emptyPic` は写真なし扱い。表示は公式サーバーへの直リンク(複製・再配信しない)で、削除済みはonErrorで非表示
 - 列挙は `list.php` 全41,018組・20件/頁。公式DBは2015年以降のみ
+- シーズン差分更新(`update-season.yml`)は2パス構成。**① detect-changed**: list.phpのステータス文字列が前回スナップショットから変化したIDを再取得。**② detect-stale**: list.phpは詳細ページ(meta description)より先に更新されるため、①だけでは『listが先に確定 → 後から詳細ページが確定』した組を取りこぼす(listが既に確定済みで文字列変化が起きない)。`detect-stale`はlistが確定結果を示すのに詳細パース結果が追随漏れ(`出場予定`のまま等)の組を洗い出し(`list_crawler.parse_list_status`。**listは「シード通過」・metaは「シード権獲得により通過」と表記が違う**点に注意)、第2パスで再取得する。両パスとも `parse-combi` で正本(`combi.jsonl.gz`)にマージ
 - 2001〜2010は `archive/{year}/` の日付別ページ(合格者のみ → 敗退者は前回戦との差分導出、1回戦敗退者は不明)
 - 決勝の最終決戦(1本目上位2〜3組の2本目後の投票)の得票 `finalRound[].votes`: 2001〜2010の公式アーカイブ `final.htm` に票数表が無いため、`wikipedia_finals.py` の `KNOWN_FINAL_ROUNDS`(2001〜2010、出典=各年Wikipedia)で手動補完。`archive_parser.parse_archive_finals` がこれを読み `champion` を最多票から算出(2001は上位2組・他は上位3組、各年合計7票)。2001は `overrides/finals/2001.json` が work を上書きするため同じ得票を override 側にも記載。フロント(`FinalsScoreTable`)は `finalRound` の進出組行を淡赤背景でハイライトし最終決戦進出ラインを可視化する
 - コンビ詳細ページの `history` は公式コンビDB由来で2015年以降のみ。2001〜2010の出場は `build_json.py` の `merge_archive_history` が years/(アーカイブ)から各コンビの `history` に逆マージして表示する(id紐付けができた組のみ)

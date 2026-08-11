@@ -30,6 +30,12 @@ jobs:
           uv run m1 crawl-combi --ids work/changed_2026.json --force
           # 変化したコンビだけ再取得し、コミット済みの正本(combi.jsonl.gz)にマージする
           uv run m1 parse-combi
+          # list.php は詳細ページより先に更新されるため、detect-changed(list文字列の変化)
+          # だけでは『list が確定 → 後から詳細が確定』の組を取りこぼす。list が確定結果を
+          # 示すのに詳細が追随漏れの組を第2パスで回収し、再取得→再パースする
+          uv run m1 detect-stale --year 2026
+          uv run m1 crawl-combi --ids work/stale_2026.json --force
+          uv run m1 parse-combi
           # 注目度は update-popularity.yml が日次で更新するためここでは取得しない
           uv run m1 build
       - name: Commit data changes

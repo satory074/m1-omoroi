@@ -119,6 +119,12 @@ def cmd_parse_combi(args):
     print(f"[parse-combi] 成績なし: {no_history}件 / 404等の除外: {junk}件 / 未知の結果文字列: {unknown or 'なし'}")
 
 
+def cmd_detect_stale(args):
+    from .list_crawler import detect_stale
+
+    detect_stale(args.year)
+
+
 def cmd_crawl_archive(args):
     from .archive_parser import crawl_archive
 
@@ -175,6 +181,10 @@ def main():
 
     p = sub.add_parser("parse-combi", help="キャッシュ済み詳細ページをパース")
     p.set_defaults(func=cmd_parse_combi)
+
+    p = sub.add_parser("detect-stale", help="list.phpが確定なのに詳細が追随漏れのIDを抽出")
+    p.add_argument("--year", type=int, required=True, help="対象の開催年")
+    p.set_defaults(func=cmd_detect_stale)
 
     p = sub.add_parser("crawl-archive", help="2001〜2010 アーカイブを取得")
     p.add_argument("--year", type=int)
