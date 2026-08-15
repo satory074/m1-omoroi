@@ -38,6 +38,9 @@ export default function FinalsPage() {
         順位はファーストラウンドの得点順。優勝は最終決戦の得票で決定します。審査員のヘッダをクリックで並べ替え、チェックを外すとその審査員を除いた合計・順位に再集計されます。
       </p>
       <p className="legend">
+        コンビ名横の(N回目) = その年時点で通算N回目の決勝進出。点数横の(N) = その審査員がつけた点数の中での順位。
+      </p>
+      <p className="legend">
         点数の色(本家テロップ準拠): <span className="score-legend gold">90点以上=金</span>{' '}
         <span className="score-legend">89点以下=白</span>
       </p>
@@ -56,28 +59,36 @@ export default function FinalsPage() {
       {finals.finalRound && finals.finalRound.length > 0 && (
         <>
           <h2 className="section-title">最終決戦</h2>
-          <ol className="rank-list">
+          <ol className="rank-list vote-list">
             {[...finals.finalRound]
               .sort((a, b) => (b.votes ?? -1) - (a.votes ?? -1))
               .map((row) => (
               <li key={row.name}>
-                <span className={`rank-pos ${row.champion ? 'champion' : ''}`}>
-                  {row.champion ? '★' : ''}
-                </span>
-                {row.combiId != null ? (
-                  <Link className="rank-name" to={`/combi/${row.combiId}`}>
-                    {row.name}
-                  </Link>
-                ) : (
-                  <span className="rank-name">{row.name}</span>
+                <div className="rank-main">
+                  <span className={`rank-pos ${row.champion ? 'champion' : ''}`}>
+                    {row.champion ? '★' : ''}
+                  </span>
+                  {row.combiId != null ? (
+                    <Link className="rank-name" to={`/combi/${row.combiId}`}>
+                      {row.name}
+                    </Link>
+                  ) : (
+                    <span className="rank-name">{row.name}</span>
+                  )}
+                  <span className="rank-value">
+                    {row.votes != null ? row.votes : ''}
+                    <small>{row.votes != null ? '票' : ''}</small>
+                  </span>
+                </div>
+                {row.voters && row.voters.length > 0 && (
+                  <div className="rank-voters">{row.voters.join('・')}</div>
                 )}
-                <span className="rank-value">
-                  {row.votes != null ? row.votes : ''}
-                  <small>{row.votes != null ? '票' : ''}</small>
-                </span>
               </li>
             ))}
           </ol>
+          {finals.finalRound.some((r) => r.voters && r.voters.length > 0) && (
+            <p className="legend">コンビ名の下の審査員名 = 最終決戦でその組に投票した審査員。</p>
+          )}
         </>
       )}
       <p className="legend">

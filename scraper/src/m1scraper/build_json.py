@@ -306,6 +306,82 @@ def merge_archive_history(records: list[dict], year_files: dict[int, dict]) -> i
     return added
 
 
+def annotate_final_appearances(all_finals: list[dict]) -> None:
+    """finals の firstRound 各行に finalAppearance(その年時点で通算N回目の決勝進出)を付与する。
+
+    キーは combiId 優先。null の行は全年 firstRound からの正規化名→ID逆引きが
+    一意に決まる場合のみそのIDへ統合し、曖昧(同名別コンビ)や不明なら名前キーで
+    独立カウントする(link() と同じく誤リンクより未リンクを優先)。
+    """
+    ids_by_name: dict[str, set] = defaultdict(set)
+    for finals in all_finals:
+        for row in finals.get("firstRound", []):
+            if row.get("combiId") is not None:
+                ids_by_name[_norm_name(row["name"])].add(row["combiId"])
+    count: dict = defaultdict(int)
+    for finals in sorted(all_finals, key=lambda f: f["year"]):
+        for row in finals.get("firstRound", []):
+            key = row.get("combiId")
+            if key is None:
+                nm = _norm_name(row["name"])
+                known = ids_by_name.get(nm, set())
+                key = next(iter(known)) if len(known) == 1 else f"name:{nm}"
+            count[key] += 1
+            row["finalAppearance"] = count[key]
+
+
+def _load_final_votes() -> dict:
+    """overrides/final_votes.json(最終決戦の審査員別投票、出典=各年Wikipedia)を読む。"""
+    path = OVERRIDES_DIR / "final_votes.json"
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def merge_final_votes(all_finals: list[dict], votes_by_year: dict) -> list[str]:
+    """finals の finalRound 各行へ voters(その組に投票した審査員名)をマージする。
+
+    手入力ミス(表記違い・転記ミス)検知のため年単位で検証し、不整合があれば
+    その年を丸ごとスキップして警告する(voters の有無が年内で混在しないように)。
+    voters は judges 配列の並び順に正規化して格納する。
+    """
+    problems = []
+    finals_by_year = {f["year"]: f for f in all_finals}
+    for year_str, entries in sorted(votes_by_year.items()):
+        year = int(year_str)
+        finals = finals_by_year.get(year)
+        if finals is None:
+            problems.append(f"{year}: finals データが存在しない")
+            continue
+        final_round = finals.get("finalRound", [])
+        judge_order = {j: i for i, j in enumerate(finals.get("judges", []))}
+        by_name = {_norm_name(e["name"]): e for e in entries}
+        errs = []
+        if set(by_name) != {_norm_name(r["name"]) for r in final_round}:
+            errs.append("コンビ名の集合が finalRound と一致しない(0票の組も全組列挙する)")
+        all_voters = [v for e in entries for v in e["voters"]]
+        if len(all_voters) != len(set(all_voters)):
+            errs.append("同一審査員が複数回投票している")
+        unknown = [v for v in all_voters if v not in judge_order]
+        if unknown:
+            errs.append(f"judges に無い審査員名: {unknown}")
+        if not errs:
+            for row in final_round:
+                e = by_name[_norm_name(row["name"])]
+                if row.get("votes") is not None and len(e["voters"]) != row["votes"]:
+                    errs.append(f"{row['name']}: voters {len(e['voters'])}名 ≠ votes {row['votes']}")
+        if errs:
+            problems.extend(f"{year}: {e}" for e in errs)
+            continue
+        for row in final_round:
+            row["voters"] = sorted(
+                by_name[_norm_name(row["name"])]["voters"], key=judge_order.__getitem__
+            )
+    for p in problems:
+        print(f"[build] final_votes整合性警告: {p}")
+    return problems
+
+
 def _make_linker(records: list[dict]):
     """コンビ名 → ID の紐付け。一意に決まる場合のみ返す(誤リンクより未リンクを優先)。"""
     by_name: dict[str, list[dict]] = defaultdict(list)
@@ -439,9 +515,13 @@ def build():
             finals = json.loads(src.read_text(encoding="utf-8"))
             for row in finals.get("firstRound", []) + finals.get("finalRound", []):
                 row["combiId"] = link(row["name"], finals["year"])
-            _write(DATA_DIR / "finals" / f.name, finals)
             finals_years.append(int(f.stem))
             all_finals.append(finals)
+        # 全年ロード後の注釈(通算進出回数は年横断の情報が必要)
+        annotate_final_appearances(all_finals)
+        merge_final_votes(all_finals, _load_final_votes())
+        for finals in all_finals:
+            _write(DATA_DIR / "finals" / f"{finals['year']}.json", finals)
 
     # 歴代王者(優勝者)の集計。出身地/結成年/生年月日は公式コンビDB(2015年以降)由来のため、
     # 2001〜2010は overrides/champions_meta.json で補完する

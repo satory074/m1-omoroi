@@ -68,6 +68,28 @@ export default function FinalsScoreTable({ finals }: Props) {
     return { totals, rankByIndex }
   }, [rows, judges.length, enabled])
 
+  // 審査員ごと(列ごと)の順位(同点は同順位)。合計のON/OFFとは独立な情報なので enabled に依存しない
+  const rankInJudge = useMemo(() => {
+    return judges.map((_, j) => {
+      const vals = rows.map((r) => (r.scores ?? [])[j])
+      const sortedIdx = rows
+        .map((_, i) => i)
+        .filter((i) => typeof vals[i] === 'number')
+        .sort((a, b) => (vals[b] as number) - (vals[a] as number))
+      const ranks = new Array<number | null>(rows.length).fill(null)
+      let lastVal: number | null = null
+      let lastRank = 0
+      sortedIdx.forEach((idx, pos) => {
+        if (lastVal === null || vals[idx] !== lastVal) {
+          lastRank = pos + 1
+          lastVal = vals[idx] as number
+        }
+        ranks[idx] = lastRank
+      })
+      return ranks
+    })
+  }, [rows, judges])
+
   // 表示順(元配列は破壊せずindex配列を並べ替え)。タイブレークは公式順位→登場順
   const displayOrder = useMemo(() => {
     const officialRank = (i: number) => rows[i].rank ?? rows[i].order ?? 99
@@ -175,13 +197,24 @@ export default function FinalsScoreTable({ finals }: Props) {
                   <td className="no">{rankByIndex[i]}</td>
                   <td>
                     {row.combiId != null ? <Link to={`/combi/${row.combiId}`}>{row.name}</Link> : row.name}
+                    {row.finalAppearance != null && (
+                      <span className="appearance-note">({row.finalAppearance}回目)</span>
+                    )}
                   </td>
                   {judges.map((_, j) => {
                     const s = scores[j]
                     const cls = enabled[j] ? scoreClass(s) : 'excluded'
                     return (
                       <td key={j} className={`no score ${cls}`}>
-                        {typeof s === 'number' ? <span className="num">{s}</span> : ''}
+                        {typeof s === 'number' ? (
+                          <>
+                            <span className="num">{s}</span>
+                            {/* .num はbackground-clip:textで透明化するため順位は兄弟要素に置く */}
+                            <span className="score-rank">({rankInJudge[j][i]})</span>
+                          </>
+                        ) : (
+                          ''
+                        )}
                       </td>
                     )
                   })}

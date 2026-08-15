@@ -151,12 +151,21 @@ export interface FinalsScore {
   scores?: (number | null)[]
   total?: number | null
   rank?: number | null
+  /** その年時点で通算何回目の決勝進出か */
+  finalAppearance?: number
 }
 
 export interface FinalsFile {
   year: number
   judges: string[]
   firstRound: FinalsScore[]
-  finalRound?: { combiId?: number | null; name: string; votes?: number | null; champion?: boolean }[]
+  finalRound?: {
+    combiId?: number | null
+    name: string
+    votes?: number | null
+    champion?: boolean
+    /** その組に投票した審査員名(judges配列の並び順) */
+    voters?: string[]
+  }[]
   source: string
 }

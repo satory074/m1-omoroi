@@ -34,6 +34,7 @@ npm run dev / npm run build
 - シーズン差分更新(`update-season.yml`)は2パス構成。**① detect-changed**: list.phpのステータス文字列が前回スナップショットから変化したIDを再取得。**② detect-stale**: list.phpは詳細ページ(meta description)より先に更新されるため、①だけでは『listが先に確定 → 後から詳細ページが確定』した組を取りこぼす(listが既に確定済みで文字列変化が起きない)。`detect-stale`はlistが確定結果を示すのに詳細パース結果が追随漏れ(`出場予定`のまま等)の組を洗い出し(`list_crawler.parse_list_status`。**listは「シード通過」・metaは「シード権獲得により通過」と表記が違う**点に注意)、第2パスで再取得する。両パスとも `parse-combi` で正本(`combi.jsonl.gz`)にマージ
 - 2001〜2010は `archive/{year}/` の日付別ページ(合格者のみ → 敗退者は前回戦との差分導出、1回戦敗退者は不明)
 - 決勝の最終決戦(1本目上位2〜3組の2本目後の投票)の得票 `finalRound[].votes`: 2001〜2010の公式アーカイブ `final.htm` に票数表が無いため、`wikipedia_finals.py` の `KNOWN_FINAL_ROUNDS`(2001〜2010、出典=各年Wikipedia)で手動補完。`archive_parser.parse_archive_finals` がこれを読み `champion` を最多票から算出(2001は上位2組・他は上位3組、各年合計7票)。2001は `overrides/finals/2001.json` が work を上書きするため同じ得票を override 側にも記載。フロント(`FinalsScoreTable`)は `finalRound` の進出組行を淡赤背景でハイライトし最終決戦進出ラインを可視化する
+- 決勝データへのbuild時注釈(build_json.py): **① `finalAppearance`** — 全年の finals をロード後、`annotate_final_appearances` が firstRound 各行へ「その年時点で通算N回目の決勝進出」を付与(combiId優先、null行は正規化名→ID逆引きが一意なら統合・曖昧なら名前キーで独立カウント)。**② `voters`** — `overrides/final_votes.json`(年→[{name, voters[]}]、出典=各年Wikipediaの「最終決戦得票詳細」表の審査員別★印)を `merge_final_votes` が finalRound 各行へマージ。審査員名は各年 `judges` 配列の短縮表記と完全一致必須で、票数一致・judges包含・重複投票なし・全組列挙を検証し、不整合の年は丸ごとスキップ+警告(ビルドは止めない)。**新シーズンは決勝後に final_votes.json へ1年分追記する**(未追記の年はUIが票数のみ表示に自然劣化)。フロントは点数横に審査員内順位 `(N)`、コンビ名横に `(N回目)`、最終決戦リストのコンビ名下に投票審査員名を表示
 - コンビ詳細ページの `history` は公式コンビDB由来で2015年以降のみ。2001〜2010の出場は `build_json.py` の `merge_archive_history` が years/(アーカイブ)から各コンビの `history` に逆マージして表示する(id紐付けができた組のみ)
 - 生HTMLは `scraper/cache/` にキャッシュ(gitignore、~2GB)。再パースはクロール不要
 - レート制限: 2〜4req/s厳守
@@ -49,4 +50,5 @@ npm run dev / npm run build
   - `legacy_combis.json` — 2001〜2010に準々決勝以上へ進出したが公式コンビDBに無い著名コンビ(千鳥・笑い飯等)の合成レコード。予約ID 900001+。`records` に投入され名寄せ→アーカイブ履歴逆マージ→詳細ページ生成。出典はWikipedia。`legacy:true`/`wikipedia` を持ち、`aliases` で全半角/綴り違いのアーカイブ名も紐付ける
   - `name_links.json` — アーカイブ名/旧名 → 既存DBコンビID。改名(鎌鼬→かまいたち、ぷくぷく隊→ヤング等)や全半角違いで名寄せが外れた組の2001〜2010出場を実ページへ紐付ける(合成コンビの重複ページ回避)。`link()` は生名・NFKC正規化名の両方で照合
   - `finals/{year}.json` — 決勝得点表を丸ごと差し替える(build_json.py が `work/finals/{year}.json` より優先して読む)。2001は第1回のみの会場審査(札幌・大阪・福岡3会場×各100人)を反映するため「会場票」1列を `大阪`/`札幌`/`福岡` の3列に分割済み(judgesの先頭3つ)。3会場合計は公式の会場票と全10組で一致することを検証済み。出典=半帖庵 http://www.hanjoan.com/project/m1.htm 。UI(`FinalsScoreTable`)は judges 配列を汎用に描画するので会場列もソート/チェックボックス対象になる
+  - `final_votes.json` — 最終決戦の審査員別投票(年→[{name, voters[]}]、全21年分、出典=各年Wikipedia)。build が finalRound へ `voters` としてマージ(検証つき)。2001の投票は個人審査員7名のみ(会場3列は投票しない)
 - 結果enum: pass / fail / seed_pass / fail_inferred / unknown (models.py)

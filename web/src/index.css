@@ -772,8 +772,24 @@ button {
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
+/* 点数チップ内の審査員内順位。.num は background-clip:text で文字を透明化するため
+   兄弟要素に置き、黒チップ上で読める淡グレーを明示する */
+.finals-table td.no.score .score-rank {
+  font-family: var(--font-num);
+  font-size: 10px;
+  font-weight: 600;
+  color: #9aa1ab;
+  margin-left: 3px;
+}
 .finals-table td.no.score.excluded {
   opacity: 0.3;
+}
+/* コンビ名横の「(N回目)」= 通算N回目の決勝進出 */
+.finals-table .appearance-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 4px;
+  white-space: nowrap;
 }
 .history th.excluded {
   opacity: 0.35;
@@ -970,6 +986,24 @@ button {
   font-weight: 500;
   color: var(--muted);
   margin-left: 2px;
+}
+
+/* 最終決戦の得票リスト(決勝ページ)のみ: 2段目に投票した審査員名を表示。
+   .rank-list はランキングページと共用のため .vote-list でスコープする */
+.vote-list li {
+  flex-wrap: wrap;
+}
+.rank-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.rank-voters {
+  width: 100%;
+  padding-left: 32px; /* rank-pos(min-width:22px)+gap に揃える */
+  font-size: 12px;
+  color: var(--muted);
 }
 
 /* ============ 統計チャート ============ */
