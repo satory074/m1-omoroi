@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 
+import { JudgeCareerSection } from '../components/JudgesRecords'
 import { RankTable, type RankRow } from '../components/RankTable'
-import { useFinalsStats, useRankings } from '../lib/api'
+import { useFinalsStats, useJudgesStats, useRankings } from '../lib/api'
 import { sliceWithTies } from '../lib/rank'
 import type { FinalsStats, StreakItem } from '../lib/types'
 
@@ -128,6 +129,7 @@ function FinalsRecords({ fs }: { fs: FinalsStats }) {
 export default function RankingsPage() {
   const { data, isLoading, isError } = useRankings()
   const { data: finalsStats } = useFinalsStats()
+  const { data: judgesStats } = useJudgesStats()
   if (isError) return <div className="error-box">ランキングを読み込めませんでした。</div>
   if (isLoading || !data) return <div className="loading">読み込み中…</div>
 
@@ -189,6 +191,16 @@ export default function RankingsPage() {
           <h1 className="page-title">決勝の記録</h1>
           <p className="page-lede">全21大会(2001〜2025)の決勝得点表・最終決戦データから集計。</p>
           <FinalsRecords fs={finalsStats} />
+        </>
+      )}
+      {judgesStats && (
+        <>
+          <h1 className="page-title">審査員の記録</h1>
+          <p className="page-lede">
+            全21大会の決勝得点表から集計した審査員別の通算記録。年別の傾向は
+            <Link to="/stats">統計</Link>へ。
+          </p>
+          <JudgeCareerSection js={judgesStats} />
         </>
       )}
     </>

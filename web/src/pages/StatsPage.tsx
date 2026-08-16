@@ -12,8 +12,9 @@ import {
 } from 'recharts'
 
 import FinalsTrends from '../components/FinalsTrends'
+import { JudgesYearlySection } from '../components/JudgesRecords'
 import RecordsExplorer from '../components/RecordsExplorer'
-import { useFinalsStats, useStats } from '../lib/api'
+import { useFinalsStats, useJudgesStats, useStats } from '../lib/api'
 import { ROUND_LABEL, ROUND_ORDER } from '../lib/rounds'
 import type { YearStats } from '../lib/types'
 
@@ -45,6 +46,7 @@ const tooltipStyle = {
 export default function StatsPage() {
   const { data, isLoading, isError } = useStats()
   const { data: finalsStats } = useFinalsStats()
+  const { data: judgesStats } = useJudgesStats()
   if (isError) return <div className="error-box">統計を読み込めませんでした。</div>
   if (isLoading || !data) return <div className="loading">読み込み中…</div>
 
@@ -201,6 +203,19 @@ export default function StatsPage() {
             <Link to="/rankings">記録ランキング</Link>へ。
           </p>
           <FinalsTrends fs={finalsStats} />
+        </>
+      )}
+
+      {judgesStats && (
+        <>
+          <h1 className="page-title" style={{ marginTop: 40 }}>
+            審査員の傾向
+          </h1>
+          <p className="page-lede">
+            決勝得点表・最終決戦の投票から集計。審査員別の通算記録は
+            <Link to="/rankings">記録ランキング</Link>へ。
+          </p>
+          <JudgesYearlySection js={judgesStats} />
         </>
       )}
 

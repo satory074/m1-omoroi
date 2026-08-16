@@ -277,6 +277,67 @@ export interface DebutFinalist {
   recordedOnly: boolean
 }
 
+/** 各年の1本目1位と2位の点差 */
+export interface FirstRoundMargin {
+  year: number
+  first: { name: string; combiId: number | null; total: number }
+  second: { name: string; combiId: number | null; total: number }
+  margin: number
+}
+
+/** 審査員の通算記録(overrides/judges.json の正規名で名寄せ) */
+export interface JudgeCareer {
+  name: string
+  years: number[]
+  yearCount: number
+  /** 採点した組数(延べ) */
+  scored: number
+  /** 平均点差 = 自分の点 − その組への個人審査員平均 の平均。負=辛口 */
+  avgDiff: number | null
+  /** 行内最高点/最低点を付けた回数(タイは全員に計上) */
+  topCount: number
+  lowCount: number
+  /** 最終決戦の投票数(votersが記録されている年のみ)と、うち優勝者への投票 */
+  votes: number
+  champVotes: number
+}
+
+export interface JudgeYearRow {
+  name: string
+  canonical: string
+  mean: number
+  diff: number
+  top: number
+  low: number
+  max: number
+  min: number
+}
+
+export interface JudgesYear {
+  year: number
+  /** その年の個人審査員全採点の平均 */
+  judgeMean: number
+  judges: JudgeYearRow[]
+}
+
+/** 最終決戦の得票(満場一致/接戦)。votes は得票の降順 */
+export interface FinalVoteYear {
+  year: number
+  champion: string
+  championCombiId: number | null
+  votes: number[]
+  unanimous: boolean
+  margin: number
+}
+
+export interface JudgesStats {
+  career: JudgeCareer[]
+  byYear: JudgesYear[]
+  finalVotes: FinalVoteYear[]
+  /** 個人審査員ではない会場票の列(2001年の大阪/札幌/福岡) */
+  venueColumns: Record<string, string[]>
+}
+
 export interface FinalsStats {
   firstRoundOrderStats: OrderStat[]
   finalOrderStats: OrderStat[]
@@ -299,6 +360,7 @@ export interface FinalsStats {
   championNthFinal: ChampionNthFinal[]
   revivalStats: RevivalStats
   debutFinalists: DebutFinalist[]
+  firstRoundMargins: FirstRoundMargin[]
   agencyFinals: AgencyFinals[]
   agencyFinalsExcluded: number
 }

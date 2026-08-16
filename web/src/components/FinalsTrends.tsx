@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 import { competitionRanks } from '../lib/rank'
 import type { FinalsStats } from '../lib/types'
 import { WinnersCell } from './RankTable'
@@ -176,6 +178,49 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
                 </td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="section-title">1本目の1位と2位の点差</h2>
+      <p className="section-note">
+        ファーストラウンド1位と2位の合計点差(接戦順)。審査員数・満点が年により違うため点差の単純比較は目安。
+      </p>
+      <div className="history-wrap">
+        <table className="history">
+          <thead>
+            <tr>
+              <th>点差</th>
+              <th>年</th>
+              <th>1位</th>
+              <th>2位</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...fs.firstRoundMargins]
+              .sort((a, b) => a.margin - b.margin || a.year - b.year)
+              .map((m) => (
+                <tr key={m.year}>
+                  <td className="no">{m.margin}</td>
+                  <td className="no">{m.year}</td>
+                  <td>
+                    {m.first.combiId != null ? (
+                      <Link to={`/combi/${m.first.combiId}`}>{m.first.name}</Link>
+                    ) : (
+                      m.first.name
+                    )}{' '}
+                    ({m.first.total})
+                  </td>
+                  <td>
+                    {m.second.combiId != null ? (
+                      <Link to={`/combi/${m.second.combiId}`}>{m.second.name}</Link>
+                    ) : (
+                      m.second.name
+                    )}{' '}
+                    ({m.second.total})
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>

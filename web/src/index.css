@@ -176,6 +176,32 @@ button {
   border-color: var(--ink);
 }
 
+/* 統計ページの審査員年別セレクタ: year-strip をボタンで使う */
+.judges-year-strip {
+  padding: 4px 0 12px;
+}
+.judges-year-strip button {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+}
+.judges-year-strip button:hover {
+  color: var(--ink);
+  border-color: var(--muted);
+}
+.judges-year-strip button.active {
+  color: #fff;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
 .year-strip .gap {
   align-self: center;
   color: var(--muted);

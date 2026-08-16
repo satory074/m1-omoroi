@@ -7,6 +7,7 @@ import type {
   CombiIndexRow,
   FinalsFile,
   FinalsStats,
+  JudgesStats,
   MetaFile,
   Popularity,
   Rankings,
@@ -107,6 +108,14 @@ export function useFinalsStats() {
   return useQuery({
     queryKey: ['finals-stats'],
     queryFn: () => fetchJsonOrNull<FinalsStats>('finals_stats.json'),
+    ...STATIC,
+  })
+}
+
+export function useJudgesStats() {
+  return useQuery({
+    queryKey: ['judges-stats'],
+    queryFn: () => fetchJsonOrNull<JudgesStats>('judges_stats.json'),
     ...STATIC,
   })
 }

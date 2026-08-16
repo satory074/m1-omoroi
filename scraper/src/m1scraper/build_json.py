@@ -774,6 +774,32 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
     ]
     agency_rows.sort(key=lambda a: (-a["value"], a["agency"]))
 
+    # --- B12: 1本目の1位と2位の点差(大接戦/大差の年) ---
+    margins = []
+    for finals in finals_sorted:
+        rows = sorted(
+            (r for r in finals.get("firstRound", []) if r.get("total") is not None),
+            key=lambda r: -r["total"],
+        )
+        if len(rows) < 2:
+            continue
+        margins.append(
+            {
+                "year": finals["year"],
+                "first": {
+                    "name": rows[0]["name"],
+                    "combiId": rows[0].get("combiId"),
+                    "total": rows[0]["total"],
+                },
+                "second": {
+                    "name": rows[1]["name"],
+                    "combiId": rows[1].get("combiId"),
+                    "total": rows[1]["total"],
+                },
+                "margin": rows[0]["total"] - rows[1]["total"],
+            }
+        )
+
     def _slots(counter: dict[int, dict]) -> list[dict]:
         return [{"order": o, **counter[o]} for o in sorted(counter)]
 
@@ -808,8 +834,170 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
             "straight": straight_bucket,
         },
         "debutFinalists": debut,
+        "firstRoundMargins": margins,
         "agencyFinals": agency_rows,
         "agencyFinalsExcluded": agency_excluded,
+    }
+
+
+def _load_judges_overrides() -> dict:
+    """overrides/judges.json(審査員名の名寄せ・会場票列。出典=各年Wikipedia等)を読む。"""
+    path = OVERRIDES_DIR / "judges.json"
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) -> dict:
+    """審査員統計(data/judges_stats.json)を集計する。
+
+    年またぎの通算(career)は overrides/judges.json の正規名で名寄せする。未収録の
+    表記は警告して生表記のまま扱う(ビルドは止めない。新シーズンの新審査員検知を
+    兼ねる)。2001年の会場票(大阪/札幌/福岡)は venues 指定で個人審査員の統計から
+    除外する。辛口/甘口(diff)は「自分の点 − その組への個人審査員平均」の平均で、
+    満点や採点の甘さが違う年をまたいでも比較できる相対値。行内の最高点/最低点は
+    タイなら全員に計上。最終決戦の投票集計(votes/champVotes)は voters がマージ
+    されている年のみが分母(finalVotes の満場一致/票差は votes から全年分)。
+    """
+    ov = judges_ov if judges_ov is not None else _load_judges_overrides()
+    names_map = ov.get("names", {})
+    by_year_map = ov.get("byYear", {})
+    venues = ov.get("venues", {})
+    problems: list[str] = []
+    unresolved: set[str] = set()
+
+    def canonical(year: int, raw: str) -> str:
+        hit = by_year_map.get(f"{year}:{raw}")
+        if hit is None:
+            hit = names_map.get(raw) or names_map.get(_norm_name(raw))
+        if hit is not None:
+            return hit
+        if raw not in unresolved:
+            unresolved.add(raw)
+            problems.append(f"{year}: 審査員名寄せ未収録: {raw} (生表記のまま集計)")
+        return raw
+
+    career: dict[str, dict] = defaultdict(
+        lambda: {
+            "years": set(),
+            "scored": 0,
+            "diff_sum": 0.0,
+            "topCount": 0,
+            "lowCount": 0,
+            "votes": 0,
+            "champVotes": 0,
+        }
+    )
+    by_year_rows = []
+    final_votes_rows = []
+
+    for finals in sorted(all_finals, key=lambda f: f["year"]):
+        year = finals["year"]
+        venue_set = set(venues.get(str(year), []))
+        cols = [
+            (i, raw, canonical(year, raw))
+            for i, raw in enumerate(finals.get("judges", []))
+            if raw not in venue_set
+        ]
+        per_col: dict[int, dict] = {
+            i: {"scores": [], "diffs": [], "top": 0, "low": 0} for i, _, _ in cols
+        }
+        for row in finals.get("firstRound", []):
+            scores = row.get("scores") or []
+            vals = [
+                (i, scores[i]) for i, _, _ in cols if i < len(scores) and scores[i] is not None
+            ]
+            if len(vals) < 2:
+                continue
+            row_mean = statistics.fmean(v for _, v in vals)
+            mx = max(v for _, v in vals)
+            mn = min(v for _, v in vals)
+            for i, v in vals:
+                pc = per_col[i]
+                pc["scores"].append(v)
+                pc["diffs"].append(v - row_mean)
+                pc["top"] += v == mx
+                pc["low"] += v == mn
+        year_judges = []
+        all_scores = [v for pc in per_col.values() for v in pc["scores"]]
+        for i, raw, canon in cols:
+            pc = per_col[i]
+            if not pc["scores"]:
+                continue
+            year_judges.append(
+                {
+                    "name": raw,
+                    "canonical": canon,
+                    "mean": round(statistics.fmean(pc["scores"]), 1),
+                    "diff": round(statistics.fmean(pc["diffs"]), 1),
+                    "top": pc["top"],
+                    "low": pc["low"],
+                    "max": max(pc["scores"]),
+                    "min": min(pc["scores"]),
+                }
+            )
+            c = career[canon]
+            c["years"].add(year)
+            c["scored"] += len(pc["scores"])
+            c["diff_sum"] += sum(pc["diffs"])
+            c["topCount"] += pc["top"]
+            c["lowCount"] += pc["low"]
+        if year_judges:
+            by_year_rows.append(
+                {
+                    "year": year,
+                    "judgeMean": round(statistics.fmean(all_scores), 1),
+                    "judges": year_judges,
+                }
+            )
+        final_round = finals.get("finalRound", [])
+        champ = next((r for r in final_round if r.get("champion")), None)
+        votes_list = sorted(
+            (r["votes"] for r in final_round if r.get("votes") is not None), reverse=True
+        )
+        if champ is not None and votes_list:
+            final_votes_rows.append(
+                {
+                    "year": year,
+                    "champion": champ["name"],
+                    "championCombiId": champ.get("combiId"),
+                    "votes": votes_list,
+                    "unanimous": votes_list[0] == sum(votes_list),
+                    "margin": votes_list[0] - (votes_list[1] if len(votes_list) > 1 else 0),
+                }
+            )
+        if final_round and all("voters" in r for r in final_round):
+            for r in final_round:
+                for v in r["voters"]:
+                    c = career[canonical(year, v)]
+                    c["votes"] += 1
+                    c["champVotes"] += bool(r.get("champion"))
+
+    career_rows = []
+    for name, c in sorted(career.items()):
+        career_rows.append(
+            {
+                "name": name,
+                "years": sorted(c["years"]),
+                "yearCount": len(c["years"]),
+                "scored": c["scored"],
+                "avgDiff": round(c["diff_sum"] / c["scored"], 2) if c["scored"] else None,
+                "topCount": c["topCount"],
+                "lowCount": c["lowCount"],
+                "votes": c["votes"],
+                "champVotes": c["champVotes"],
+            }
+        )
+    career_rows.sort(key=lambda r: (-r["yearCount"], r["name"]))
+
+    for p in problems:
+        print(f"[build] judges整合性警告: {p}")
+
+    return {
+        "career": career_rows,
+        "byYear": by_year_rows,
+        "finalVotes": final_votes_rows,
+        "venueColumns": venues,
     }
 
 
@@ -974,6 +1162,8 @@ def build():
             DATA_DIR / "finals_stats.json",
             build_finals_stats(all_finals, records, champions_data),
         )
+        # 審査員統計(名寄せ・採点傾向・最終決戦の投票)
+        _write(DATA_DIR / "judges_stats.json", build_judges_stats(all_finals))
 
     _write(
         DATA_DIR / "meta.json",
