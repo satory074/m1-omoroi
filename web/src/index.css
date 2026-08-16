@@ -1219,3 +1219,49 @@ button {
 .site-footer a {
   color: var(--muted);
 }
+
+/* ============ サイト間ナビ（逆リンクバー） ============
+   画面下端に常駐する控えめな逆リンクバー（→ satory074.com/apps）。
+   正準仕様: basecamp/docs/app-backlink.md。本文を隠さない（body 側に高さ分の padding を予約） */
+.app-backlink-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 12px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--paper-2) 90%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.app-backlink-bar a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  /* ヒット領域を WCAG 2.5.8 の 24px 以上に拡大（負マージンで見た目の高さは不変） */
+  padding: 8px 14px;
+  margin: -8px 0;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.12s ease;
+}
+
+.app-backlink-bar a:hover {
+  color: var(--red);
+}
+
+body {
+  padding-bottom: calc(48px + env(safe-area-inset-bottom));
+}
+
+/* ページ内アンカー遷移時に固定バーが飛び先を隠さないように */
+html {
+  scroll-padding-bottom: calc(48px + env(safe-area-inset-bottom));
+}

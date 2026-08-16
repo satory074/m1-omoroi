@@ -59,6 +59,19 @@ export default function App() {
           </p>
         </div>
       </footer>
+
+      {/* サイト間ナビ: 画面下端に常駐する控えめな逆リンクバー（→ satory074.com/apps）。
+          正準仕様: basecamp/docs/app-backlink.md */}
+      <nav className="app-backlink-bar" aria-label="サイト間ナビゲーション">
+        <a
+          href="https://satory074.com/apps/"
+          target="_blank"
+          rel="noopener"
+          aria-label="satory074 のほかのアプリ一覧を新しいタブで開く"
+        >
+          satory074 のほかのアプリ <span aria-hidden="true">↗</span>
+        </a>
+      </nav>
     </div>
   )
 }
