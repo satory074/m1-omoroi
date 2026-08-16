@@ -185,16 +185,19 @@
  ],
  "finalRound": [
   {
+   "order": 1,
    "name": "真空ジェシカ",
    "votes": 1,
    "champion": false
   },
   {
+   "order": 2,
    "name": "令和ロマン",
    "votes": 5,
    "champion": true
   },
   {
+   "order": 3,
    "name": "バッテリィズ",
    "votes": 3,
    "champion": false

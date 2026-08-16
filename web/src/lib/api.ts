@@ -6,6 +6,7 @@ import type {
   CombiDetail,
   CombiIndexRow,
   FinalsFile,
+  FinalsStats,
   MetaFile,
   Popularity,
   Rankings,
@@ -98,6 +99,14 @@ export function useAdvancers() {
   return useQuery({
     queryKey: ['advancers'],
     queryFn: () => fetchJsonOrNull<Advancers>('advancers.json'),
+    ...STATIC,
+  })
+}
+
+export function useFinalsStats() {
+  return useQuery({
+    queryKey: ['finals-stats'],
+    queryFn: () => fetchJsonOrNull<FinalsStats>('finals_stats.json'),
     ...STATIC,
   })
 }

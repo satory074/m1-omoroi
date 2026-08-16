@@ -163,16 +163,19 @@
  ],
  "finalRound": [
   {
+   "order": 1,
    "name": "見取り図",
    "votes": 2,
    "champion": false
   },
   {
+   "order": 2,
    "name": "マヂカルラブリー",
    "votes": 3,
    "champion": true
   },
   {
+   "order": 3,
    "name": "おいでやすこが",
    "votes": 2,
    "champion": false

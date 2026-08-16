@@ -40,6 +40,14 @@ export default function FinalsPage() {
       <p className="legend">
         コンビ名横の(N回目) = その年時点で通算N回目の決勝進出。点数横の(N) = その審査員がつけた点数の中での順位。
       </p>
+      {finals.firstRound.some((r) => r.order != null) && (
+        <p className="legend">出番 = ファーストラウンドのネタ披露順。</p>
+      )}
+      {finals.firstRound.some((r) => r.revival) && (
+        <p className="legend">
+          <span className="revival-chip">敗者復活</span> = 敗者復活戦を勝ち上がって決勝へ進出した組。
+        </p>
+      )}
       <p className="legend">
         点数の色(本家テロップ準拠): <span className="score-legend gold">90点以上=金</span>{' '}
         <span className="score-legend">89点以下=白</span>
@@ -75,6 +83,7 @@ export default function FinalsPage() {
                   ) : (
                     <span className="rank-name">{row.name}</span>
                   )}
+                  {row.order != null && <span className="vote-order">{row.order}番手</span>}
                   <span className="rank-value">
                     {row.votes != null ? row.votes : ''}
                     <small>{row.votes != null ? '票' : ''}</small>
@@ -86,6 +95,9 @@ export default function FinalsPage() {
               </li>
             ))}
           </ol>
+          {finals.finalRound.some((r) => r.order != null) && (
+            <p className="legend">N番手 = 最終決戦のネタ披露順(並びは得票順)。</p>
+          )}
           {finals.finalRound.some((r) => r.voters && r.voters.length > 0) && (
             <p className="legend">コンビ名の下の審査員名 = 最終決戦でその組に投票した審査員。</p>
           )}

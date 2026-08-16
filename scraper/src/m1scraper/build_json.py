@@ -14,7 +14,9 @@
 """
 
 import json
+import re
 import shutil
+import statistics
 import unicodedata
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -143,10 +145,23 @@ def validate_years(year_files: dict[int, dict]):
     return problems
 
 
+def _top_with_ties(items: list, n: int, key=lambda it: it["value"]) -> list:
+    """上位n件+境界の同値をすべて含める(件数で機械的に切らない)。itemsはソート済み前提。"""
+    if len(items) <= n:
+        return items
+    cut = key(items[n - 1])
+    end = n
+    while end < len(items) and key(items[end]) == cut:
+        end += 1
+    return items[:end]
+
+
 def build_rankings(records: list[dict]) -> dict:
     def top(counter: dict[int, int], names: dict[int, str], n=30):
-        ranked = sorted(counter.items(), key=lambda kv: (-kv[1], names.get(kv[0], "")))[:n]
-        return [{"id": cid, "name": names[cid], "value": v} for cid, v in ranked]
+        ranked = sorted(counter.items(), key=lambda kv: (-kv[1], names.get(kv[0], "")))
+        return _top_with_ties(
+            [{"id": cid, "name": names[cid], "value": v} for cid, v in ranked], n
+        )
 
     # 「敗退」判定は明示的な fail に加えて推定敗退(fail_inferred)も数える。
     # ランキングはアーカイブ統合前の2015年以降データで集計するため現状 fail_inferred は
@@ -229,7 +244,15 @@ def build_champions(
             age = year - int(birth[:4]) if birth and birth[:4].isdigit() else None
             members.append({"name": m.get("name"), "from": m.get("from"), "age": age})
 
-        out.append({"year": year, "name": champ["name"], "formed": formed, "members": members})
+        out.append(
+            {
+                "year": year,
+                "name": champ["name"],
+                "id": champ.get("combiId"),
+                "formed": formed,
+                "members": members,
+            }
+        )
 
     return {"champions": out}
 
@@ -382,6 +405,290 @@ def merge_final_votes(all_finals: list[dict], votes_by_year: dict) -> list[str]:
     return problems
 
 
+def _load_finals_extra() -> dict:
+    """overrides/finals_extra.json(2001〜2010の出番順・敗者復活、出典=Wikipedia本体記事)を読む。"""
+    path = OVERRIDES_DIR / "finals_extra.json"
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def merge_finals_extra(all_finals: list[dict], extra_by_year: dict) -> list[str]:
+    """finals へ出番順(firstRoundOrder/finalOrder)をマージする。
+
+    手入力ミス検知のため年×フィールド単位で検証し、不整合があればそのフィールドを
+    スキップして警告する。検証: NFKC名前セットが当該ラウンドと一致し、値が
+    1..N の順列であること。override は既存の order より優先する。
+    """
+    problems = []
+    finals_by_year = {f["year"]: f for f in all_finals}
+    for year_str, extra in sorted(extra_by_year.items()):
+        year = int(year_str)
+        finals = finals_by_year.get(year)
+        if finals is None:
+            problems.append(f"{year}: finals データが存在しない")
+            continue
+        for field, round_key in (("firstRoundOrder", "firstRound"), ("finalOrder", "finalRound")):
+            orders = extra.get(field)
+            if orders is None:
+                continue
+            rows = finals.get(round_key, [])
+            by_name = {_norm_name(n): v for n, v in orders.items()}
+            if set(by_name) != {_norm_name(r["name"]) for r in rows}:
+                problems.append(f"{year}: {field} のコンビ名集合が {round_key} と一致しない")
+                continue
+            if sorted(by_name.values()) != list(range(1, len(rows) + 1)):
+                problems.append(f"{year}: {field} の値が 1..{len(rows)} の順列でない")
+                continue
+            for row in rows:
+                row["order"] = by_name[_norm_name(row["name"])]
+    for p in problems:
+        print(f"[build] finals_extra整合性警告: {p}")
+    return problems
+
+
+def annotate_revivals(
+    all_finals: list[dict], year_files: dict[int, dict], extra_by_year: dict
+) -> list[str]:
+    """finals の firstRound の敗者復活組に revival: true を付与する。
+
+    2015年以降は years の playoff 結果(pass がその年の敗者復活勝者)から自動導出し、
+    2002〜2010は overrides/finals_extra.json の revival(出典=Wikipedia)を使う。
+    敗者復活戦の無い2001年はどちらも無いので付与なし。改名等で決勝行と照合できない
+    場合は警告してスキップする(誤マークより未マークを優先)。
+    """
+    problems = []
+    for finals in all_finals:
+        year = finals["year"]
+        rows = finals.get("firstRound", [])
+        target_id = None
+        target_name = extra_by_year.get(str(year), {}).get("revival")
+        if target_name is None:
+            yf = year_files.get(year)
+            if yf is None:
+                continue
+            winners = [
+                e for e in yf["entries"] if e.get("results", {}).get("playoff") == "pass"
+            ]
+            if not winners:
+                continue
+            if len(winners) > 1:
+                problems.append(f"{year}: playoff pass が {len(winners)} 組ある")
+                continue
+            target_id = winners[0].get("id")
+            target_name = winners[0]["name"]
+        row = None
+        if target_id is not None:
+            row = next((r for r in rows if r.get("combiId") == target_id), None)
+        if row is None:
+            nm = _norm_name(target_name)
+            row = next((r for r in rows if _norm_name(r["name"]) == nm), None)
+        if row is None:
+            problems.append(f"{year}: 敗者復活 {target_name} が firstRound に見つからない")
+            continue
+        row["revival"] = True
+    for p in problems:
+        print(f"[build] revival整合性警告: {p}")
+    return problems
+
+
+def _find_champion_first_round(finals: dict) -> dict | None:
+    """その年の優勝コンビの firstRound 行を返す(combiId優先、次にNFKC名で照合)。"""
+    champ = next((r for r in finals.get("finalRound", []) if r.get("champion")), None)
+    if champ is None:
+        return None
+    rows = finals.get("firstRound", [])
+    if champ.get("combiId") is not None:
+        row = next((r for r in rows if r.get("combiId") == champ["combiId"]), None)
+        if row is not None:
+            return row
+    nm = _norm_name(champ["name"])
+    return next((r for r in rows if _norm_name(r["name"]) == nm), None)
+
+
+def build_finals_stats(all_finals: list[dict], records: list[dict], champions: dict) -> dict:
+    """決勝データ横断の統計(data/finals_stats.json)を集計する。
+
+    出番順・順位・偏差値は各年 finals から、結成年数は merge_archive_history 後の
+    records から、優勝系列は champions.json(2001〜2010の結成年補完済み)から算出。
+    出番順が不明(order null)の行・結成年不明の組は分母から除外する。
+    """
+    by_id = {r["id"]: r for r in records}
+    finals_sorted = sorted(all_finals, key=lambda f: f["year"])
+
+    # --- B1: 1本目出番順別(分母=orderが判明している行のみ) ---
+    first_order: dict[int, dict] = defaultdict(
+        lambda: {"appearances": 0, "finalists": 0, "wins": 0, "winners": []}
+    )
+    # --- B2: 最終決戦出番順別 ---
+    final_order: dict[int, dict] = defaultdict(
+        lambda: {"appearances": 0, "wins": 0, "winners": []}
+    )
+    # --- B3: 王者の1本目順位別 ---
+    champ_rank: dict[int, dict] = defaultdict(lambda: {"count": 0, "winners": []})
+
+    for finals in finals_sorted:
+        year = finals["year"]
+        finalist_ids = {
+            r["combiId"] for r in finals.get("finalRound", []) if r.get("combiId") is not None
+        }
+        finalist_names = {_norm_name(r["name"]) for r in finals.get("finalRound", [])}
+        champ_row = _find_champion_first_round(finals)
+        for row in finals.get("firstRound", []):
+            order = row.get("order")
+            if order is None:
+                continue
+            slot = first_order[order]
+            slot["appearances"] += 1
+            is_finalist = (
+                row.get("combiId") in finalist_ids or _norm_name(row["name"]) in finalist_names
+            )
+            slot["finalists"] += is_finalist
+            if row is champ_row:
+                slot["wins"] += 1
+                slot["winners"].append(
+                    {"year": year, "name": row["name"], "combiId": row.get("combiId")}
+                )
+        for row in finals.get("finalRound", []):
+            order = row.get("order")
+            if order is None:
+                continue
+            slot = final_order[order]
+            slot["appearances"] += 1
+            if row.get("champion"):
+                slot["wins"] += 1
+                slot["winners"].append(
+                    {"year": year, "name": row["name"], "combiId": row.get("combiId")}
+                )
+        if champ_row is not None and champ_row.get("rank") is not None:
+            r = champ_rank[champ_row["rank"]]
+            r["count"] += 1
+            r["winners"].append(
+                {"year": year, "name": champ_row["name"], "combiId": champ_row.get("combiId")}
+            )
+
+    # --- B4: 結成年数別(結成N年 = 大会年 − 結成年。出場資格と同じ数え方) ---
+    formation: dict[str, dict[int, int]] = {r: defaultdict(int) for r in ADVANCER_TIERS}
+    unknown_formed = {r: 0 for r in ADVANCER_TIERS}
+    for rec in records:
+        formed = rec.get("formed")
+        for year_str, entry in rec.get("history", {}).items():
+            res = entry.get("results", {})
+            for round_key in ADVANCER_TIERS:
+                if round_key not in res:
+                    continue
+                span = int(year_str) - formed if formed is not None else None
+                if span is None or span < 0:
+                    unknown_formed[round_key] += 1
+                else:
+                    formation[round_key][span] += 1
+    champion_formation: dict[int, dict] = defaultdict(lambda: {"count": 0, "combis": []})
+    for ch in champions.get("champions", []):
+        if ch.get("formed") is None:
+            continue
+        span = ch["year"] - ch["formed"]
+        champion_formation[span]["count"] += 1
+        champion_formation[span]["combis"].append({"year": ch["year"], "name": ch["name"]})
+
+    # --- B5: 得点偏差値(各年firstRound内で標準化、丸め後に同点判定) ---
+    deviations = []
+    for finals in finals_sorted:
+        rows = [r for r in finals.get("firstRound", []) if r.get("total") is not None]
+        totals = [r["total"] for r in rows]
+        if len(totals) < 2:
+            continue
+        mean = statistics.fmean(totals)
+        sd = statistics.pstdev(totals)
+        if sd == 0:
+            continue
+        for row in rows:
+            deviations.append(
+                {
+                    "year": finals["year"],
+                    "name": row["name"],
+                    "combiId": row.get("combiId"),
+                    "total": row["total"],
+                    "deviation": round(50 + 10 * (row["total"] - mean) / sd, 1),
+                    "firstRoundRank": row.get("rank"),
+                }
+            )
+    deviations.sort(key=lambda d: (-d["deviation"], d["year"], d["name"]))
+    top_dev = _top_with_ties(deviations, 20, key=lambda d: d["deviation"])
+    rank = 0
+    for i, d in enumerate(top_dev):
+        if i == 0 or d["deviation"] != top_dev[i - 1]["deviation"]:
+            rank = i + 1
+        d["rank"] = rank
+
+    # --- B6: 最終決戦進出回数(combiId優先、null行はNFKC名キー) ---
+    fr_count: dict = defaultdict(lambda: {"value": 0, "years": [], "name": None, "id": None})
+    for finals in finals_sorted:
+        for row in finals.get("finalRound", []):
+            cid = row.get("combiId")
+            key = cid if cid is not None else f"name:{_norm_name(row['name'])}"
+            slot = fr_count[key]
+            slot["value"] += 1
+            slot["years"].append(finals["year"])
+            slot["id"] = cid
+            # 表示名は公式DBの現行名(改名反映)。無ければ finals の表記
+            rec = by_id.get(cid) if cid is not None else None
+            slot["name"] = rec["name"] if rec else row["name"]
+    fr_ranked = sorted(fr_count.values(), key=lambda s: (-s["value"], s["name"]))
+    most_final_rounds = _top_with_ties(fr_ranked, 30)
+
+    # --- B7: 事務所別 延べ決勝進出(belongの現行表記で集計) ---
+    agency: dict[str, dict] = defaultdict(lambda: {"value": 0, "ids": set()})
+    agency_excluded = 0
+    for finals in finals_sorted:
+        for row in finals.get("firstRound", []):
+            cid = row.get("combiId")
+            rec = by_id.get(cid) if cid is not None else None
+            if rec is None:
+                agency_excluded += 1
+                continue
+            belong = rec.get("belong")
+            if belong is None:
+                name = "不明"
+            else:
+                m = re.fullmatch(r"プロ（(.+)）", belong)
+                name = m.group(1) if m else belong
+            agency[name]["value"] += 1
+            agency[name]["ids"].add(cid)
+    agency_rows = [
+        {"agency": name, "value": s["value"], "combis": len(s["ids"])}
+        for name, s in agency.items()
+    ]
+    agency_rows.sort(key=lambda a: (-a["value"], a["agency"]))
+
+    def _slots(counter: dict[int, dict]) -> list[dict]:
+        return [{"order": o, **counter[o]} for o in sorted(counter)]
+
+    return {
+        "firstRoundOrderStats": _slots(first_order),
+        "finalOrderStats": _slots(final_order),
+        "championFirstRoundRank": [
+            {"rank": r, **champ_rank[r]} for r in sorted(champ_rank)
+        ],
+        "formationYears": {
+            "champion": [
+                {"years": y, **champion_formation[y]} for y in sorted(champion_formation)
+            ],
+            **{
+                round_key: [
+                    {"years": y, "count": c}
+                    for y, c in sorted(formation[round_key].items())
+                ]
+                for round_key in ("final", "semifinal", "quarterfinal")
+            },
+            "unknownFormed": unknown_formed,
+        },
+        "topDeviationScores": top_dev,
+        "mostFinalRoundAppearances": most_final_rounds,
+        "agencyFinals": agency_rows,
+        "agencyFinalsExcluded": agency_excluded,
+    }
+
+
 def _make_linker(records: list[dict]):
     """コンビ名 → ID の紐付け。一意に決まる場合のみ返す(誤リンクより未リンクを優先)。"""
     by_name: dict[str, list[dict]] = defaultdict(list)
@@ -520,6 +827,9 @@ def build():
         # 全年ロード後の注釈(通算進出回数は年横断の情報が必要)
         annotate_final_appearances(all_finals)
         merge_final_votes(all_finals, _load_final_votes())
+        finals_extra = _load_finals_extra()
+        merge_finals_extra(all_finals, finals_extra)
+        annotate_revivals(all_finals, year_files, finals_extra)
         for finals in all_finals:
             _write(DATA_DIR / "finals" / f"{finals['year']}.json", finals)
 
@@ -530,11 +840,16 @@ def build():
     champ_overrides = (
         json.loads(champ_meta_path.read_text(encoding="utf-8")) if champ_meta_path.exists() else {}
     )
-    _write(
-        DATA_DIR / "champions.json",
-        build_champions(all_finals, combi_by_id, champ_overrides),
-    )
+    champions_data = build_champions(all_finals, combi_by_id, champ_overrides)
+    _write(DATA_DIR / "champions.json", champions_data)
     _write(DATA_DIR / "advancers.json", advancers)
+
+    # 決勝データ横断の統計(出番順・順位・偏差値・最終決戦進出・事務所別)
+    if all_finals:
+        _write(
+            DATA_DIR / "finals_stats.json",
+            build_finals_stats(all_finals, records, champions_data),
+        )
 
     _write(
         DATA_DIR / "meta.json",

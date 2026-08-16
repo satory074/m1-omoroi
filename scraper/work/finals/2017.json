@@ -163,16 +163,19 @@
  ],
  "finalRound": [
   {
+   "order": 1,
    "name": "とろサーモン",
    "votes": 4,
    "champion": true
   },
   {
+   "order": 2,
    "name": "ミキ",
    "votes": 0,
    "champion": false
   },
   {
+   "order": 3,
    "name": "和牛",
    "votes": 3,
    "champion": false

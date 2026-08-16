@@ -128,16 +128,19 @@
  ],
  "finalRound": [
   {
+   "order": 1,
    "name": "スーパーマラドーナ",
    "votes": 1,
    "champion": false
   },
   {
+   "order": 2,
    "name": "和牛",
    "votes": 1,
    "champion": false
   },
   {
+   "order": 3,
    "name": "銀シャリ",
    "votes": 3,
    "champion": true

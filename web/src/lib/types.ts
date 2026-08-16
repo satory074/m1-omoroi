@@ -111,6 +111,8 @@ export interface ChampionMember {
 export interface Champion {
   year: number
   name: string
+  /** コンビID(build時に決勝データから名寄せ。全21王者が解決済みだがnullable) */
+  id: number | null
   formed: number | null
   members: ChampionMember[]
 }
@@ -145,7 +147,7 @@ export interface Advancers {
 }
 
 export interface FinalsScore {
-  order?: number
+  order?: number | null
   combiId?: number | null
   name: string
   scores?: (number | null)[]
@@ -153,6 +155,8 @@ export interface FinalsScore {
   rank?: number | null
   /** その年時点で通算何回目の決勝進出か */
   finalAppearance?: number
+  /** 敗者復活戦からの決勝進出組 */
+  revival?: boolean
 }
 
 export interface FinalsFile {
@@ -160,6 +164,8 @@ export interface FinalsFile {
   judges: string[]
   firstRound: FinalsScore[]
   finalRound?: {
+    /** 最終決戦の出番順 */
+    order?: number | null
     combiId?: number | null
     name: string
     votes?: number | null
@@ -168,4 +174,71 @@ export interface FinalsFile {
     voters?: string[]
   }[]
   source: string
+}
+
+export interface FinalsStatsWinner {
+  year: number
+  name: string
+  combiId: number | null
+}
+
+/** 決勝1本目の出番順別成績(分母は出番順が判明している年のみ) */
+export interface OrderStat {
+  order: number
+  appearances: number
+  finalists?: number
+  wins: number
+  winners: FinalsStatsWinner[]
+}
+
+export interface ChampionRankStat {
+  rank: number
+  count: number
+  winners: FinalsStatsWinner[]
+}
+
+export interface FormationYearStat {
+  years: number
+  count: number
+  combis?: { year: number; name: string }[]
+}
+
+export interface DeviationScore {
+  rank: number
+  year: number
+  name: string
+  combiId: number | null
+  total: number
+  deviation: number
+  firstRoundRank: number | null
+}
+
+export interface FinalRoundAppearance {
+  id: number | null
+  name: string
+  value: number
+  years: number[]
+}
+
+export interface AgencyFinals {
+  agency: string
+  value: number
+  combis: number
+}
+
+export interface FinalsStats {
+  firstRoundOrderStats: OrderStat[]
+  finalOrderStats: OrderStat[]
+  championFirstRoundRank: ChampionRankStat[]
+  formationYears: {
+    champion: FormationYearStat[]
+    final: FormationYearStat[]
+    semifinal: FormationYearStat[]
+    quarterfinal: FormationYearStat[]
+    unknownFormed: { final: number; semifinal: number; quarterfinal: number }
+  }
+  topDeviationScores: DeviationScore[]
+  mostFinalRoundAppearances: FinalRoundAppearance[]
+  agencyFinals: AgencyFinals[]
+  agencyFinalsExcluded: number
 }

@@ -27,6 +27,7 @@ def test_build_champions_from_combi_records():
     c = champs[0]
     assert c["year"] == 2025
     assert c["name"] == "たくろう"
+    assert c["id"] == 4021  # 優勝タブのリンク用にIDをパススルー
     assert c["formed"] == 2016
     # 年齢 = 優勝年 − 生年
     assert c["members"] == [
@@ -55,6 +56,7 @@ def test_build_champions_falls_back_to_overrides():
 
     out = build_champions(finals, {}, overrides)
     c = out["champions"][0]
+    assert c["id"] is None  # 未リンク王者は id null(UIは非リンク表示)
     assert c["formed"] == 1992
     assert c["members"] == [
         {"name": "中川剛", "from": "大阪府", "age": 31},

@@ -791,6 +791,20 @@ button {
   margin-left: 4px;
   white-space: nowrap;
 }
+/* 敗者復活戦から決勝へ進出した組のチップ(.formed-chip.lastyear と同系色) */
+.revival-chip {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--red-dark);
+  background: var(--gold-bg);
+  border-radius: 999px;
+  padding: 3px 6px;
+  margin-left: 6px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
 .history th.excluded {
   opacity: 0.35;
 }
@@ -1004,6 +1018,15 @@ button {
   padding-left: 32px; /* rank-pos(min-width:22px)+gap に揃える */
   font-size: 12px;
   color: var(--muted);
+}
+/* 最終決戦リストのネタ披露順(並びは得票順のまま) */
+.vote-list .vote-order {
+  flex: 0 0 auto;
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 /* ============ 統計チャート ============ */

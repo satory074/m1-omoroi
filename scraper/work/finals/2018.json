@@ -163,16 +163,19 @@
  ],
  "finalRound": [
   {
+   "order": 1,
    "name": "ジャルジャル",
    "votes": 0,
    "champion": false
   },
   {
+   "order": 2,
    "name": "和牛",
    "votes": 3,
    "champion": false
   },
   {
+   "order": 3,
    "name": "霜降り明星",
    "votes": 4,
    "champion": true

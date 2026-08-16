@@ -7,8 +7,8 @@ interface Props {
   finals: FinalsFile
 }
 
-/** ソート対象: 審査員のindex、または合計列 */
-type SortKey = number | 'total'
+/** ソート対象: 審査員のindex、合計列、または出番順列 */
+type SortKey = number | 'total' | 'order'
 interface SortState {
   key: SortKey
   dir: 'asc' | 'desc'
@@ -36,6 +36,8 @@ export default function FinalsScoreTable({ finals }: Props) {
   }, [finals.finalRound])
   const isFinalist = (row: (typeof rows)[number]) =>
     (row.combiId != null && finalistKeys.ids.has(row.combiId)) || finalistKeys.names.has(row.name)
+  // 出番順列は判明している年のみ表示(全21年分入力済みだが将来の欠損に備える)
+  const hasOrder = rows.some((r) => r.order != null)
   // 審査員ごとの集計ON/OFF(初期は全ON)。yearが変わると key で再マウントされ初期化される
   const [enabled, setEnabled] = useState<boolean[]>(() => judges.map(() => true))
   // null=既定(再計算順位の昇順)
@@ -102,6 +104,7 @@ export default function FinalsScoreTable({ finals }: Props) {
     }
     const valueOf = (i: number): number => {
       if (sort.key === 'total') return totals[i]
+      if (sort.key === 'order') return rows[i].order ?? Infinity
       const v = (rows[i].scores ?? [])[sort.key]
       return typeof v === 'number' ? v : -Infinity
     }
@@ -120,11 +123,13 @@ export default function FinalsScoreTable({ finals }: Props) {
   function setAll(value: boolean) {
     setEnabled(judges.map(() => value))
   }
-  // 3状態: 別列→desc / 同列desc→asc / 同列asc→クリア(既定へ)
+  // 3状態: 別列→desc / 同列desc→asc / 同列asc→クリア(既定へ)。出番順のみasc起点
   function clickSort(key: SortKey) {
     setSort((prev) => {
-      if (!prev || prev.key !== key) return { key, dir: 'desc' }
-      if (prev.dir === 'desc') return { key, dir: 'asc' }
+      const first: SortState['dir'] = key === 'order' ? 'asc' : 'desc'
+      const second: SortState['dir'] = key === 'order' ? 'desc' : 'asc'
+      if (!prev || prev.key !== key) return { key, dir: first }
+      if (prev.dir === first) return { key, dir: second }
       return null
     })
   }
@@ -163,6 +168,14 @@ export default function FinalsScoreTable({ finals }: Props) {
                   順
                 </button>
               </th>
+              {hasOrder && (
+                <th className="sortable" aria-sort={ariaSort('order')}>
+                  <button type="button" className="th-sort" onClick={() => clickSort('order')} aria-label="出番順でソート">
+                    出番
+                    <span className="sort-arrow">{arrow('order')}</span>
+                  </button>
+                </th>
+              )}
               <th>コンビ</th>
               {judges.map((j, i) => (
                 <th key={i} className={`judge-th ${enabled[i] ? '' : 'excluded'}`} aria-sort={ariaSort(i)}>
@@ -195,11 +208,13 @@ export default function FinalsScoreTable({ finals }: Props) {
               return (
                 <tr key={row.name} className={isFinalist(row) ? 'finalist' : undefined}>
                   <td className="no">{rankByIndex[i]}</td>
+                  {hasOrder && <td className="no order">{row.order ?? ''}</td>}
                   <td>
                     {row.combiId != null ? <Link to={`/combi/${row.combiId}`}>{row.name}</Link> : row.name}
                     {row.finalAppearance != null && (
                       <span className="appearance-note">({row.finalAppearance}回目)</span>
                     )}
+                    {row.revival && <span className="revival-chip">敗者復活</span>}
                   </td>
                   {judges.map((_, j) => {
                     const s = scores[j]

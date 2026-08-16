@@ -185,16 +185,19 @@
  ],
  "finalRound": [
   {
+   "order": 1,
    "name": "ドンデコルテ",
    "votes": 1,
    "champion": false
   },
   {
+   "order": 2,
    "name": "エバース",
    "votes": 0,
    "champion": false
   },
   {
+   "order": 3,
    "name": "たくろう",
    "votes": 8,
    "champion": true

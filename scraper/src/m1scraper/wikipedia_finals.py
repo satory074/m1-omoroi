@@ -118,12 +118,19 @@ def parse_finals_page(year: int, html: str) -> dict | None:
             continue
 
         if vote_col is not None and final_round is None:
+            order_col = next((i for i, h in enumerate(header) if h in _ORDER_LABELS), None)
             rows = []
             for row in grid[1:]:
                 name = row[name_col]
                 if not name or name == "コンビ名":
                     continue
-                rows.append({"name": name, "votes": _to_int(row[vote_col])})
+                rows.append(
+                    {
+                        "order": _to_int(row[order_col]) if order_col is not None else None,
+                        "name": name,
+                        "votes": _to_int(row[vote_col]),
+                    }
+                )
             if rows:
                 max_votes = max((r["votes"] or 0) for r in rows)
                 for r in rows:
