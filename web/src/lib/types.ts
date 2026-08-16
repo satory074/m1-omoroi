@@ -82,13 +82,25 @@ export interface RankingItem {
   id: number
   name: string
   value: number
+  /** 該当年リスト(通算出場回数など) */
+  years?: number[]
 }
 
+/** 連続出場: value=連続年数、start〜end がその区間 */
+export interface StreakItem {
+  id: number
+  name: string
+  value: number
+  start: number
+  end: number
+}
+
+/** 集計は公式コンビDBの2015年以降(決勝の全期間版は FinalsStats 側) */
 export interface Rankings {
   mostSemifinalFails: RankingItem[]
   mostQuarterfinals: RankingItem[]
-  mostFinals: RankingItem[]
   mostFirstRoundFails: RankingItem[]
+  longestStreaks: StreakItem[]
 }
 
 export interface YearStats {
@@ -220,6 +232,15 @@ export interface FinalRoundAppearance {
   years: number[]
 }
 
+/** 全期間(2001〜)の決勝(ファーストラウンド)進出回数。wins=うち優勝回数 */
+export interface FinalAppearanceRank {
+  id: number | null
+  name: string
+  value: number
+  years: number[]
+  wins: number
+}
+
 export interface AgencyFinals {
   agency: string
   value: number
@@ -239,7 +260,12 @@ export interface FinalsStats {
   }
   /** 全大会・全決勝進出組の得点偏差値(偏差値降順、同点は順位共有) */
   deviationScores: DeviationScore[]
+  /** 最終決戦(1本目上位2〜3組)の進出回数 */
   mostFinalRoundAppearances: FinalRoundAppearance[]
+  /** 決勝(ファーストラウンド)の進出回数。全期間 */
+  mostFinalAppearances: FinalAppearanceRank[]
+  /** 無冠の帝王: 決勝2回以上進出かつ優勝なし */
+  uncrownedKings: FinalAppearanceRank[]
   agencyFinals: AgencyFinals[]
   agencyFinalsExcluded: number
 }

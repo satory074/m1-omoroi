@@ -6,51 +6,88 @@ import type { FinalsStats, FinalsStatsWinner } from '../lib/types'
 
 const SHOWN = 15 // 各ランキングの表示件数(境界の同点はすべて表示)
 
-const SECTIONS: { key: keyof import('../lib/types').Rankings; title: string; unit: string; note?: string }[] = [
-  { key: 'mostFinals', title: '決勝 最多進出', unit: '回', note: '決勝に進んだ回数' },
-  { key: 'mostQuarterfinals', title: '準々決勝 最多進出', unit: '回', note: '準々決勝に進んだ回数（勝ち上がりは問わない）' },
-  { key: 'mostSemifinalFails', title: '準決勝 最多敗退', unit: '回', note: 'あと一歩の悲運ランキング' },
-  { key: 'mostFirstRoundFails', title: '1回戦 最多敗退', unit: '回', note: 'それでも挑み続けた記録' },
-]
-
 interface RankRow {
   id: number | null
   name: string
   value: number
   /** 該当年のリスト(あれば2行目に表示) */
   years?: number[]
+  /** 2行目に表示する補足テキスト(years より優先) */
+  detail?: string
 }
 
 function RankTable({ items, unit }: { items: RankRow[]; unit: string }) {
   // 同値は順位を共有する(標準競技順位: 1,1,3,…)
   const rank = competitionRanks(items, (it) => it.value)
-  const hasYears = items.some((it) => it.years && it.years.length > 0)
+  const hasSub = items.some((it) => it.detail || (it.years && it.years.length > 0))
   return (
-    <ol className={`rank-list${hasYears ? ' vote-list' : ''}`}>
-      {items.map((item, i) => (
-        <li key={item.id ?? item.name}>
-          <div className="rank-main">
-            <span className={`rank-pos${rank[i] === 1 ? ' champion' : ''}`}>{rank[i]}</span>
-            {item.id != null ? (
-              <Link className="rank-name" to={`/combi/${item.id}`} title={item.name}>
-                {item.name}
-              </Link>
-            ) : (
-              <span className="rank-name" title={item.name}>
-                {item.name}
+    <ol className={`rank-list${hasSub ? ' vote-list' : ''}`}>
+      {items.map((item, i) => {
+        const sub = item.detail ?? (item.years && item.years.length > 0 ? item.years.join('・') : null)
+        return (
+          <li key={item.id ?? item.name}>
+            <div className="rank-main">
+              <span className={`rank-pos${rank[i] === 1 ? ' champion' : ''}`}>{rank[i]}</span>
+              {item.id != null ? (
+                <Link className="rank-name" to={`/combi/${item.id}`} title={item.name}>
+                  {item.name}
+                </Link>
+              ) : (
+                <span className="rank-name" title={item.name}>
+                  {item.name}
+                </span>
+              )}
+              <span className="rank-value">
+                {item.value}
+                <small>{unit}</small>
               </span>
-            )}
-            <span className="rank-value">
-              {item.value}
-              <small>{unit}</small>
-            </span>
-          </div>
-          {item.years && item.years.length > 0 && (
-            <div className="rank-voters">{item.years.join('・')}</div>
-          )}
-        </li>
-      ))}
+            </div>
+            {sub && <div className="rank-voters">{sub}</div>}
+          </li>
+        )
+      })}
     </ol>
+  )
+}
+
+/** 連続出場: 最上位は「全大会皆勤」の大きな同値グループになるため、組数+全組リストで表示 */
+function StreakSection({ streaks }: { streaks: import('../lib/types').StreakItem[] }) {
+  if (streaks.length === 0) return null
+  const maxVal = streaks[0].value
+  const perfect = streaks.filter((s) => s.value === maxVal)
+  const rest = streaks.filter((s) => s.value < maxVal)
+  return (
+    <>
+      <h2 className="section-title">連続出場</h2>
+      <p className="section-note">
+        連続でエントリーした年数（公式コンビ情報の2015年以降。エントリー済みの2026年を含む）。 最長は
+        {perfect[0].start}年から{maxVal}大会連続の{perfect.length}組。
+      </p>
+      <details className="streak-details">
+        <summary>
+          {maxVal}大会連続({perfect[0].start}〜{perfect[0].end})の全{perfect.length}組を表示
+        </summary>
+        <p className="streak-names">
+          {perfect.map((s, i) => (
+            <span key={s.id}>
+              {i > 0 && '・'}
+              <Link to={`/combi/${s.id}`}>{s.name}</Link>
+            </span>
+          ))}
+        </p>
+      </details>
+      {rest.length > 0 && (
+        <RankTable
+          items={sliceWithTies(rest, SHOWN, (it) => it.value).map((s) => ({
+            id: s.id,
+            name: s.name,
+            value: s.value,
+            detail: s.value > 1 ? `${s.start}〜${s.end}` : `${s.end}`,
+          }))}
+          unit="年"
+        />
+      )}
+    </>
   )
 }
 
@@ -103,6 +140,12 @@ function FinalsRecords({ fs }: { fs: FinalsStats }) {
         items={sliceWithTies(fs.mostFinalRoundAppearances, SHOWN, (it) => it.value)}
         unit="回"
       />
+
+      <h2 className="section-title">無冠の帝王(決勝最多進出・未優勝)</h2>
+      <p className="section-note">
+        決勝(ファーストラウンド)に2回以上進みながら優勝の無いコンビ。全21大会(2001〜2025)。同点は全組表示。
+      </p>
+      <RankTable items={sliceWithTies(fs.uncrownedKings, SHOWN, (it) => it.value)} unit="回" />
 
       <h2 className="section-title">歴代スコアランキング(得点偏差値)</h2>
       <p className="section-note">
@@ -292,22 +335,58 @@ export default function RankingsPage() {
   if (isError) return <div className="error-box">ランキングを読み込めませんでした。</div>
   if (isLoading || !data) return <div className="loading">読み込み中…</div>
 
+  const gridSections: { key: string; title: string; unit: string; note?: string; items: RankRow[] }[] = [
+    ...(finalsStats
+      ? [
+          {
+            key: 'mostFinalAppearances',
+            title: '決勝 最多進出',
+            unit: '回',
+            note: '決勝(ファーストラウンド)に進んだ回数。全21大会(2001〜2025)',
+            items: finalsStats.mostFinalAppearances,
+          },
+        ]
+      : []),
+    {
+      key: 'mostQuarterfinals',
+      title: '準々決勝 最多進出',
+      unit: '回',
+      note: '準々決勝に進んだ回数（勝ち上がりは問わない。2015年以降）',
+      items: data.mostQuarterfinals,
+    },
+    {
+      key: 'mostSemifinalFails',
+      title: '準決勝 最多敗退',
+      unit: '回',
+      note: 'あと一歩の悲運ランキング（2015年以降）',
+      items: data.mostSemifinalFails,
+    },
+    {
+      key: 'mostFirstRoundFails',
+      title: '1回戦 最多敗退',
+      unit: '回',
+      note: 'それでも挑み続けた記録（2015年以降）',
+      items: data.mostFirstRoundFails,
+    },
+  ]
+
   return (
     <>
       <h1 className="page-title">記録ランキング</h1>
       <p className="page-lede">
-        公式コンビ情報(2015年以降)から集計した通算記録・各ランキング上位{SHOWN}組(同点は全組表示)。 2001年からの全期間は
-        <Link to="/stats">統計の到達回数ランキング</Link>を参照。
+        決勝の記録は2001年からの全期間、その他の通算記録は公式コンビ情報(2015年以降)から集計。各ランキング上位{SHOWN}組(同点は全組表示)。 全期間の到達回数は
+        <Link to="/stats">統計の到達回数ランキング</Link>も参照。
       </p>
       <div className="rank-grid">
-        {SECTIONS.map((s) => (
+        {gridSections.map((s) => (
           <section key={s.key} className="rank-section">
             <h2 className="section-title">{s.title}</h2>
             {s.note && <p className="section-note">{s.note}</p>}
-            <RankTable items={sliceWithTies(data[s.key], SHOWN, (it) => it.value)} unit={s.unit} />
+            <RankTable items={sliceWithTies(s.items, SHOWN, (it) => it.value)} unit={s.unit} />
           </section>
         ))}
       </div>
+      <StreakSection streaks={data.longestStreaks} />
       {finalsStats && (
         <>
           <h1 className="page-title">決勝の記録</h1>

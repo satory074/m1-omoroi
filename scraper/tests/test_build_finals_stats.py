@@ -24,16 +24,35 @@ def test_build_rankings_top_includes_boundary_ties():
             {
                 "id": i,
                 "name": f"c{i:02d}",
-                # 上位5組は2回、残り35組は1回決勝進出
+                # 上位5組は2回、残り35組は1回準々決勝進出
                 "history": {
-                    "2020": {"results": {"final": "fail"}},
-                    **({"2021": {"results": {"final": "fail"}}} if i < 5 else {}),
+                    "2020": {"results": {"quarterfinal": "fail"}},
+                    **({"2021": {"results": {"quarterfinal": "fail"}}} if i < 5 else {}),
                 },
             }
         )
-    finals = build_rankings(records)["mostFinals"]
-    assert len(finals) == 40  # 30で切らず、境界値1の同値35組を全部含む
-    assert finals[0]["value"] == 2 and finals[-1]["value"] == 1
+    quarters = build_rankings(records)["mostQuarterfinals"]
+    assert len(quarters) == 40  # 30で切らず、境界値1の同値35組を全部含む
+    assert quarters[0]["value"] == 2 and quarters[-1]["value"] == 1
+
+
+def test_build_rankings_longest_streaks():
+    records = [
+        {
+            "id": 1,
+            "name": "A",
+            "history": {
+                y: {"results": {"first": "fail"}}
+                for y in ("2015", "2016", "2017", "2019", "2020")
+            },
+        },
+        {"id": 2, "name": "B", "history": {"2018": {"results": {"first": "pass"}}}},
+    ]
+    r = build_rankings(records)
+    streaks = {x["name"]: x for x in r["longestStreaks"]}
+    # 2018欠場で途切れる → 最長は2015〜2017の3年
+    assert streaks["A"] == {"id": 1, "name": "A", "value": 3, "start": 2015, "end": 2017}
+    assert streaks["B"] == {"id": 2, "name": "B", "value": 1, "start": 2018, "end": 2018}
 
 
 def _finals(year, first, final, judges=None):
@@ -169,6 +188,35 @@ def test_final_round_appearances_combi_id_and_name_fallback():
     rows = {r["name"]: r for r in s["mostFinalRoundAppearances"]}
     assert rows["笑い飯"] == {"value": 2, "years": [2002, 2003], "name": "笑い飯", "id": 900021}
     assert rows["無名コンビ"]["value"] == 1 and rows["無名コンビ"]["id"] is None
+
+
+def test_most_final_appearances_all_time_and_uncrowned():
+    y1 = _finals(
+        2002,
+        [
+            {"name": "笑い飯", "combiId": 900021, "total": 600, "rank": 1},
+            {"name": "ドツボ", "combiId": 7, "total": 590, "rank": 2},
+            {"name": "一発屋", "combiId": 9, "total": 580, "rank": 3},
+        ],
+        [{"name": "笑い飯", "combiId": 900021, "votes": 4, "champion": True}],
+    )
+    y2 = _finals(
+        2003,
+        [
+            # combiId欠損でも全年からの名前逆引きが一意なら同一コンビに統合される
+            {"name": "笑い飯", "combiId": None, "total": 610, "rank": 1},
+            {"name": "ドツボ", "combiId": 7, "total": 605, "rank": 2},
+        ],
+        [{"name": "笑い飯", "combiId": None, "votes": 5, "champion": True}],
+    )
+    s = _stats([y1, y2], [{"id": 900021, "name": "笑い飯", "history": {}}])
+    rows = {r["name"]: r for r in s["mostFinalAppearances"]}
+    assert rows["笑い飯"] == {
+        "value": 2, "years": [2002, 2003], "wins": 2, "name": "笑い飯", "id": 900021,
+    }
+    assert rows["ドツボ"]["wins"] == 0 and rows["一発屋"]["value"] == 1
+    # 無冠の帝王: 2回以上進出かつ優勝なしのみ(1回きりの一発屋・優勝済みの笑い飯は対象外)
+    assert [r["name"] for r in s["uncrownedKings"]] == ["ドツボ"]
 
 
 def test_final_round_appearances_displays_current_db_name():

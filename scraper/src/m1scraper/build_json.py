@@ -156,6 +156,21 @@ def _top_with_ties(items: list, n: int, key=lambda it: it["value"]) -> list:
     return items[:end]
 
 
+def _longest_streak(years: list[int]) -> tuple[int, int, int]:
+    """昇順の年リストから最長連続区間 (長さ, 開始年, 終了年) を返す。同長なら最初の区間。"""
+    best = (0, 0, 0)
+    run_start = years[0]
+    prev = None
+    for y in years:
+        if prev is not None and y != prev + 1:
+            run_start = y
+        length = y - run_start + 1
+        if length > best[0]:
+            best = (length, run_start, y)
+        prev = y
+    return best
+
+
 def build_rankings(records: list[dict]) -> dict:
     def top(counter: dict[int, int], names: dict[int, str], n=30):
         ranked = sorted(counter.items(), key=lambda kv: (-kv[1], names.get(kv[0], "")))
@@ -166,13 +181,15 @@ def build_rankings(records: list[dict]) -> dict:
     # 「敗退」判定は明示的な fail に加えて推定敗退(fail_inferred)も数える。
     # ランキングはアーカイブ統合前の2015年以降データで集計するため現状 fail_inferred は
     # 出現しないが、集計対象が変わっても「そのラウンドで負けた回数」の意味がぶれないようにしておく。
+    # (2001〜2010は1回戦敗退者が記録に残らず、全期間集計はバイアスが出るため対象にしない。
+    #  決勝進出のみ全期間データが揃うので finals_stats.mostFinalAppearances 側で集計する)
     FAILED = ("fail", "fail_inferred")
 
     names = {r["id"]: r["name"] for r in records}
     semifinal_fails: dict[int, int] = defaultdict(int)
     quarterfinal_up: dict[int, int] = defaultdict(int)
-    finals: dict[int, int] = defaultdict(int)
     first_fails: dict[int, int] = defaultdict(int)
+    streaks = []
 
     for rec in records:
         for entry in rec["history"].values():
@@ -181,16 +198,25 @@ def build_rankings(records: list[dict]) -> dict:
                 semifinal_fails[rec["id"]] += 1
             if "quarterfinal" in res:
                 quarterfinal_up[rec["id"]] += 1
-            if "final" in res:
-                finals[rec["id"]] += 1
             if res.get("first") in FAILED:
                 first_fails[rec["id"]] += 1
+        years = sorted(int(y) for y in rec["history"])
+        if years:
+            length, start, end = _longest_streak(years)
+            streaks.append(
+                {"id": rec["id"], "name": rec["name"], "value": length, "start": start, "end": end}
+            )
+
+    # 連続出場は最上位が「全大会皆勤」の大きな同値グループになる(2026年時点で87組)ため、
+    # 通算出場回数ランキングは上位が皆勤組と完全に一致してしまい独立の意味を持たない。
+    # 連続出場のみ出力し、フロントは皆勤グループを組数+全組リストで表示する。
+    streaks.sort(key=lambda r: (-r["value"], r["name"]))
 
     return {
         "mostSemifinalFails": top(semifinal_fails, names),
         "mostQuarterfinals": top(quarterfinal_up, names),
-        "mostFinals": top(finals, names),
         "mostFirstRoundFails": top(first_fails, names),
+        "longestStreaks": _top_with_ties(streaks, 30),
     }
 
 
@@ -646,6 +672,32 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
     fr_ranked = sorted(fr_count.values(), key=lambda s: (-s["value"], s["name"]))
     most_final_rounds = _top_with_ties(fr_ranked, 30)
 
+    # --- B8: 全期間(2001〜)の決勝進出回数と無冠の帝王 ---
+    # rankings.json の通算記録(2015年以降)と違い、決勝は全期間データが揃うのでここで集計する
+    identity = _make_final_identity(all_finals)
+    fa_count: dict = defaultdict(
+        lambda: {"value": 0, "years": [], "wins": 0, "name": None, "id": None}
+    )
+    for finals in finals_sorted:
+        champ = next((r for r in finals.get("finalRound", []) if r.get("champion")), None)
+        champ_key = identity(champ) if champ is not None else None
+        for row in finals.get("firstRound", []):
+            key = identity(row)
+            slot = fa_count[key]
+            slot["value"] += 1
+            slot["years"].append(finals["year"])
+            if key == champ_key:
+                slot["wins"] += 1
+            cid = key if isinstance(key, int) else None
+            slot["id"] = cid
+            # 表示名は公式DBの現行名(改名反映)。無ければ finals の表記
+            rec = by_id.get(cid) if cid is not None else None
+            slot["name"] = rec["name"] if rec else row["name"]
+    fa_ranked = sorted(fa_count.values(), key=lambda s: (-s["value"], s["name"]))
+    most_finals_all = _top_with_ties(fa_ranked, 30)
+    # 無冠の帝王: 複数回決勝に進みながら優勝なし(1回のみの組は多すぎるので対象外)
+    uncrowned = [s for s in fa_ranked if s["wins"] == 0 and s["value"] >= 2]
+
     # --- B7: 事務所別 延べ決勝進出(belongの現行表記で集計) ---
     agency: dict[str, dict] = defaultdict(lambda: {"value": 0, "ids": set()})
     agency_excluded = 0
@@ -694,6 +746,8 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
         },
         "deviationScores": deviations,
         "mostFinalRoundAppearances": most_final_rounds,
+        "mostFinalAppearances": most_finals_all,
+        "uncrownedKings": uncrowned,
         "agencyFinals": agency_rows,
         "agencyFinalsExcluded": agency_excluded,
     }
