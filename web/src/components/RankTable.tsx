@@ -23,7 +23,8 @@ export function RankTable({ items, unit }: { items: RankRow[]; unit: string }) {
       {items.map((item, i) => {
         const sub = item.detail ?? (item.years && item.years.length > 0 ? item.years.join('・') : null)
         return (
-          <li key={item.id ?? item.name}>
+          // 年齢記録では同じコンビの2人が同一リストに並ぶため、id 単独ではキーが重複する
+          <li key={`${item.id ?? ''}:${item.name}`}>
             <div className="rank-main">
               <span className={`rank-pos${rank[i] === 1 ? ' champion' : ''}`}>{rank[i]}</span>
               {item.id != null ? (
