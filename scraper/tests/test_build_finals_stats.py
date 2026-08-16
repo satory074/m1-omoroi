@@ -103,9 +103,9 @@ def test_deviation_scores_and_rounded_tie_cut():
         [{"name": "A", "combiId": 1, "votes": 7, "champion": True}],
     )
     s = _stats([y])
-    devs = {d["name"]: d["deviation"] for d in s["topDeviationScores"]}
+    devs = {d["name"]: d["deviation"] for d in s["deviationScores"]}
     assert devs == {"A": 62.2, "B": 50.0, "C": 37.8}
-    ranks = {d["name"]: d["rank"] for d in s["topDeviationScores"]}
+    ranks = {d["name"]: d["rank"] for d in s["deviationScores"]}
     assert ranks == {"A": 1, "B": 2, "C": 3}
 
 
@@ -128,9 +128,24 @@ def test_deviation_same_rounded_value_shares_rank():
         [],
     )
     s = _stats([y1, y2])
-    top = s["topDeviationScores"]
+    top = s["deviationScores"]
     # 2組ずつの年はどちらも 60.0 / 40.0 → 丸め後同値で順位共有
     assert [(d["deviation"], d["rank"]) for d in top] == [(60.0, 1), (60.0, 1), (40.0, 3), (40.0, 3)]
+
+
+def test_deviation_scores_include_all_rows():
+    # 全件表示: 上位20で切らない(3年×10組=30行がすべて残る)
+    years = []
+    for year in (2019, 2020, 2021):
+        rows = [
+            {"name": f"c{year}-{i}", "combiId": year * 100 + i, "order": i, "total": 600 + i, "rank": 11 - i}
+            for i in range(1, 11)
+        ]
+        years.append(_finals(year, rows, []))
+    s = _stats(years)
+    assert len(s["deviationScores"]) == 30
+    # 3年とも同じ得点分布なので各偏差値が3行ずつ同値 → 最下位グループは順位28
+    assert s["deviationScores"][-1]["rank"] == 28
 
 
 def test_deviation_skips_zero_sd_year():
@@ -142,7 +157,7 @@ def test_deviation_skips_zero_sd_year():
         ],
         [],
     )
-    assert _stats([y])["topDeviationScores"] == []
+    assert _stats([y])["deviationScores"] == []
 
 
 def test_final_round_appearances_combi_id_and_name_fallback():

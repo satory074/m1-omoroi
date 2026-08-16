@@ -237,7 +237,8 @@ export interface FinalsStats {
     quarterfinal: FormationYearStat[]
     unknownFormed: { final: number; semifinal: number; quarterfinal: number }
   }
-  topDeviationScores: DeviationScore[]
+  /** 全大会・全決勝進出組の得点偏差値(偏差値降順、同点は順位共有) */
+  deviationScores: DeviationScore[]
   mostFinalRoundAppearances: FinalRoundAppearance[]
   agencyFinals: AgencyFinals[]
   agencyFinalsExcluded: number

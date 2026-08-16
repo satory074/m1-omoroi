@@ -104,10 +104,11 @@ function FinalsRecords({ fs }: { fs: FinalsStats }) {
         unit="回"
       />
 
-      <h2 className="section-title">歴代最高スコア(得点偏差値)</h2>
+      <h2 className="section-title">歴代スコアランキング(得点偏差値)</h2>
       <p className="section-note">
         偏差値 = その年のファーストラウンド得点内での (得点−平均)÷標準偏差×10+50。
-        審査員数・満点(2001年は1000点満点)・採点の辛さが違う年をまたいで比較するための正規化。上位20+同点。
+        審査員数・満点(2001年は1000点満点)・採点の辛さが違う年をまたいで比較するための正規化。
+        全{new Set(fs.deviationScores.map((d) => d.year)).size}大会の決勝進出全組を表示。
       </p>
       <div className="history-wrap">
         <table className="history">
@@ -121,7 +122,7 @@ function FinalsRecords({ fs }: { fs: FinalsStats }) {
             </tr>
           </thead>
           <tbody>
-            {fs.topDeviationScores.map((d) => (
+            {fs.deviationScores.map((d) => (
               <tr key={`${d.year}-${d.name}`}>
                 <td className="no">{d.rank}</td>
                 <td className="no">{d.year}</td>

@@ -329,8 +329,8 @@ def merge_archive_history(records: list[dict], year_files: dict[int, dict]) -> i
     return added
 
 
-def annotate_final_appearances(all_finals: list[dict]) -> None:
-    """finals の firstRound 各行に finalAppearance(その年時点で通算N回目の決勝進出)を付与する。
+def _make_final_identity(all_finals: list[dict]):
+    """finals の firstRound/finalRound 行 → コンビ同一性キーを返す関数を作る。
 
     キーは combiId 優先。null の行は全年 firstRound からの正規化名→ID逆引きが
     一意に決まる場合のみそのIDへ統合し、曖昧(同名別コンビ)や不明なら名前キーで
@@ -341,14 +341,25 @@ def annotate_final_appearances(all_finals: list[dict]) -> None:
         for row in finals.get("firstRound", []):
             if row.get("combiId") is not None:
                 ids_by_name[_norm_name(row["name"])].add(row["combiId"])
+
+    def identity(row: dict) -> int | str:
+        key = row.get("combiId")
+        if key is None:
+            nm = _norm_name(row["name"])
+            known = ids_by_name.get(nm, set())
+            key = next(iter(known)) if len(known) == 1 else f"name:{nm}"
+        return key
+
+    return identity
+
+
+def annotate_final_appearances(all_finals: list[dict]) -> None:
+    """finals の firstRound 各行に finalAppearance(その年時点で通算N回目の決勝進出)を付与する。"""
+    identity = _make_final_identity(all_finals)
     count: dict = defaultdict(int)
     for finals in sorted(all_finals, key=lambda f: f["year"]):
         for row in finals.get("firstRound", []):
-            key = row.get("combiId")
-            if key is None:
-                nm = _norm_name(row["name"])
-                known = ids_by_name.get(nm, set())
-                key = next(iter(known)) if len(known) == 1 else f"name:{nm}"
+            key = identity(row)
             count[key] += 1
             row["finalAppearance"] = count[key]
 
@@ -613,10 +624,9 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
                 }
             )
     deviations.sort(key=lambda d: (-d["deviation"], d["year"], d["name"]))
-    top_dev = _top_with_ties(deviations, 20, key=lambda d: d["deviation"])
     rank = 0
-    for i, d in enumerate(top_dev):
-        if i == 0 or d["deviation"] != top_dev[i - 1]["deviation"]:
+    for i, d in enumerate(deviations):
+        if i == 0 or d["deviation"] != deviations[i - 1]["deviation"]:
             rank = i + 1
         d["rank"] = rank
 
@@ -682,7 +692,7 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
             },
             "unknownFormed": unknown_formed,
         },
-        "topDeviationScores": top_dev,
+        "deviationScores": deviations,
         "mostFinalRoundAppearances": most_final_rounds,
         "agencyFinals": agency_rows,
         "agencyFinalsExcluded": agency_excluded,
