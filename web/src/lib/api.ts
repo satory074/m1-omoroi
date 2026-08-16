@@ -9,6 +9,7 @@ import type {
   FinalsStats,
   JudgesStats,
   MetaFile,
+  PeopleStats,
   Popularity,
   Rankings,
   Stats,
@@ -116,6 +117,14 @@ export function useJudgesStats() {
   return useQuery({
     queryKey: ['judges-stats'],
     queryFn: () => fetchJsonOrNull<JudgesStats>('judges_stats.json'),
+    ...STATIC,
+  })
+}
+
+export function usePeopleStats() {
+  return useQuery({
+    queryKey: ['people-stats'],
+    queryFn: () => fetchJsonOrNull<PeopleStats>('people_stats.json'),
     ...STATIC,
   })
 }

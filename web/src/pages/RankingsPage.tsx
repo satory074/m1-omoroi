@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
 
+import CareerRecords from '../components/CareerRecords'
 import { JudgeCareerSection } from '../components/JudgesRecords'
 import { RankTable, type RankRow } from '../components/RankTable'
-import { useFinalsStats, useJudgesStats, useRankings } from '../lib/api'
+import { useFinalsStats, useJudgesStats, usePeopleStats, useRankings } from '../lib/api'
 import { sliceWithTies } from '../lib/rank'
 import type { FinalsStats, StreakItem } from '../lib/types'
 
@@ -130,6 +131,7 @@ export default function RankingsPage() {
   const { data, isLoading, isError } = useRankings()
   const { data: finalsStats } = useFinalsStats()
   const { data: judgesStats } = useJudgesStats()
+  const { data: peopleStats } = usePeopleStats()
   if (isError) return <div className="error-box">ランキングを読み込めませんでした。</div>
   if (isLoading || !data) return <div className="loading">読み込み中…</div>
 
@@ -201,6 +203,15 @@ export default function RankingsPage() {
             <Link to="/stats">統計</Link>へ。
           </p>
           <JudgeCareerSection js={judgesStats} />
+        </>
+      )}
+      {peopleStats && (
+        <>
+          <h1 className="page-title">キャリア・人物の記録</h1>
+          <p className="page-lede">
+            公式コンビ情報のプロフィール(生年月日・所属・職業・人数)から集計した人の記録。
+          </p>
+          <CareerRecords ps={peopleStats} />
         </>
       )}
     </>

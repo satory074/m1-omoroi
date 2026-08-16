@@ -840,6 +840,291 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
     }
 
 
+def _parse_birth(s: str | None) -> tuple[int, int, int] | None:
+    """和式の生年月日 "1970年12月04日" を (年, 月, 日) にパースする。不正は None。"""
+    if not s:
+        return None
+    m = re.fullmatch(r"(\d{4})年(\d{1,2})月(\d{1,2})日", s.strip())
+    if not m:
+        return None
+    y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    if not (1 <= mo <= 12 and 1 <= d <= 31):
+        return None
+    return (y, mo, d)
+
+
+def _age_at(birth: tuple[int, int, int], on: tuple[int, int, int]) -> int:
+    """on 時点の満年齢(誕生日前なら1引く)。"""
+    age = on[0] - birth[0]
+    if (on[1], on[2]) < (birth[1], birth[2]):
+        age -= 1
+    return age
+
+
+def _load_finals_dates() -> dict[int, tuple[int, int, int]]:
+    """overrides/finals_dates.json(年→決勝開催日、出典=Wikipedia)を読む。
+
+    検証: キー年と日付の年が一致し、月が11または12であること。不整合は警告してスキップ。
+    """
+    path = OVERRIDES_DIR / "finals_dates.json"
+    if not path.exists():
+        return {}
+    out = {}
+    problems = []
+    for year_str, date_str in json.loads(path.read_text(encoding="utf-8")).items():
+        if year_str.startswith("_"):  # _comment 等
+            continue
+        m = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", str(date_str))
+        if not m:
+            problems.append(f"{year_str}: 日付形式が不正: {date_str}")
+            continue
+        y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if y != int(year_str) or mo not in (11, 12) or not (1 <= d <= 31):
+            problems.append(f"{year_str}: 開催日 {date_str} が年と不整合")
+            continue
+        out[int(year_str)] = (y, mo, d)
+    for p in problems:
+        print(f"[build] finals_dates整合性警告: {p}")
+    return out
+
+
+# 到達ラウンドの序列(playoff は準決勝敗退組の敗者復活戦なので除く)
+PEOPLE_ROUNDS = ["first", "second", "third", "quarterfinal", "semifinal", "final"]
+
+
+def _best_round_key(rec: dict) -> str | None:
+    """history 全年での最高到達ラウンド。"""
+    best = -1
+    for entry in rec.get("history", {}).values():
+        for rk in entry.get("results", {}):
+            if rk in PEOPLE_ROUNDS:
+                best = max(best, PEOPLE_ROUNDS.index(rk))
+    return PEOPLE_ROUNDS[best] if best >= 0 else None
+
+
+def build_people_stats(
+    records: list[dict],
+    all_finals: list[dict],
+    champ_overrides: dict[str, dict],
+    finals_dates: dict[int, tuple[int, int, int]],
+) -> dict:
+    """人物・キャリア統計(data/people_stats.json)を集計する。
+
+    年齢は公式コンビDBの生年月日(自己申告・和式表記)から。出場時年齢は
+    「エントリー年 − 生年」(年末時点の満年齢と同義の近似)、決勝・優勝時は
+    overrides/finals_dates.json の開催日基準で誕生日込みの厳密な満年齢。
+    10〜90歳のサニティ範囲外(冗談登録など)は除外し ageExcluded で件数を報告。
+    最年少/最年長は人物単位で極値1件に集約(同一人物が複数年で並ばないように)。
+    ageGap(コンビ内年齢差)は自己申告ノイズを避けるため準々決勝以上到達組のみ。
+    records は merge_archive_history 後を渡すこと(2001〜2010の決勝も対象になる)。
+    """
+    by_id = {r["id"]: r for r in records}
+    excluded_keys: set = set()
+    AGE_MIN, AGE_MAX = 10, 90
+
+    def sane(age: int, key) -> bool:
+        if AGE_MIN <= age <= AGE_MAX:
+            return True
+        excluded_keys.add(key)
+        return False
+
+    def keep(store: dict, key, row: dict, smaller: bool):
+        cur = store.get(key)
+        if cur is None or (row["age"] < cur["age"] if smaller else row["age"] > cur["age"]):
+            store[key] = row
+
+    # --- 出場時の最年少/最年長(人物の極値は初出場年と最終出場年だけ見れば十分) ---
+    app_min: dict = {}
+    app_max: dict = {}
+    for rec in records:
+        years = sorted(int(y) for y in rec.get("history", {}))
+        if not years:
+            continue
+        for m in rec.get("members", []):
+            b = _parse_birth(m.get("birth"))
+            if b is None:
+                continue
+            key = (m.get("name"), m.get("birth"))
+            for year, store, smaller in ((years[0], app_min, True), (years[-1], app_max, False)):
+                age = year - b[0]
+                if not sane(age, (key, year)):
+                    continue
+                keep(
+                    store,
+                    key,
+                    {
+                        "age": age,
+                        "member": m.get("name"),
+                        "combi": rec["name"],
+                        "combiId": rec["id"],
+                        "year": year,
+                    },
+                    smaller,
+                )
+
+    # --- 決勝進出時・優勝時の最年少/最年長(開催日基準の厳密な満年齢) ---
+    fin_min: dict = {}
+    fin_max: dict = {}
+    ch_min: dict = {}
+    ch_max: dict = {}
+    for finals in sorted(all_finals, key=lambda f: f["year"]):
+        year = finals["year"]
+        on = finals_dates.get(year, (year, 12, 31))
+        champ = next((r for r in finals.get("finalRound", []) if r.get("champion")), None)
+        for row in finals.get("firstRound", []):
+            rec = by_id.get(row.get("combiId"))
+            is_champ = champ is not None and (
+                (row.get("combiId") is not None and row.get("combiId") == champ.get("combiId"))
+                or _norm_name(row["name"]) == _norm_name(champ["name"])
+            )
+            members = rec.get("members") if rec else None
+            if not members and is_champ:
+                # 2001〜2010の王者で公式DB未収録の組は champions_meta.json で補完
+                members = (champ_overrides.get(str(year)) or {}).get("members")
+            for m in members or []:
+                b = _parse_birth(m.get("birth"))
+                if b is None:
+                    continue
+                age = _age_at(b, on)
+                key = (m.get("name"), m.get("birth"))
+                if not sane(age, (key, year)):
+                    continue
+                age_row = {
+                    "age": age,
+                    "member": m.get("name"),
+                    "combi": row["name"],
+                    "combiId": row.get("combiId"),
+                    "year": year,
+                }
+                keep(fin_min, key, age_row, True)
+                keep(fin_max, key, age_row, False)
+                if is_champ:
+                    keep(ch_min, key, age_row, True)
+                    keep(ch_max, key, age_row, False)
+
+    def _tops(store: dict, smaller: bool) -> list[dict]:
+        rows = sorted(
+            store.values(),
+            key=lambda r: (r["age"] if smaller else -r["age"], r["year"], r["member"] or ""),
+        )
+        return _top_with_ties(rows, 10, key=lambda r: r["age"])
+
+    # --- コンビ内の年齢差(準々決勝以上到達組のみ) ---
+    gaps = []
+    for rec in records:
+        best = _best_round_key(rec)
+        if best not in ("quarterfinal", "semifinal", "final"):
+            continue
+        births = [(m, _parse_birth(m.get("birth"))) for m in rec.get("members", [])]
+        births = [(m, b) for m, b in births if b is not None]
+        if len(births) < 2:
+            continue
+        births.sort(key=lambda mb: mb[1])
+        first_year = min(int(y) for y in rec["history"])
+        if not all(
+            AGE_MIN <= first_year - b[0] <= AGE_MAX for _, b in (births[0], births[-1])
+        ):
+            continue
+        gaps.append(
+            {
+                "id": rec["id"],
+                "name": rec["name"],
+                # 年下メンバーが生まれた時点での年上メンバーの満年齢
+                "gapYears": _age_at(births[0][1], births[-1][1]),
+                "older": births[0][0].get("name"),
+                "younger": births[-1][0].get("name"),
+                "bestRound": best,
+            }
+        )
+    gaps.sort(key=lambda g: (-g["gapYears"], g["name"]))
+    gaps = _top_with_ties(gaps, 10, key=lambda g: g["gapYears"])
+
+    def _reach_years(rec: dict, round_key: str) -> list[int]:
+        return sorted(
+            {int(y) for y, e in rec["history"].items() if round_key in e.get("results", {})}
+        )
+
+    # --- アマチュアの最高到達(準々決勝以上) ---
+    amateurs = []
+    for rec in records:
+        if rec.get("belong") != "アマチュア":
+            continue
+        best = _best_round_key(rec)
+        if best not in ("quarterfinal", "semifinal", "final"):
+            continue
+        amateurs.append(
+            {
+                "id": rec["id"],
+                "name": rec["name"],
+                "bestRound": best,
+                "years": _reach_years(rec, best),
+            }
+        )
+    amateurs.sort(
+        key=lambda a: (-PEOPLE_ROUNDS.index(a["bestRound"]), a["years"][0], a["name"])
+    )
+
+    # --- 職業別の最高到達(メンバーの job 単位。コンビは各メンバーの職業すべてに計上) ---
+    jobs: dict[str, dict] = {}
+    for rec in records:
+        rec_jobs = {m.get("job") for m in rec.get("members", []) if m.get("job")}
+        if not rec_jobs:
+            continue
+        best = _best_round_key(rec)
+        if best is None:
+            continue
+        bi = PEOPLE_ROUNDS.index(best)
+        for job in rec_jobs:
+            slot = jobs.setdefault(job, {"job": job, "bestRound": best, "combis": []})
+            cur = PEOPLE_ROUNDS.index(slot["bestRound"])
+            if bi > cur:
+                slot["bestRound"] = best
+                slot["combis"] = []
+            if bi >= cur:
+                slot["combis"].append(
+                    {"id": rec["id"], "name": rec["name"], "year": _reach_years(rec, best)[0]}
+                )
+    jobs_rows = []
+    for slot in jobs.values():
+        slot["combis"].sort(key=lambda c: (c["year"], c["name"]))
+        slot["count"] = len(slot["combis"])
+        slot["combis"] = slot["combis"][:10]
+        jobs_rows.append(slot)
+    jobs_rows.sort(key=lambda s: (-PEOPLE_ROUNDS.index(s["bestRound"]), s["job"]))
+
+    # --- トリオ(3人組)の最高成績(3回戦以上到達のみ、4人以上のユニットは対象外) ---
+    trios = []
+    for rec in records:
+        if len(rec.get("members", [])) != 3:
+            continue
+        best = _best_round_key(rec)
+        if best is None or PEOPLE_ROUNDS.index(best) < PEOPLE_ROUNDS.index("third"):
+            continue
+        trios.append(
+            {
+                "id": rec["id"],
+                "name": rec["name"],
+                "bestRound": best,
+                "years": _reach_years(rec, best),
+            }
+        )
+    trios.sort(key=lambda t: (-PEOPLE_ROUNDS.index(t["bestRound"]), t["years"][0], t["name"]))
+    trios = _top_with_ties(trios, 30, key=lambda t: PEOPLE_ROUNDS.index(t["bestRound"]))
+
+    return {
+        "ageRecords": {
+            "appearance": {"youngest": _tops(app_min, True), "oldest": _tops(app_max, False)},
+            "final": {"youngest": _tops(fin_min, True), "oldest": _tops(fin_max, False)},
+            "champion": {"youngest": _tops(ch_min, True), "oldest": _tops(ch_max, False)},
+        },
+        "ageExcluded": len(excluded_keys),
+        "ageGap": gaps,
+        "amateur": amateurs,
+        "jobs": jobs_rows,
+        "trio": trios,
+    }
+
+
 def _load_judges_overrides() -> dict:
     """overrides/judges.json(審査員名の名寄せ・会場票列。出典=各年Wikipedia等)を読む。"""
     path = OVERRIDES_DIR / "judges.json"
@@ -1155,6 +1440,12 @@ def build():
     champions_data = build_champions(all_finals, combi_by_id, champ_overrides)
     _write(DATA_DIR / "champions.json", champions_data)
     _write(DATA_DIR / "advancers.json", advancers)
+
+    # 人物・キャリア統計(年齢記録・コンビ内年齢差・アマチュア・職業別・トリオ)
+    _write(
+        DATA_DIR / "people_stats.json",
+        build_people_stats(records, all_finals, champ_overrides, _load_finals_dates()),
+    )
 
     # 決勝データ横断の統計(出番順・順位・偏差値・最終決戦進出・事務所別)
     if all_finals:

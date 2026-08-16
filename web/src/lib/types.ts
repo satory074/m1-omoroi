@@ -338,6 +338,56 @@ export interface JudgesStats {
   venueColumns: Record<string, string[]>
 }
 
+/** 年齢記録の1行(人物単位の極値) */
+export interface AgeRecordRow {
+  age: number
+  member: string | null
+  combi: string
+  combiId: number | null
+  year: number
+}
+
+export interface AgeGapRow {
+  id: number
+  name: string
+  /** 年下メンバーが生まれた時点での年上メンバーの満年齢 */
+  gapYears: number
+  older: string | null
+  younger: string | null
+  bestRound: RoundKey
+}
+
+/** 最高到達ラウンドの記録(アマチュア・トリオ) */
+export interface ReachRow {
+  id: number
+  name: string
+  bestRound: RoundKey
+  years: number[]
+}
+
+export interface JobStat {
+  job: string
+  bestRound: RoundKey
+  count: number
+  combis: { id: number; name: string; year: number }[]
+}
+
+export interface PeopleStats {
+  ageRecords: {
+    /** 出場: エントリー年−生年の近似(年末時点の満年齢) */
+    appearance: { youngest: AgeRecordRow[]; oldest: AgeRecordRow[] }
+    /** 決勝・優勝: 決勝開催日時点の厳密な満年齢 */
+    final: { youngest: AgeRecordRow[]; oldest: AgeRecordRow[] }
+    champion: { youngest: AgeRecordRow[]; oldest: AgeRecordRow[] }
+  }
+  /** サニティ範囲(10〜90歳)外として除外した人数 */
+  ageExcluded: number
+  ageGap: AgeGapRow[]
+  amateur: ReachRow[]
+  jobs: JobStat[]
+  trio: ReachRow[]
+}
+
 export interface FinalsStats {
   firstRoundOrderStats: OrderStat[]
   finalOrderStats: OrderStat[]
