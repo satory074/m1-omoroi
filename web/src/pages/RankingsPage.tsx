@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 
 import CareerRecords from '../components/CareerRecords'
 import { JudgeCareerSection } from '../components/JudgesRecords'
+import PopularityRanking from '../components/PopularityRanking'
 import { RankTable, type RankRow } from '../components/RankTable'
 import { useFinalsStats, useJudgesStats, usePeopleStats, useRankings } from '../lib/api'
 import { sliceWithTies } from '../lib/rank'
@@ -205,6 +206,7 @@ export default function RankingsPage() {
           <JudgeCareerSection js={judgesStats} />
         </>
       )}
+      <PopularityRanking />
       {peopleStats && (
         <>
           <h1 className="page-title">キャリア・人物の記録</h1>

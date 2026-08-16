@@ -774,6 +774,21 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
     ]
     agency_rows.sort(key=lambda a: (-a["value"], a["agency"]))
 
+    # --- B13: コンビ名の文字数と成績(「短い名前ほど優勝する」説の検証) ---
+    def _name_len(name: str) -> int:
+        return len(_norm_name(name).replace(" ", ""))
+
+    name_len_counts: dict[int, dict] = defaultdict(
+        lambda: {"entrants": 0, "finalists": 0, "champions": 0}
+    )
+    for rec in records:
+        name_len_counts[_name_len(rec["name"])]["entrants"] += 1
+    for slot in fa_ranked:
+        ln = name_len_counts[_name_len(slot["name"])]
+        ln["finalists"] += 1
+        ln["champions"] += slot["wins"] > 0
+    name_length_rows = [{"length": ln, **name_len_counts[ln]} for ln in sorted(name_len_counts)]
+
     # --- B12: 1本目の1位と2位の点差(大接戦/大差の年) ---
     margins = []
     for finals in finals_sorted:
@@ -835,6 +850,7 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
         },
         "debutFinalists": debut,
         "firstRoundMargins": margins,
+        "nameLengthStats": name_length_rows,
         "agencyFinals": agency_rows,
         "agencyFinalsExcluded": agency_excluded,
     }

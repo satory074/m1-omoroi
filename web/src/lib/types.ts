@@ -411,6 +411,8 @@ export interface FinalsStats {
   revivalStats: RevivalStats
   debutFinalists: DebutFinalist[]
   firstRoundMargins: FirstRoundMargin[]
+  /** コンビ名の文字数(NFKC・空白除去)別のエントリー/決勝進出/優勝組数 */
+  nameLengthStats: { length: number; entrants: number; finalists: number; champions: number }[]
   agencyFinals: AgencyFinals[]
   agencyFinalsExcluded: number
 }

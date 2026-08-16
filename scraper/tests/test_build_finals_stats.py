@@ -314,6 +314,27 @@ def test_debut_finalists_flags_and_exclusions():
     ]
 
 
+def test_name_length_stats():
+    y = _finals(
+        2020,
+        [
+            {"name": "和牛", "combiId": 1, "total": 650, "rank": 1},
+            {"name": "オズワルド", "combiId": 2, "total": 640, "rank": 2},
+        ],
+        [{"name": "和牛", "combiId": 1, "votes": 4, "champion": True}],
+    )
+    records = [
+        {"id": 1, "name": "和牛", "history": {}},
+        {"id": 2, "name": "オズワルド", "history": {}},
+        {"id": 3, "name": "ミキ", "history": {}},
+        {"id": 4, "name": "Ｄｏｎ　浅草", "history": {}},  # NFKC+空白除去で5文字
+    ]
+    s = _stats([y], records)
+    rows = {r["length"]: r for r in s["nameLengthStats"]}
+    assert rows[2] == {"length": 2, "entrants": 2, "finalists": 1, "champions": 1}
+    assert rows[5] == {"length": 5, "entrants": 2, "finalists": 1, "champions": 0}
+
+
 def test_agency_normalization_and_excluded_count():
     y = _finals(
         2020,

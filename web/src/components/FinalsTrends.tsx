@@ -257,6 +257,55 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
         </table>
       </div>
 
+      <h2 className="section-title">コンビ名の文字数と成績</h2>
+      <p className="section-note">
+        「短い名前ほど優勝しやすい」説の検証。文字数は空白を除き全半角をそろえて数えた値。
+        エントリーは記録に残る全コンビ、決勝・優勝はコンビ単位(複数回進出も1組)。
+      </p>
+      <div className="history-wrap">
+        <table className="history">
+          <thead>
+            <tr>
+              <th>文字数</th>
+              <th>エントリー</th>
+              <th>決勝進出</th>
+              <th>優勝</th>
+              <th>決勝率</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(() => {
+              const rows: { label: string; entrants: number; finalists: number; champions: number }[] = []
+              for (const r of fs.nameLengthStats) {
+                if (r.length <= 9) {
+                  rows.push({ label: `${r.length}文字`, ...r })
+                } else {
+                  const last = rows[rows.length - 1]
+                  if (last && last.label === '10文字以上') {
+                    last.entrants += r.entrants
+                    last.finalists += r.finalists
+                    last.champions += r.champions
+                  } else {
+                    rows.push({ label: '10文字以上', entrants: r.entrants, finalists: r.finalists, champions: r.champions })
+                  }
+                }
+              }
+              return rows.map((r) => (
+                <tr key={r.label}>
+                  <td>{r.label}</td>
+                  <td className="no">{r.entrants.toLocaleString('ja-JP')}</td>
+                  <td className="no">{r.finalists > 0 ? r.finalists : ''}</td>
+                  <td className="no">{r.champions > 0 ? r.champions : ''}</td>
+                  <td className="no">
+                    {r.finalists > 0 ? `${((r.finalists / r.entrants) * 100).toFixed(2)}%` : ''}
+                  </td>
+                </tr>
+              ))
+            })()}
+          </tbody>
+        </table>
+      </div>
+
       <h2 className="section-title">事務所別 決勝進出</h2>
       <p className="section-note">
         延べ = 決勝(ファーストラウンド)出場のコンビ×年。所属は公式コンビDBの現行表記のため、移籍・改名は現在の所属で集計。
