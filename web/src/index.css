@@ -1248,7 +1248,8 @@ button {
   /* ヒット領域を WCAG 2.5.8 の 24px 以上に拡大（負マージンで見た目の高さは不変） */
   padding: 8px 14px;
   margin: -8px 0;
-  color: var(--muted);
+  /* --muted は paper-2 上で 3.24:1 と AA 未達のため ink 70% 混色 (5.73:1) を使う */
+  color: color-mix(in srgb, var(--ink) 70%, var(--paper-2));
   text-decoration: none;
   transition: color 0.12s ease;
 }
