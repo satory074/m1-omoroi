@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import {
   Bar,
   BarChart,
@@ -10,8 +11,9 @@ import {
   YAxis,
 } from 'recharts'
 
+import FinalsTrends from '../components/FinalsTrends'
 import RecordsExplorer from '../components/RecordsExplorer'
-import { useStats } from '../lib/api'
+import { useFinalsStats, useStats } from '../lib/api'
 import { ROUND_LABEL, ROUND_ORDER } from '../lib/rounds'
 import type { YearStats } from '../lib/types'
 
@@ -42,6 +44,7 @@ const tooltipStyle = {
 
 export default function StatsPage() {
   const { data, isLoading, isError } = useStats()
+  const { data: finalsStats } = useFinalsStats()
   if (isError) return <div className="error-box">統計を読み込めませんでした。</div>
   if (isLoading || !data) return <div className="loading">読み込み中…</div>
 
@@ -187,6 +190,19 @@ export default function StatsPage() {
         </table>
       </div>
       <p className="legend">各セルは「通過数/出場数」</p>
+
+      {finalsStats && (
+        <>
+          <h1 className="page-title" style={{ marginTop: 40 }}>
+            決勝の傾向
+          </h1>
+          <p className="page-lede">
+            全21大会(2001〜2025)の決勝データから見る傾向。コンビ別のランキングは
+            <Link to="/rankings">記録ランキング</Link>へ。
+          </p>
+          <FinalsTrends fs={finalsStats} />
+        </>
+      )}
 
       <RecordsExplorer />
     </>
