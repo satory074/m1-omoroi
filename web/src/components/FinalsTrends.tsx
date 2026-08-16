@@ -91,6 +91,70 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
         </table>
       </div>
 
+      <h2 className="section-title">敗者復活の記録</h2>
+      <p className="section-note">
+        敗者復活戦は{fs.revivalStats.sinceYear}年開始({fs.revivalStats.sinceYear}年以降が集計対象)。出場は延べ(コンビ×年)。
+        敗者復活からの優勝: <WinnersCell winners={fs.revivalStats.winners} />
+      </p>
+      <div className="history-wrap">
+        <table className="history">
+          <thead>
+            <tr>
+              <th>区分</th>
+              <th>決勝出場</th>
+              <th>最終決戦進出</th>
+              <th>優勝</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(
+              [
+                ['敗者復活組', fs.revivalStats.revival],
+                ['ストレート組', fs.revivalStats.straight],
+              ] as const
+            ).map(([label, b]) => (
+              <tr key={label}>
+                <td>{label}</td>
+                <td className="no">{b.appearances}</td>
+                <td className="no">
+                  {b.finalists}
+                  {b.appearances > 0 && ` (${Math.round((b.finalists / b.appearances) * 100)}%)`}
+                </td>
+                <td className="no">
+                  {b.wins}
+                  {b.appearances > 0 && ` (${Math.round((b.wins / b.appearances) * 100)}%)`}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="section-title">何回目の決勝で優勝したか</h2>
+      <p className="section-note">優勝した年が、そのコンビにとって通算何回目の決勝進出だったか。</p>
+      <div className="history-wrap">
+        <table className="history">
+          <thead>
+            <tr>
+              <th>通算</th>
+              <th>回数</th>
+              <th>王者</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fs.championNthFinal.map((r) => (
+              <tr key={r.n}>
+                <td className="no">{r.n}回目</td>
+                <td className="no">{r.count}</td>
+                <td>
+                  <WinnersCell winners={r.winners} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       <h2 className="section-title">王者のファーストラウンド順位</h2>
       <p className="section-note">優勝コンビが1本目で何位だったか。</p>
       <div className="history-wrap">

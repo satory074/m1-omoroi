@@ -563,6 +563,12 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
     )
     # --- B3: 王者の1本目順位別 ---
     champ_rank: dict[int, dict] = defaultdict(lambda: {"count": 0, "winners": []})
+    # --- B9: 敗者復活 vs ストレート(制度のある2002年以降が分母) ---
+    revival_winners = []
+    revival_bucket = {"appearances": 0, "finalists": 0, "wins": 0}
+    straight_bucket = {"appearances": 0, "finalists": 0, "wins": 0}
+    # --- B10: 通算N回目の決勝で優勝(finalAppearance注釈から) ---
+    champ_nth: dict[int, dict] = defaultdict(lambda: {"count": 0, "winners": []})
 
     for finals in finals_sorted:
         year = finals["year"]
@@ -572,14 +578,24 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
         finalist_names = {_norm_name(r["name"]) for r in finals.get("finalRound", [])}
         champ_row = _find_champion_first_round(finals)
         for row in finals.get("firstRound", []):
+            is_finalist = (
+                row.get("combiId") in finalist_ids or _norm_name(row["name"]) in finalist_names
+            )
+            if year >= 2002:  # 2001年は敗者復活戦なし
+                bucket = revival_bucket if row.get("revival") else straight_bucket
+                bucket["appearances"] += 1
+                bucket["finalists"] += is_finalist
+                if row is champ_row:
+                    bucket["wins"] += 1
+                    if row.get("revival"):
+                        revival_winners.append(
+                            {"year": year, "name": row["name"], "combiId": row.get("combiId")}
+                        )
             order = row.get("order")
             if order is None:
                 continue
             slot = first_order[order]
             slot["appearances"] += 1
-            is_finalist = (
-                row.get("combiId") in finalist_ids or _norm_name(row["name"]) in finalist_names
-            )
             slot["finalists"] += is_finalist
             if row is champ_row:
                 slot["wins"] += 1
@@ -601,6 +617,12 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
             r = champ_rank[champ_row["rank"]]
             r["count"] += 1
             r["winners"].append(
+                {"year": year, "name": champ_row["name"], "combiId": champ_row.get("combiId")}
+            )
+        if champ_row is not None and champ_row.get("finalAppearance"):
+            n = champ_row["finalAppearance"]
+            champ_nth[n]["count"] += 1
+            champ_nth[n]["winners"].append(
                 {"year": year, "name": champ_row["name"], "combiId": champ_row.get("combiId")}
             )
 
@@ -698,6 +720,36 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
     # 無冠の帝王: 複数回決勝に進みながら優勝なし(1回のみの組は多すぎるので対象外)
     uncrowned = [s for s in fa_ranked if s["wins"] == 0 and s["value"] >= 2]
 
+    # --- B11: 初出場で決勝進出 ---
+    # 第1回(2001年)は全組が初出場のため対象外。records は merge_archive_history 後なので
+    # 2001〜2010の出場も(記録に残る範囲で)history に含まれる。1回戦敗退が記録に残らない
+    # 2001〜2010に出場しえた組(結成が2010年以前)は recordedOnly=true で注記する。
+    debut = []
+    for finals in finals_sorted:
+        year = finals["year"]
+        if year == 2001:  # 第1回は全組が初出場
+            continue
+        for row in finals.get("firstRound", []):
+            if row.get("finalAppearance") != 1:
+                continue
+            rec = by_id.get(row.get("combiId"))
+            if rec is None or not rec.get("history"):
+                continue
+            if min(int(y) for y in rec["history"]) != year:
+                continue
+            formed = rec.get("formed")
+            eligible_from = formed if formed is not None else 2001
+            # 出場しえた過去大会(結成年以降)に記録不完全な2001〜2010が含まれるか
+            recorded_only = max(eligible_from, 2001) <= min(2010, year - 1)
+            debut.append(
+                {
+                    "year": year,
+                    "name": row["name"],
+                    "combiId": row.get("combiId"),
+                    "recordedOnly": recorded_only,
+                }
+            )
+
     # --- B7: 事務所別 延べ決勝進出(belongの現行表記で集計) ---
     agency: dict[str, dict] = defaultdict(lambda: {"value": 0, "ids": set()})
     agency_excluded = 0
@@ -748,6 +800,14 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
         "mostFinalRoundAppearances": most_final_rounds,
         "mostFinalAppearances": most_finals_all,
         "uncrownedKings": uncrowned,
+        "championNthFinal": [{"n": n, **champ_nth[n]} for n in sorted(champ_nth)],
+        "revivalStats": {
+            "sinceYear": 2002,
+            "winners": revival_winners,
+            "revival": revival_bucket,
+            "straight": straight_bucket,
+        },
+        "debutFinalists": debut,
         "agencyFinals": agency_rows,
         "agencyFinalsExcluded": agency_excluded,
     }

@@ -247,6 +247,36 @@ export interface AgencyFinals {
   combis: number
 }
 
+interface RevivalBucket {
+  appearances: number
+  finalists: number
+  wins: number
+}
+
+/** 敗者復活組 vs ストレート組の成績(制度のある2002年以降が分母) */
+export interface RevivalStats {
+  sinceYear: number
+  /** 敗者復活からの優勝 */
+  winners: FinalsStatsWinner[]
+  revival: RevivalBucket
+  straight: RevivalBucket
+}
+
+/** 通算N回目の決勝で優勝した回数の分布 */
+export interface ChampionNthFinal {
+  n: number
+  count: number
+  winners: FinalsStatsWinner[]
+}
+
+/** 初出場(初エントリー年)で決勝進出。recordedOnly=記録に残る範囲での判定(2001〜2010に出場しえた組) */
+export interface DebutFinalist {
+  year: number
+  name: string
+  combiId: number | null
+  recordedOnly: boolean
+}
+
 export interface FinalsStats {
   firstRoundOrderStats: OrderStat[]
   finalOrderStats: OrderStat[]
@@ -266,6 +296,9 @@ export interface FinalsStats {
   mostFinalAppearances: FinalAppearanceRank[]
   /** 無冠の帝王: 決勝2回以上進出かつ優勝なし */
   uncrownedKings: FinalAppearanceRank[]
+  championNthFinal: ChampionNthFinal[]
+  revivalStats: RevivalStats
+  debutFinalists: DebutFinalist[]
   agencyFinals: AgencyFinals[]
   agencyFinalsExcluded: number
 }

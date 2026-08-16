@@ -227,6 +227,93 @@ def test_final_round_appearances_displays_current_db_name():
     assert s["mostFinalRoundAppearances"][0]["name"] == "ちょんまげラーメン"
 
 
+def test_revival_stats_split_and_winners():
+    y2001 = _finals(  # 制度前 → 分母に入らない
+        2001,
+        [{"name": "中川家", "combiId": 1, "total": 800, "rank": 1}],
+        [{"name": "中川家", "combiId": 1, "votes": 6, "champion": True}],
+    )
+    y2007 = _finals(
+        2007,
+        [
+            {"name": "サンド", "combiId": 2, "total": 650, "rank": 1, "revival": True},
+            {"name": "トータル", "combiId": 3, "total": 640, "rank": 2},
+            {"name": "キング", "combiId": 4, "total": 600, "rank": 3},
+        ],
+        [
+            {"name": "サンド", "combiId": 2, "votes": 4, "champion": True},
+            {"name": "トータル", "combiId": 3, "votes": 3, "champion": False},
+        ],
+    )
+    s = _stats([y2001, y2007])
+    rs = s["revivalStats"]
+    assert rs["sinceYear"] == 2002
+    assert rs["revival"] == {"appearances": 1, "finalists": 1, "wins": 1}
+    assert rs["straight"] == {"appearances": 2, "finalists": 1, "wins": 0}
+    assert rs["winners"] == [{"year": 2007, "name": "サンド", "combiId": 2}]
+
+
+def test_champion_nth_final_distribution():
+    years = []
+    for year, nth in ((2015, 1), (2016, 1), (2017, 3)):
+        years.append(
+            _finals(
+                year,
+                [{"name": f"w{year}", "combiId": year, "total": 650, "rank": 1, "finalAppearance": nth}],
+                [{"name": f"w{year}", "combiId": year, "votes": 4, "champion": True}],
+            )
+        )
+    s = _stats(years)
+    assert [(r["n"], r["count"]) for r in s["championNthFinal"]] == [(1, 2), (3, 1)]
+    assert s["championNthFinal"][1]["winners"] == [{"year": 2017, "name": "w2017", "combiId": 2017}]
+
+
+def test_debut_finalists_flags_and_exclusions():
+    y2001 = _finals(  # 第1回は全組初出場のため対象外
+        2001, [{"name": "初代", "combiId": 1, "total": 800, "rank": 1, "finalAppearance": 1}], []
+    )
+    y2004 = _finals(
+        2004,
+        [
+            # 記録上の初出場だが結成2003 → 2003年に1回戦敗退の記録が残らない可能性 → recordedOnly
+            {"name": "南キャン", "combiId": 5, "total": 700, "rank": 1, "finalAppearance": 1},
+        ],
+        [],
+    )
+    y2015 = _finals(
+        2015,
+        [
+            # 結成2012(大会休止期間)→ 出場しえた大会がすべて記録に残る2015年以降 → 確定初出場
+            {"name": "メイプル", "combiId": 6, "total": 650, "rank": 1, "finalAppearance": 1},
+            # 2度目の決勝 → 対象外
+            {"name": "ベテラン", "combiId": 7, "total": 640, "rank": 2, "finalAppearance": 2},
+            # 初決勝だが初出場ではない(2015年より前にエントリー歴) → 対象外
+            {"name": "苦労人", "combiId": 8, "total": 630, "rank": 3, "finalAppearance": 1},
+        ],
+        [],
+    )
+    records = [
+        {"id": 1, "name": "初代", "formed": 1992, "history": {"2001": {"results": {"final": "pass"}}}},
+        {"id": 5, "name": "南キャン", "formed": 2003, "history": {"2004": {"results": {"final": "fail"}}}},
+        {"id": 6, "name": "メイプル", "formed": 2012, "history": {"2015": {"results": {"final": "fail"}}}},
+        {"id": 7, "name": "ベテラン", "formed": 2001, "history": {"2015": {"results": {"final": "fail"}}}},
+        {
+            "id": 8,
+            "name": "苦労人",
+            "formed": 2010,
+            "history": {
+                "2010": {"results": {"third": "fail"}},  # アーカイブ統合済みの過去エントリー
+                "2015": {"results": {"final": "fail"}},
+            },
+        },
+    ]
+    s = _stats([y2001, y2004, y2015], records)
+    assert s["debutFinalists"] == [
+        {"year": 2004, "name": "南キャン", "combiId": 5, "recordedOnly": True},
+        {"year": 2015, "name": "メイプル", "combiId": 6, "recordedOnly": False},
+    ]
+
+
 def test_agency_normalization_and_excluded_count():
     y = _finals(
         2020,

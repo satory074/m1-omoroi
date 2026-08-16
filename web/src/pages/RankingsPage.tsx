@@ -64,6 +64,33 @@ function FinalsRecords({ fs }: { fs: FinalsStats }) {
       </p>
       <RankTable items={sliceWithTies(fs.uncrownedKings, SHOWN, (it) => it.value)} unit="回" />
 
+      <h2 className="section-title">初出場で決勝進出</h2>
+      <p className="section-note">
+        初エントリーの年にいきなり決勝へ進んだコンビ。第1回(2001年)は全組が初出場のため対象外。
+        ※印は2001〜2010に1回戦敗退などの記録が残らないため「記録に残る範囲での初出場」。
+      </p>
+      <div className="history-wrap">
+        <table className="history">
+          <thead>
+            <tr>
+              <th>年</th>
+              <th>コンビ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fs.debutFinalists.map((d) => (
+              <tr key={`${d.year}-${d.name}`}>
+                <td className="no">{d.year}</td>
+                <td>
+                  {d.combiId != null ? <Link to={`/combi/${d.combiId}`}>{d.name}</Link> : d.name}
+                  {d.recordedOnly && ' ※'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       <h2 className="section-title">歴代スコアランキング(得点偏差値)</h2>
       <p className="section-note">
         偏差値 = その年のファーストラウンド得点内での (得点−平均)÷標準偏差×10+50。
