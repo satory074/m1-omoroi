@@ -3,7 +3,6 @@ import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 
 import CombiPhoto from '../components/CombiPhoto'
-import CombiSearch from '../components/CombiSearch'
 import { useMeta, usePopularity, useYear } from '../lib/api'
 import { formationInfo } from '../lib/eligibility'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits, isPassing } from '../lib/rounds'
@@ -168,7 +167,6 @@ export default function YearPage() {
             </button>
           ))}
         </div>
-        <CombiSearch />
         <select value={sort} onChange={(e) => setParam('sort', e.target.value)} aria-label="並び順">
           <option value="no">エントリーNo順</option>
           <option value="kana">五十音順</option>

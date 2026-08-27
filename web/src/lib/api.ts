@@ -5,6 +5,7 @@ import type {
   Champions,
   CombiDetail,
   CombiIndexRow,
+  CombiMemberIndexRow,
   FinalsFile,
   FinalsStats,
   JudgesStats,
@@ -15,6 +16,7 @@ import type {
   Stats,
   YearFile,
 } from './types'
+import { buildMemberKeys } from './search'
 
 const BASE = import.meta.env.BASE_URL
 
@@ -46,10 +48,12 @@ export function useYear(year: number | null) {
   })
 }
 
-export function usePopularity() {
+/** enabled=false で取得を抑止できる(ヘッダー常駐の検索が未使用のページで無駄に取らないため) */
+export function usePopularity(enabled = true) {
   return useQuery({
     queryKey: ['popularity'],
     queryFn: () => fetchJsonOrNull<Popularity>('popularity.json'),
+    enabled,
     ...STATIC,
   })
 }
@@ -58,6 +62,25 @@ export function useCombiIndex(enabled: boolean) {
   return useQuery({
     queryKey: ['combi-index'],
     queryFn: () => fetchJson<CombiIndexRow[]>('combi/index.json'),
+    enabled,
+    ...STATIC,
+  })
+}
+
+/**
+ * 芸人名検索用のメンバー索引(約1.07MB gz)。combi/index.json と位置対応。
+ * enabled は検索ボックスのフォーカスで立ち、index.json と並行に取りに行く。
+ * 取得後そのまま正規化済み構造へ展開して返す(react-query がキャッシュするので1回だけ)。
+ * 旧デプロイのキャッシュ等で members.json が無い場合は null になり、
+ * 芸人名セクションを出さずコンビ名検索だけに自然劣化する。
+ */
+export function useCombiMembers(enabled: boolean) {
+  return useQuery({
+    queryKey: ['combi-members'],
+    queryFn: async () => {
+      const rows = await fetchJsonOrNull<CombiMemberIndexRow[]>('combi/members.json')
+      return rows ? await buildMemberKeys(rows) : null
+    },
     enabled,
     ...STATIC,
   })

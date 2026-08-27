@@ -48,6 +48,13 @@ export interface MetaFile {
 /** [id, 名前, かな, 出場年リスト] */
 export type CombiIndexRow = [number, string, string | null, number[]]
 
+/**
+ * combi/members.json の1行 = [名前, かな, 名前, かな, ...] のフラット配列(かな欠損は空文字)。
+ * 配列全体は combi/index.json と**同じ並び・同じ行数**で、行 i は index[i] と同じコンビを指す
+ * (id を持たないのは gzip 後に +11% になるため。参照は同じ添字で引く)。
+ */
+export type CombiMemberIndexRow = string[]
+
 export interface CombiMember {
   name?: string
   kana?: string

@@ -1,5 +1,6 @@
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
 
+import CombiSearch from './components/CombiSearch'
 import { useMeta } from './lib/api'
 import CombiPage from './pages/CombiPage'
 import FinalsPage from './pages/FinalsPage'
@@ -19,11 +20,14 @@ export default function App() {
     <div className="app">
       <header className="site-header">
         <div className="site-header-inner">
-          <NavLink className="brand" to="/">
-            <span className="brand-m1">M-1</span>
-            <span className="brand-name">オモロイ</span>
-            <span className="brand-sub">通過・敗退 全記録(非公式)</span>
-          </NavLink>
+          <div className="site-header-top">
+            <NavLink className="brand" to="/">
+              <span className="brand-m1">M-1</span>
+              <span className="brand-name">オモロイ</span>
+              <span className="brand-sub">通過・敗退 全記録(非公式)</span>
+            </NavLink>
+            <CombiSearch />
+          </div>
           <nav className="site-nav">
             <NavLink to="/" end>
               年度別 結果

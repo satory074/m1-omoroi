@@ -4,6 +4,8 @@
   meta.json            スキーマ版・生成日時・年度一覧
   years/{year}.json    年度×回戦の主データ
   combi/index.json     検索用索引 [[id, 名前, かな, [出場年...]], ...]
+  combi/members.json   芸人名(メンバー)検索用索引 [[名前, かな, 名前, かな, ...], ...]
+                       ※ index.json と同じ並び・同じ行数(行 i = index[i] のコンビ)
   combi/{NN}.json      詳細シャード (NN = id % 100)
   rankings.json        記録ランキング(事前集計)
   stats.json           年度別統計(事前集計)
@@ -281,6 +283,35 @@ def build_champions(
         )
 
     return {"champions": out}
+
+
+def build_member_index(records: list[dict]) -> tuple[list[list[str]], int]:
+    """combi/index.json と同じ並び(id昇順)のメンバー名検索索引を作る。
+
+    行 i は index.json の行 i と同じコンビ。各行は [名前, かな, 名前, かな, ...] の
+    フラット配列(かな欠損は空文字)。名前が無いメンバーは検索できないので落とす。
+    メンバーが居ない/全員名前なしのコンビも空配列の行を残す(落とすと位置がずれる)。
+
+    各行にidを持たせない(位置対応にする)のは、持たせるとgzip後に約+11%になるため。
+    消費側は index[i] を同じ添字で引けるので、idは不要。呼び出し側は index と同じ
+    sorted(records, key=id) を渡すこと(行数の一致は build() で検証する)。
+
+    正規化(NFKC・ひらがな→カタカナ等)はここでは行わない。焼き込むと配信量が
+    約+28%になる一方、クライアント側の正規化は初回1回きり約100msで済むため。
+    """
+    out: list[list[str]] = []
+    dropped = 0
+    for rec in records:
+        row: list[str] = []
+        for m in rec.get("members") or []:
+            name = (m.get("name") or "").strip()
+            if not name:
+                dropped += 1
+                continue
+            row.append(name)
+            row.append((m.get("kana") or "").strip())
+        out.append(row)
+    return out, dropped
 
 
 ADVANCER_TIERS = ["quarterfinal", "semifinal", "final"]  # 昇順(final が最上位)
@@ -1388,9 +1419,10 @@ def build():
         _write(DATA_DIR / "years" / f"{year}.json", yf)
 
     # 検索用索引と詳細シャード
+    sorted_records = sorted(records, key=lambda r: r["id"])
     index = []
     shards: dict[int, dict] = defaultdict(dict)
-    for rec in sorted(records, key=lambda r: r["id"]):
+    for rec in sorted_records:
         entered_years = sorted(int(y) for y in rec["history"])
         index.append([rec["id"], rec["name"], rec["kana"], entered_years])
         shard = {
@@ -1411,6 +1443,20 @@ def build():
             shard["officialUrl"] = f"https://www.m-1gp.com/combi/{rec['id']}.html"
         shards[rec["id"] % SHARD_COUNT][str(rec["id"])] = shard
     _write(DATA_DIR / "combi" / "index.json", index)
+
+    # 芸人名検索用のメンバー索引。index.json と位置対応なので行数がずれたら致命的
+    member_index, dropped_members = build_member_index(sorted_records)
+    if len(member_index) != len(index):
+        raise SystemExit(
+            f"[build] members.json と index.json の行数がずれています "
+            f"({len(member_index)} != {len(index)})"
+        )
+    _write(DATA_DIR / "combi" / "members.json", member_index)
+    print(
+        f"[build] メンバー索引 {sum(len(r) // 2 for r in member_index):,}人 / "
+        f"{len(member_index):,}組 (名前なしで除外 {dropped_members}人)"
+    )
+
     for nn, shard in shards.items():
         _write(DATA_DIR / "combi" / f"{nn}.json", shard)
 
