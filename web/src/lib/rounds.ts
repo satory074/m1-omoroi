@@ -20,6 +20,16 @@ export const ROUND_LABEL: Record<RoundKey, string> = {
   final: '決勝',
 }
 
+/** combi/index.json の5要素目(最高到達ラウンド)の対応表。0=不明なので添字は1始まり。
+ *  ビルド側 build_json.py の MAIN_ROUNDS と一致させること(playoff を含まない)。 */
+export const BEST_ROUND_KEYS: RoundKey[] = ROUND_ORDER.filter((r) => r !== 'playoff')
+
+/** 最高到達ラウンドの表示ラベル。不明(0)や範囲外は null。 */
+export function bestRoundLabel(best: number): string | null {
+  const key = BEST_ROUND_KEYS[best - 1]
+  return key ? ROUND_LABEL[key] : null
+}
+
 export const RESULT_DISPLAY: Record<ResultKey, { sym: string; label: string }> = {
   pass: { sym: '○', label: '通過' },
   seed_pass: { sym: '◎', label: 'シード通過' },

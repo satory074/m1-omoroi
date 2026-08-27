@@ -45,8 +45,9 @@ export interface MetaFile {
   finalsYears: number[]
 }
 
-/** [id, 名前, かな, 出場年リスト] */
-export type CombiIndexRow = [number, string, string | null, number[]]
+/** [id, 名前, かな, 出場年リスト, 最高到達ラウンド]。
+ *  最高到達は 0=不明 / 1..6 = BEST_ROUND_KEYS(1回戦〜決勝、敗者復活戦は含まない)。 */
+export type CombiIndexRow = [number, string, string | null, number[], number]
 
 /**
  * combi/members.json の1行 = [名前, かな, 名前, かな, ...] のフラット配列(かな欠損は空文字)。

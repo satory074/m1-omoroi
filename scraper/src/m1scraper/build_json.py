@@ -3,7 +3,8 @@
 生成物:
   meta.json            スキーマ版・生成日時・年度一覧
   years/{year}.json    年度×回戦の主データ
-  combi/index.json     検索用索引 [[id, 名前, かな, [出場年...]], ...]
+  combi/index.json     検索用索引 [[id, 名前, かな, [出場年...], 最高到達ラウンド], ...]
+                       ※ 最高到達は 0=不明 / 1..6 = MAIN_ROUNDS(1回戦〜決勝)
   combi/members.json   芸人名(メンバー)検索用索引 [[名前, かな, 名前, かな, ...], ...]
                        ※ index.json と同じ並び・同じ行数(行 i = index[i] のコンビ)
   combi/{NN}.json      詳細シャード (NN = id % 100)
@@ -283,6 +284,30 @@ def build_champions(
         )
 
     return {"champions": out}
+
+
+# ROUND_KEYS から playoff(敗者復活戦)を除いた本線。到達段階の比較に使う。
+# web/src/lib/rounds.ts の furthestRound() と同じ意味論(敗者復活戦は本線に数えない)
+MAIN_ROUNDS = [rk for rk in ROUND_KEYS if rk != "playoff"]
+
+
+def best_round(rec: dict) -> int:
+    """全出場年を通じた最高到達ラウンド。0=不明、1..6 が MAIN_ROUNDS に対応。
+
+    「到達」は当該年の results にそのキーが在ることで判定する(合否は問わない)。
+    build_advancers と同じ判定基準。results が空の組(エントリーのみで結果が未確定。
+    約3,271組で、その大半は進行中シーズン — 2026年1,875組・2025年679組)は 0 を返す。
+    2001〜2010のアーカイブ由来は merge_archive_history で結果が入るので 0 にはならない。
+
+    combi/index.json の5要素目として配る。int にしているのはラウンドキー文字列より
+    gzip後で約12KB小さいため(実測: int +12.8KB / 文字列 +24.5KB)。
+    """
+    best = 0
+    for hist in (rec.get("history") or {}).values():
+        for rk in (hist.get("results") or {}):
+            if rk in MAIN_ROUNDS:
+                best = max(best, MAIN_ROUNDS.index(rk) + 1)
+    return best
 
 
 def build_member_index(records: list[dict]) -> tuple[list[list[str]], int]:
@@ -935,18 +960,14 @@ def _load_finals_dates() -> dict[int, tuple[int, int, int]]:
     return out
 
 
-# 到達ラウンドの序列(playoff は準決勝敗退組の敗者復活戦なので除く)
-PEOPLE_ROUNDS = ["first", "second", "third", "quarterfinal", "semifinal", "final"]
-
-
 def _best_round_key(rec: dict) -> str | None:
-    """history 全年での最高到達ラウンド。"""
-    best = -1
-    for entry in rec.get("history", {}).values():
-        for rk in entry.get("results", {}):
-            if rk in PEOPLE_ROUNDS:
-                best = max(best, PEOPLE_ROUNDS.index(rk))
-    return PEOPLE_ROUNDS[best] if best >= 0 else None
+    """history 全年での最高到達ラウンド(キー表記)。到達なしは None。
+
+    判定は best_round() に一本化してある。以前はここに同じロジックの写しがあったが、
+    索引(combi/index.json の5要素目)と人物統計で定義が食い違う余地があったため統合した。
+    """
+    best = best_round(rec)
+    return MAIN_ROUNDS[best - 1] if best else None
 
 
 def build_people_stats(
@@ -1108,7 +1129,7 @@ def build_people_stats(
             }
         )
     amateurs.sort(
-        key=lambda a: (-PEOPLE_ROUNDS.index(a["bestRound"]), a["years"][0], a["name"])
+        key=lambda a: (-MAIN_ROUNDS.index(a["bestRound"]), a["years"][0], a["name"])
     )
 
     # --- 職業別の最高到達(メンバーの job 単位。コンビは各メンバーの職業すべてに計上) ---
@@ -1120,10 +1141,10 @@ def build_people_stats(
         best = _best_round_key(rec)
         if best is None:
             continue
-        bi = PEOPLE_ROUNDS.index(best)
+        bi = MAIN_ROUNDS.index(best)
         for job in rec_jobs:
             slot = jobs.setdefault(job, {"job": job, "bestRound": best, "combis": []})
-            cur = PEOPLE_ROUNDS.index(slot["bestRound"])
+            cur = MAIN_ROUNDS.index(slot["bestRound"])
             if bi > cur:
                 slot["bestRound"] = best
                 slot["combis"] = []
@@ -1137,7 +1158,7 @@ def build_people_stats(
         slot["count"] = len(slot["combis"])
         slot["combis"] = slot["combis"][:10]
         jobs_rows.append(slot)
-    jobs_rows.sort(key=lambda s: (-PEOPLE_ROUNDS.index(s["bestRound"]), s["job"]))
+    jobs_rows.sort(key=lambda s: (-MAIN_ROUNDS.index(s["bestRound"]), s["job"]))
 
     # --- トリオ(3人組)の最高成績(3回戦以上到達のみ、4人以上のユニットは対象外) ---
     trios = []
@@ -1145,7 +1166,7 @@ def build_people_stats(
         if len(rec.get("members", [])) != 3:
             continue
         best = _best_round_key(rec)
-        if best is None or PEOPLE_ROUNDS.index(best) < PEOPLE_ROUNDS.index("third"):
+        if best is None or MAIN_ROUNDS.index(best) < MAIN_ROUNDS.index("third"):
             continue
         trios.append(
             {
@@ -1155,8 +1176,8 @@ def build_people_stats(
                 "years": _reach_years(rec, best),
             }
         )
-    trios.sort(key=lambda t: (-PEOPLE_ROUNDS.index(t["bestRound"]), t["years"][0], t["name"]))
-    trios = _top_with_ties(trios, 30, key=lambda t: PEOPLE_ROUNDS.index(t["bestRound"]))
+    trios.sort(key=lambda t: (-MAIN_ROUNDS.index(t["bestRound"]), t["years"][0], t["name"]))
+    trios = _top_with_ties(trios, 30, key=lambda t: MAIN_ROUNDS.index(t["bestRound"]))
 
     return {
         "ageRecords": {
@@ -1424,7 +1445,7 @@ def build():
     shards: dict[int, dict] = defaultdict(dict)
     for rec in sorted_records:
         entered_years = sorted(int(y) for y in rec["history"])
-        index.append([rec["id"], rec["name"], rec["kana"], entered_years])
+        index.append([rec["id"], rec["name"], rec["kana"], entered_years, best_round(rec)])
         shard = {
             "name": rec["name"],
             "kana": rec["kana"],
@@ -1452,6 +1473,16 @@ def build():
             f"({len(member_index)} != {len(index)})"
         )
     _write(DATA_DIR / "combi" / "members.json", member_index)
+
+    # best_round と build_advancers は「準々決勝以上」の判定を独立に持つので、
+    # 定義がずれたら気付けるよう組数の一致を検証する(どちらも 578 組のはず)
+    adv_count = sum(len(t["combis"]) for t in advancers["tiers"])
+    idx_count = sum(1 for row in index if row[4] >= 4)
+    if adv_count != idx_count:
+        raise SystemExit(
+            f"[build] 準々決勝以上の組数が advancers.json({adv_count})と "
+            f"index.json の最高到達({idx_count})で食い違っています"
+        )
     print(
         f"[build] メンバー索引 {sum(len(r) // 2 for r in member_index):,}人 / "
         f"{len(member_index):,}組 (名前なしで除外 {dropped_members}人)"

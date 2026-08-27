@@ -77,9 +77,10 @@ button {
 .site-header {
   background: var(--stage);
   color: #fff;
-  /* 検索候補を本文の上に重ねるためのスタッキング文脈。40 は逆リンクバーなのでその下 */
+  /* 検索候補・検索パネルを本文の上に重ねるためのスタッキング文脈。
+     逆リンクバー(fixed, z-index:40)より前に出す必要があるので 50 */
   position: relative;
-  z-index: 30;
+  z-index: 50;
 }
 
 .site-header-inner {
@@ -324,7 +325,8 @@ button {
   color: #fff;
 }
 
-.toolbar select {
+.toolbar select,
+.search-panel-head select {
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 3px;
@@ -361,6 +363,14 @@ button {
 
 .combi-search input[type='search']::placeholder {
   color: rgba(255, 255, 255, 0.5);
+}
+
+/* 展開中は入力欄だけを背景(z:55)より前に出す。.combi-search は z-index:auto で
+   スタッキング文脈を作らないため、こうしないと入力欄が暗幕に覆われてクリックも
+   奪われる。パネル(z:60)より後ろなので候補側には被らない */
+.combi-search.expanded input[type='search'] {
+  position: relative;
+  z-index: 56;
 }
 
 /* 入力中は紙面側の見た目に切り替えて、候補リストと地続きに見せる */
@@ -454,11 +464,25 @@ button {
 }
 
 .combi-search-empty,
-.combi-search-more,
 .combi-search-pending {
   padding: 8px 10px;
   font-size: 13px;
   color: var(--muted);
+}
+
+/* 「他 N 件」は展開パネルへの導線なので、押せることが分かる見た目にする */
+.combi-search-more {
+  padding: 8px 10px;
+  border-radius: 3px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--red);
+  cursor: pointer;
+}
+
+.combi-search-more:hover,
+.combi-search-more.active {
+  background: var(--paper-2);
 }
 
 /* 狭幅では検索欄をブランド行の下に丸ごと落とす(ナビは既に横スクロールする) */
@@ -469,6 +493,166 @@ button {
   .brand-sub {
     display: none;
   }
+}
+
+/* ============ 検索結果の展開パネル ============ */
+.search-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(18, 16, 16, 0.28);
+}
+
+.search-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 60;
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(80dvh, 720px);
+  /* 上部(件数・タブ・並び替え)を固定し、下のリストだけをスクロールさせる */
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow: 0 12px 32px rgba(18, 16, 16, 0.22);
+}
+
+.search-panel-head {
+  flex: none;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 4px 4px 0 0;
+}
+
+.search-panel-count {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-panel-count strong {
+  font-family: var(--font-num);
+  font-size: 17px;
+  color: var(--ink);
+}
+
+.search-panel-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-panel-controls .seg button {
+  padding: 6px 11px;
+  font-size: 12.5px;
+}
+
+.search-panel-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.search-panel-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name hits'
+    'meta hits';
+  align-content: center;
+  gap: 0 10px;
+  height: 56px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--paper-2);
+  text-decoration: none;
+  color: inherit;
+}
+
+.search-panel-row:hover,
+.search-panel-row:focus-visible {
+  background: var(--paper-2);
+}
+
+.search-panel-name {
+  grid-area: name;
+  min-width: 0;
+  font-weight: 700;
+  font-size: 14.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-panel-sub {
+  font-weight: 500;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.search-panel-sub::before {
+  content: '／';
+  margin: 0 3px 0 5px;
+}
+
+.search-panel-meta {
+  grid-area: meta;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-panel-round::before {
+  content: '・';
+  margin: 0 1px;
+}
+
+.search-panel-hits {
+  grid-area: hits;
+  align-self: center;
+  font-family: var(--font-num);
+  font-size: 16px;
+  color: var(--muted);
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .search-panel {
+    right: auto;
+    left: 0;
+    width: 100%;
+    max-height: min(78dvh, 640px);
+  }
+}
+
+/* 注目度は約1,300組にしかないので狭幅では畳む。
+   行高 56px は SearchPanel の estimateSize と対応するので変えないこと */
+@media (max-width: 640px) {
+  .search-panel-hits {
+    display: none;
+  }
+}
+
+/* 絞り込みが追いついていない間は薄く見せる(useDeferredValue で1テンポ遅れる) */
+.search-panel-list[aria-busy='true'] {
+  opacity: 0.55;
+}
+
+.search-panel-note {
+  padding: 6px 12px 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
 }
 
 /* ============ 一覧テーブル(合格発表の紙) ============ */

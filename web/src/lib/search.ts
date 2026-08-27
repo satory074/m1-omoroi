@@ -158,3 +158,189 @@ export async function buildMemberKeys(rows: CombiMemberIndexRow[]): Promise<Memb
   off[rows.length] = p
   return { raw, rawSort, names, kanas, off }
 }
+
+/* ============ ヒットの探索とランキング ============ */
+
+/** 五十音順の比較。localeCompare より速く、毎回作り直さないようモジュールスコープに置く */
+const collator = new Intl.Collator('ja')
+
+export interface Hit {
+  /** combi/index.json の行番号 */
+  i: number
+  /** MemberKeys 内のメンバー番号(コンビ名ヒットは -1) */
+  m: number
+  tier: number
+  pop: number
+  nYears: number
+  lastYear: number
+  /** 五十音の並べ替えキー(生のかな。無ければ生の名前) */
+  sortKey: string
+}
+
+/** 出場年リストを連続範囲に畳んで表示する。例 [2015,2016,2017,2022,2023] → "2015–2017, 2022–2023" */
+export function formatYears(years: number[]): string {
+  if (!years || years.length === 0) return ''
+  const ys = [...years].sort((a, b) => a - b)
+  const parts: string[] = []
+  let start = ys[0]
+  let prev = ys[0]
+  for (let i = 1; i <= ys.length; i++) {
+    if (i < ys.length && ys[i] === prev + 1) {
+      prev = ys[i]
+      continue
+    }
+    parts.push(start === prev ? `${start}` : `${start}–${prev}`)
+    if (i < ys.length) {
+      start = ys[i]
+      prev = ys[i]
+    }
+  }
+  return parts.join(', ')
+}
+
+/**
+ * 関連度順: 一致の質 → 注目度 → 出場年数 → 直近出場年 → 五十音 → 行番号。
+ * 注目度(YouTube再生数)は3回戦以上の約1,300組にしか無く、残り約41,800組は全て -1 で並ぶ。
+ * そのまま五十音へ落とすと「田中」のような多ヒット時の並びが無作為に見えるので、
+ * index に元から入っている出場年で「常連ほど上」の弱い信号を足している。
+ * 最終段の行番号は決定性のため必須(topK は安定ソートではない)。
+ */
+export function cmpHit(a: Hit, b: Hit): number {
+  if (a.tier !== b.tier) return a.tier - b.tier
+  // 「すべて」タブで両種を混ぜたとき、同ティアならコンビ名を先に出す。
+  // ドロップダウンはコンビ名セクションが上なので、順序を食い違わせないため。
+  // 同一セクション内では m の符号が揃うので何もしないのと同じ
+  const ka = a.m < 0 ? 0 : 1
+  const kb = b.m < 0 ? 0 : 1
+  if (ka !== kb) return ka - kb
+  if (a.pop !== b.pop) return b.pop - a.pop
+  if (a.nYears !== b.nYears) return b.nYears - a.nYears
+  if (a.lastYear !== b.lastYear) return b.lastYear - a.lastYear
+  const c = collator.compare(a.sortKey, b.sortKey)
+  return c !== 0 ? c : a.i - b.i
+}
+
+function makeHit(
+  index: CombiIndexRow[],
+  i: number,
+  m: number,
+  tier: number,
+  pop: number,
+  sortKey: string,
+): Hit {
+  const yrs = index[i][3]
+  return { i, m, tier, pop, nYears: yrs.length, lastYear: yrs.length > 0 ? yrs[yrs.length - 1] : 0, sortKey }
+}
+
+export interface Hits {
+  combi: Hit[]
+  member: Hit[]
+}
+
+const NO_HITS: Hits = { combi: [], member: [] }
+
+/**
+ * 正規化済みクエリ q に一致する**全ヒット**を返す(件数上限なし・未ソート)。
+ * ドロップダウンは topK で20件に絞り、展開パネルは全件を並べ替えて使う —
+ * 両者が同じ実装を通ることで、候補と「他 N 件」の中身が食い違わないようにしている。
+ *
+ * 芸人名側はコンビ名で既にヒットした組を除外し、1組につき最良ティアの1人だけ返す
+ * (同じコンビへ飛ぶ行が並んでも情報が増えないため)。
+ *
+ * 最悪ケース(「ん」)で約27,000個の Hit を確保するが、これは打鍵ごとに走っても
+ * 実測3〜8msに収まる。重いのは並べ替えの方なので、そちらは呼び出し側の責務にしてある。
+ */
+export function findHits(
+  q: string,
+  index: CombiIndexRow[] | undefined,
+  combiKeys: CombiKeys | null,
+  memberKeys: MemberKeys | null | undefined,
+  popOf: (id: number) => number,
+): Hits {
+  // 記号や空白だけの入力は正規化すると空文字になる。String.includes('') は常に true なので
+  // ここで弾かないと全43,108組 + 全88,315人がヒットする
+  if (!q || !index || !combiKeys) return NO_HITS
+
+  const matchedCombi = new Uint8Array(index.length)
+  const combi: Hit[] = []
+  for (let i = 0; i < index.length; i++) {
+    const t = tierOf(combiKeys.names[i], combiKeys.kanas[i], q)
+    if (t === TIER_NONE) continue
+    matchedCombi[i] = 1
+    combi.push(makeHit(index, i, -1, t, popOf(index[i][0]), index[i][2] || index[i][1]))
+  }
+
+  const member: Hit[] = []
+  if (memberKeys) {
+    const { names, kanas, rawSort, off } = memberKeys
+    for (let i = 0; i < index.length; i++) {
+      if (matchedCombi[i]) continue
+      let best = -1
+      let bestTier = TIER_NONE
+      for (let m = off[i]; m < off[i + 1]; m++) {
+        const t = tierOf(names[m], kanas[m], q)
+        if (t < bestTier) {
+          bestTier = t
+          best = m
+          if (t === TIER_EXACT) break
+        }
+      }
+      if (best < 0) continue
+      member.push(makeHit(index, i, best, bestTier, popOf(index[i][0]), rawSort[best]))
+    }
+  }
+
+  return { combi, member }
+}
+
+/* ============ 展開パネルのタブと並び替え ============ */
+
+export type PanelTab = 'all' | 'combi' | 'member'
+export type PanelSort = 'relevance' | 'pop' | 'round' | 'kana' | 'year'
+
+export const PANEL_TABS: PanelTab[] = ['all', 'combi', 'member']
+export const PANEL_SORTS: { key: PanelSort; label: string }[] = [
+  { key: 'relevance', label: '関連度順' },
+  { key: 'pop', label: '注目度順' },
+  { key: 'round', label: '最高到達ラウンド順' },
+  { key: 'kana', label: '五十音順' },
+  { key: 'year', label: '出場年順 (新しい順)' },
+]
+
+export function isPanelTab(v: string | null): v is PanelTab {
+  return v === 'all' || v === 'combi' || v === 'member'
+}
+
+export function isPanelSort(v: string | null): v is PanelSort {
+  return PANEL_SORTS.some((s) => s.key === v)
+}
+
+/** 並び替えの比較関数。index を参照するのは最高到達ラウンド(5要素目)を見るため。 */
+export function comparatorFor(sort: PanelSort, index: CombiIndexRow[]): (a: Hit, b: Hit) => number {
+  const kana = (a: Hit, b: Hit) => collator.compare(a.sortKey, b.sortKey) || a.i - b.i
+  switch (sort) {
+    case 'pop':
+      return (a, b) => (b.pop !== a.pop ? b.pop - a.pop : cmpHit(a, b))
+    case 'round':
+      // 不明(0)は最後に落ちる。同着は注目度 → 五十音で解く
+      return (a, b) => {
+        // GitHub Pages は max-age=600 なので、新JS × 旧index.json(4要素)の組み合わせが
+        // 一時的に起こりうる。undefined のまま引くと NaN になりソートが壊れる
+        const ra = index[a.i][4] ?? 0
+        const rb = index[b.i][4] ?? 0
+        if (ra !== rb) return rb - ra
+        if (a.pop !== b.pop) return b.pop - a.pop
+        return kana(a, b)
+      }
+    case 'kana':
+      return kana
+    case 'year':
+      return (a, b) => {
+        if (a.lastYear !== b.lastYear) return b.lastYear - a.lastYear
+        if (a.nYears !== b.nYears) return b.nYears - a.nYears
+        return kana(a, b)
+      }
+    default:
+      return cmpHit
+  }
+}
