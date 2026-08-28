@@ -1560,3 +1560,47 @@ body {
 html {
   scroll-padding-bottom: calc(48px + env(safe-area-inset-bottom));
 }
+
+/* ============ 年度ページ「資格がありながら未エントリー」 ============ */
+.absent-section {
+  margin-top: 36px;
+}
+
+.absent-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 未エントリーの区分。「見送り(前後の年に出場)」だけ確度が高いので強調する */
+.kind-chip {
+  display: inline-block;
+  font-family: var(--font-jp);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--muted);
+  background: var(--paper-2);
+  border-radius: 999px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.kind-chip.skip {
+  color: var(--red-dark);
+  background: var(--gold-bg);
+}
+
+.absent-detail {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.absent-rest {
+  margin-top: 12px;
+}
+
+.absent-rest .history-wrap {
+  margin-top: 10px;
+}

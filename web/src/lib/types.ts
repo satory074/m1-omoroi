@@ -154,6 +154,8 @@ export interface Advancer {
   formed: number | null
   firstYear: number
   reachCount: number
+  /** 最高ラウンドに関係ない全出場年(昇順)。年度ページの未エントリー判定に使う */
+  entryYears: number[]
   members: AdvancerMember[]
 }
 

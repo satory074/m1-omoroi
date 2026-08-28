@@ -18,3 +18,9 @@ export function formationInfo(
   if (years < 0) return null // 結成が大会より後(データ異常)は非表示
   return { years, isLastYear: years === m1LimitYears(year) }
 }
+
+/** その年に出場資格(結成N年以内)があったか。結成年不明・結成前は false。 */
+export function isEligible(year: number, formed: number | null | undefined): boolean {
+  const fi = formationInfo(year, formed)
+  return fi != null && fi.years <= m1LimitYears(year)
+}

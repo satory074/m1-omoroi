@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 
+import AbsentAdvancers from '../components/AbsentAdvancers'
 import CombiPhoto from '../components/CombiPhoto'
 import { useMeta, usePopularity, useYear } from '../lib/api'
 import { formationInfo } from '../lib/eligibility'
@@ -102,6 +103,13 @@ export default function YearPage() {
     }
     return sorted
   }, [yearFile, round, resultFilter, sort, popularity])
+
+  // 「資格がありながら未エントリー」の判定用。その年エントリーした全組のID
+  const enteredIds = useMemo(() => {
+    const ids = new Set<number>()
+    for (const e of yearFile?.entries ?? []) if (e.id != null) ids.add(e.id)
+    return ids
+  }, [yearFile])
 
   const parentRef = useRef<HTMLDivElement>(null)
   const virtualizer = useVirtualizer({
@@ -251,6 +259,8 @@ export default function YearPage() {
           </div>
         )}
       </div>
+
+      <AbsentAdvancers year={year} enteredIds={enteredIds} isArchive={isArchive} />
     </>
   )
 }

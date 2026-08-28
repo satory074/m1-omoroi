@@ -350,6 +350,8 @@ def build_advancers(records: list[dict]) -> dict:
     ないため「到達」は3キーの有無で判定する(合否は問わない)。
     出身地・生年は公式コンビDB(2015年以降)/レガシー由来のため、それ以外は欠損のまま。
     age は「初めてその最高ラウンドに到達した年 − 生年」で算出する。
+    entryYears は最高ラウンドに関係ない全出場年(昇順)。年度ページの
+    「資格がありながら未エントリー」判定が、その年に出たか/前後に出たかを見るのに使う。
     records は merge_archive_history 後を渡すこと(2001〜2010の出場も含める)。
     """
     tiers: dict[str, list] = {r: [] for r in ADVANCER_TIERS}
@@ -377,6 +379,7 @@ def build_advancers(records: list[dict]) -> dict:
                 "formed": rec.get("formed"),
                 "firstYear": first_year,
                 "reachCount": len(years),
+                "entryYears": sorted(int(y) for y in rec.get("history", {})),
                 "members": members,
             }
         )
