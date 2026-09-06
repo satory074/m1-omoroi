@@ -1212,7 +1212,8 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
     兼ねる)。2001年の会場票(大阪/札幌/福岡)は venues 指定で個人審査員の統計から
     除外する。辛口/甘口(diff)は「自分の点 − その組への個人審査員平均」の平均で、
     満点や採点の甘さが違う年をまたいでも比較できる相対値。行内の最高点/最低点は
-    タイなら全員に計上。最終決戦の投票集計(votes/champVotes)は voters がマージ
+    タイなら全員に計上。byYear の maxCombis/minCombis はその審査員自身がその年に
+    最も高く/低く評価した組(同点は全件。combiId は名寄せできない年は None)。最終決戦の投票集計(votes/champVotes)は voters がマージ
     されている年のみが分母(finalVotes の満場一致/票差は votes から全年分)。
     """
     ov = judges_ov if judges_ov is not None else _load_judges_overrides()
@@ -1256,7 +1257,7 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
             if raw not in venue_set
         ]
         per_col: dict[int, dict] = {
-            i: {"scores": [], "diffs": [], "top": 0, "low": 0} for i, _, _ in cols
+            i: {"scores": [], "combis": [], "diffs": [], "top": 0, "low": 0} for i, _, _ in cols
         }
         for row in finals.get("firstRound", []):
             scores = row.get("scores") or []
@@ -1268,9 +1269,11 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
             row_mean = statistics.fmean(v for _, v in vals)
             mx = max(v for _, v in vals)
             mn = min(v for _, v in vals)
+            combi = {"name": row["name"], "combiId": row.get("combiId")}
             for i, v in vals:
                 pc = per_col[i]
                 pc["scores"].append(v)
+                pc["combis"].append(combi)
                 pc["diffs"].append(v - row_mean)
                 pc["top"] += v == mx
                 pc["low"] += v == mn
@@ -1280,6 +1283,7 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
             pc = per_col[i]
             if not pc["scores"]:
                 continue
+            mx_val, mn_val = max(pc["scores"]), min(pc["scores"])
             year_judges.append(
                 {
                     "name": raw,
@@ -1288,8 +1292,11 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
                     "diff": round(statistics.fmean(pc["diffs"]), 1),
                     "top": pc["top"],
                     "low": pc["low"],
-                    "max": max(pc["scores"]),
-                    "min": min(pc["scores"]),
+                    "max": mx_val,
+                    "min": mn_val,
+                    # その審査員がその年に最も高く/低く評価した組(同点は全件、出番順)
+                    "maxCombis": [c for v, c in zip(pc["scores"], pc["combis"]) if v == mx_val],
+                    "minCombis": [c for v, c in zip(pc["scores"], pc["combis"]) if v == mn_val],
                 }
             )
             c = career[canon]

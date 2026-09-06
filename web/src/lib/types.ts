@@ -312,6 +312,13 @@ export interface JudgeCareer {
   champVotes: number
 }
 
+/** その審査員がその年に最高点/最低点をつけた組(同点は全件、出番順) */
+export interface JudgePickCombi {
+  name: string
+  /** 名寄せできなかった組(主に2001〜2010)は null */
+  combiId: number | null
+}
+
 export interface JudgeYearRow {
   name: string
   canonical: string
@@ -321,6 +328,9 @@ export interface JudgeYearRow {
   low: number
   max: number
   min: number
+  /** max/min を付けた組(同点は全件) */
+  maxCombis: JudgePickCombi[]
+  minCombis: JudgePickCombi[]
 }
 
 export interface JudgesYear {

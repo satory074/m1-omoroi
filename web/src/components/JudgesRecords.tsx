@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import type { JudgesStats } from '../lib/types'
+import type { JudgePickCombi, JudgesStats } from '../lib/types'
 
 /** 連続年をまとめて表示する: [2001..2010, 2016..2023] → "2001〜2010・2016〜2023" */
 function compressYears(years: number[]): string {
@@ -63,18 +63,46 @@ export function JudgeCareerSection({ js }: { js: JudgesStats }) {
   )
 }
 
+/** 「点数 + その点を付けた組」のセル。同点は全組を「・」で並べ、その年の王者には👑 */
+function PickCell({
+  score,
+  combis,
+  championId,
+}: {
+  score: number
+  combis: JudgePickCombi[]
+  championId: number | null
+}) {
+  return (
+    <td className="judge-pick">
+      <span className="pick-score">{score}</span>
+      {combis.map((c, i) => (
+        <span key={`${c.name}-${i}`}>
+          {i > 0 && '・'}
+          {c.combiId != null ? <Link to={`/combi/${c.combiId}`}>{c.name}</Link> : c.name}
+          {c.combiId != null && c.combiId === championId && ' 👑'}
+        </span>
+      ))}
+    </td>
+  )
+}
+
 /** 審査員の年別採点傾向+最終決戦の得票(統計ページ) */
 export function JudgesYearlySection({ js }: { js: JudgesStats }) {
   const years = js.byYear.map((y) => y.year)
   const [year, setYear] = useState(years[years.length - 1])
   const yearRow = js.byYear.find((y) => y.year === year)
   const venueNote = js.venueColumns[String(year)]
+  // その年の王者IDは finalVotes から引く(全年 championCombiId が入っている)
+  const championId = js.finalVotes.find((v) => v.year === year)?.championCombiId ?? null
   return (
     <>
       <h2 className="section-title">審査員の年別採点傾向</h2>
       <p className="section-note">
-        平均差 = その審査員の平均点 − その年の審査員全体の平均点。最高点/最低点はその組に対して
+        平均差 = その審査員の平均点 − その年の審査員全体の平均点。最高点回数/最低点回数はその組に対して
         審査員の中で最高/最低の点を付けた回数(同点は全員に計上)。
+        自己最高点/自己最低点 = その審査員がその年に最も高く/低く評価した組(同点は全組)で、
+        👑はその年の優勝コンビ。
         {venueNote && ` ${year}年の会場票(${venueNote.join('・')})は集計に含まない。`}
       </p>
       <div className="year-strip judges-year-strip">
@@ -92,9 +120,10 @@ export function JudgesYearlySection({ js }: { js: JudgesStats }) {
                 <th>審査員</th>
                 <th>平均点</th>
                 <th>平均差</th>
-                <th>最高点</th>
-                <th>最低点</th>
-                <th>点の幅</th>
+                <th>最高点回数</th>
+                <th>最低点回数</th>
+                <th>自己最高点</th>
+                <th>自己最低点</th>
               </tr>
             </thead>
             <tbody>
@@ -107,9 +136,8 @@ export function JudgesYearlySection({ js }: { js: JudgesStats }) {
                     <td className="no">{j.diff > 0 ? `+${j.diff.toFixed(1)}` : j.diff.toFixed(1)}</td>
                     <td className="no">{j.top}回</td>
                     <td className="no">{j.low}回</td>
-                    <td className="no">
-                      {j.min}〜{j.max}
-                    </td>
+                    <PickCell score={j.max} combis={j.maxCombis} championId={championId} />
+                    <PickCell score={j.min} combis={j.minCombis} championId={championId} />
                   </tr>
                 ))}
             </tbody>

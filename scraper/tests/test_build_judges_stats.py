@@ -129,3 +129,29 @@ def test_career_votes_only_when_voters_merged():
     career = {c["name"]: c for c in s["career"]}
     assert career["松本人志"]["votes"] == 1 and career["松本人志"]["champVotes"] == 1
     assert career["オール巨人"]["votes"] == 1 and career["オール巨人"]["champVotes"] == 0
+
+
+def test_year_judges_report_own_max_min_combis():
+    y = _finals(
+        2016,
+        ["松本", "巨人"],
+        [
+            {"name": "A", "combiId": 1, "scores": [95, 90], "total": 185},
+            {"name": "B", "combiId": 2, "scores": [95, 88], "total": 183},
+            # 2001〜2010の名寄せ未リンク組を想定(combiId なし)
+            {"name": "C", "combiId": None, "scores": [90, 93], "total": 183},
+        ],
+    )
+    s = build_judges_stats([y], OV)
+    matsu, kyojin = s["byYear"][0]["judges"]
+    # 自己最高点の同点は全組を出番順で列挙
+    assert matsu["max"] == 95
+    assert matsu["maxCombis"] == [
+        {"name": "A", "combiId": 1},
+        {"name": "B", "combiId": 2},
+    ]
+    assert matsu["min"] == 90
+    assert matsu["minCombis"] == [{"name": "C", "combiId": None}]
+    # 巨人: [90, 88, 93] → 最高はC(combiId なしはそのまま None)・最低はB
+    assert kyojin["maxCombis"] == [{"name": "C", "combiId": None}]
+    assert kyojin["minCombis"] == [{"name": "B", "combiId": 2}]

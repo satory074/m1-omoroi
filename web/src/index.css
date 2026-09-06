@@ -988,6 +988,14 @@ button {
   font-weight: 700;
 }
 
+/* 審査員の年別表: 「点数 + その点を付けた組」のセル */
+.history td.judge-pick .pick-score {
+  font-family: var(--font-num);
+  font-size: 15px;
+  font-weight: 700;
+  margin-right: 6px;
+}
+
 .history td.cell {
   text-align: center;
   font-weight: 700;
