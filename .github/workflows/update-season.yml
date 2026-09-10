@@ -43,9 +43,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data scraper/state scraper/work/combi.jsonl.gz scraper/work/popularity.json
+          # build は data/meta.json 等も再生成する。未stageの再生成物が残ると
+          # 後続の git pull --rebase が「unstaged changes」で失敗するため破棄する
+          git checkout -- .
           if git diff --cached --quiet; then
             echo "変更なし"
           else
             git commit -m "シーズンデータ自動更新 ($(date +%Y-%m-%d))"
+            # クロールに約50分かかるため、その間に update-popularity.yml が
+            # push しているとそのままでは reject され、取得結果が丸ごと失われる
+            git pull --rebase origin main
             git push
           fi
