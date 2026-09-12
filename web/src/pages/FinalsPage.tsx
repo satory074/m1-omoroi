@@ -40,6 +40,14 @@ export default function FinalsPage() {
       <p className="legend">
         コンビ名横の(N回目) = その年時点で通算N回目の決勝進出。点数横の(N) = その審査員がつけた点数の中での順位。
       </p>
+      <p className="legend">
+        <strong>あなた</strong>列 = もしあなたが審査員だったら。0〜100の点数を入力すると、あなたを加えた合計・順位が即座に再計算されます(↑↓
+        で1点ずつ増減、Enter で出番順の次の組へ、Esc でその組を取り消し)。入力した点数は<strong>この端末のブラウザに年ごとに保存</strong>
+        され、次に開いたときも残ります。審査員を「全解除」すれば、あなたの採点だけの順位も見られます。
+      </p>
+      <p className="legend">
+        見出しが<strong>合計*</strong>のときは、公式の合計(全審査員のみ)とは違う集計であることを示します。
+      </p>
       {finals.firstRound.some((r) => r.order != null) && (
         <p className="legend">出番 = ファーストラウンドのネタ披露順。</p>
       )}

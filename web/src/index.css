@@ -1154,6 +1154,65 @@ button {
   accent-color: var(--red);
 }
 
+/* ---- 「もしあなたが審査員だったら」= あなた列 ---- */
+/* ヘッダを朱にして、実在の審査員列と一目で区別できるようにする */
+.history th.judge-th.my-th {
+  border-bottom: 2px solid var(--red);
+}
+.history th.judge-th.my-th .th-sort {
+  color: var(--red);
+  font-weight: 700;
+}
+
+/* 得点チップの中に埋める入力欄。.num の background-clip:text グラデは <input> には
+   効かないので、凡例 .score-legend と同じくベタ色で塗る。
+   height/padding/border を .num の行ボックス(font-size 18px / line-height 1)に
+   合わせて、あなた列だけ行が高くなるのを防ぐ。
+   font-size を 18px にしてあるので iOS のフォーカス時ズーム(16px未満で発生)も起きない。 */
+.finals-table td.no.score.my .my-score-input {
+  display: inline-block;
+  width: 2.6em;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  appearance: none;
+}
+.finals-table td.no.score.my.gold .my-score-input {
+  color: #f4c033;
+  -webkit-text-fill-color: #f4c033;
+}
+.finals-table td.no.score.my .my-score-input::placeholder {
+  color: #6b7280;
+  font-weight: 400;
+  opacity: 1; /* Firefox の既定 opacity を打ち消す */
+}
+/* フォーカスはチップの縁で示す。border-spacing が 3px しかなく、グローバルの
+   :focus-visible(outline-offset: 2px)だと隣のチップに被るため内側に出す */
+.finals-table td.no.score.my .my-score-input:focus {
+  outline: none;
+}
+.finals-table td.no.score.my:focus-within {
+  box-shadow: inset 0 0 0 1px #000, inset 0 0 0 2px var(--red);
+}
+/* 集計から外していても入力自体はできるので、審査員列の .3 ほど薄くしない */
+.finals-table td.no.score.my.excluded {
+  opacity: 0.55;
+}
+/* 未入力のチップは縁を落として「ここに入れる」と示す */
+.finals-table td.no.score.my.empty {
+  box-shadow: inset 0 0 0 1px #000, inset 0 0 0 2px rgba(196, 204, 214, 0.22);
+}
+
 /* コントロール(全選択/全解除 + 選択中人数) */
 .finals-controls {
   align-items: center;
@@ -1163,6 +1222,29 @@ button {
   font-size: 12px;
   font-weight: 700;
   color: var(--muted);
+}
+.finals-count.finals-my-count {
+  color: var(--red);
+}
+/* あなたの点数のクリアボタン。.seg とは独立した単独ボタンなので専用に持つ */
+.finals-clear {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #fff;
+  padding: 7px 13px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+}
+.finals-clear:hover:not(:disabled) {
+  color: var(--red);
+  border-color: var(--red);
+}
+.finals-clear:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 /* 凡例内の得点色サンプル(得点チップと同じ黒地・本家テロップ風) */
