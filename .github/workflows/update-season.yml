@@ -20,6 +20,16 @@ jobs:
       - name: Crawl season diff
         working-directory: scraper
         run: |
+          # チェックアウト直後は cache/combi が空。再取得が0件のまま parse-combi を
+          # 呼ぶと「キャッシュがありません」で exit 1 するため、取得済みがある時だけ回す。
+          # (前回実行から変化が無い週は両パスとも0件になり得る)
+          parse_if_crawled() {
+            if [ -n "$(ls -A cache/combi 2>/dev/null)" ]; then
+              uv run m1 parse-combi
+            else
+              echo "再取得0件のため parse-combi をスキップ(正本 combi.jsonl.gz をそのまま使う)"
+            fi
+          }
           uv sync
           uv run m1 crawl-list --year 2026 --refresh --detect-changed
           uv run python -c "
@@ -29,13 +39,14 @@ jobs:
           "
           uv run m1 crawl-combi --ids work/changed_2026.json --force
           # 変化したコンビだけ再取得し、コミット済みの正本(combi.jsonl.gz)にマージする
-          uv run m1 parse-combi
+          parse_if_crawled
           # list.php は詳細ページより先に更新されるため、detect-changed(list文字列の変化)
           # だけでは『list が確定 → 後から詳細が確定』の組を取りこぼす。list が確定結果を
           # 示すのに詳細が追随漏れの組を第2パスで回収し、再取得→再パースする
+          # (第1パスをスキップした場合 detect-stale は正本 .gz を読むので問題ない)
           uv run m1 detect-stale --year 2026
           uv run m1 crawl-combi --ids work/stale_2026.json --force
-          uv run m1 parse-combi
+          parse_if_crawled
           # 注目度は update-popularity.yml が日次で更新するためここでは取得しない
           uv run m1 build
       - name: Commit data changes
