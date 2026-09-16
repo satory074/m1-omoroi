@@ -8,6 +8,11 @@ on:
     # 毎日 18:00 JST (09:00 UTC)。APIクォータは日本時間16時頃にリセットされる
     - cron: '0 9 * * *'
   workflow_dispatch:
+    inputs:
+      rescore:
+        description: '採用判定ルール変更後の一括再集計(蓄積済み動画IDに videos.list のみ、約260units)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -32,6 +37,9 @@ jobs:
             exit 0
           fi
           uv sync
+          if [ "${{ inputs.rescore }}" = "true" ]; then
+            uv run m1 rescore-popularity
+          fi
           uv run m1 fetch-popularity
           uv run m1 build
       - name: Commit data changes

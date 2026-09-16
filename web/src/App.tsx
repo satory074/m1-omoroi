@@ -59,7 +59,7 @@ export default function App() {
             <a href="https://www.m-1gp.com/" target="_blank" rel="noreferrer">
               M-1グランプリ公式サイト
             </a>
-            、決勝の得点はWikipediaを出典としています。注目度はコンビ名でYouTube検索した上位動画の再生数合計です。
+            、決勝の得点はWikipediaを出典としています。注目度はコンビ名でYouTube検索した上位動画のうちコンビ名を単語として含むもの(同名の楽曲・ゲーム等は除外)の再生数合計です。
           </p>
         </div>
       </footer>

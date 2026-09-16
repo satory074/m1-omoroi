@@ -157,6 +157,12 @@ def cmd_fetch_popularity(args):
     fetch_popularity(limit=args.limit)
 
 
+def cmd_rescore_popularity(args):
+    from .youtube_popularity import rescore_popularity
+
+    rescore_popularity()
+
+
 def cmd_build(args):
     from .build_json import build
 
@@ -200,6 +206,12 @@ def main():
     p = sub.add_parser("fetch-popularity", help="YouTube再生数(注目度)を取得")
     p.add_argument("--limit", type=int, help="今回取得する組数の上限(動作確認用)")
     p.set_defaults(func=cmd_fetch_popularity)
+
+    p = sub.add_parser(
+        "rescore-popularity",
+        help="取得済み動画IDから注目度を一括再集計(searchを消費しない。判定ルール変更後に実行)",
+    )
+    p.set_defaults(func=cmd_rescore_popularity)
 
     p = sub.add_parser("build", help="work/* から data/* を生成")
     p.set_defaults(func=cmd_build)
