@@ -158,9 +158,12 @@ def cmd_fetch_popularity(args):
 
 
 def cmd_rescore_popularity(args):
-    from .youtube_popularity import rescore_popularity
+    from .youtube_popularity import QuotaExceeded, rescore_popularity
 
-    rescore_popularity()
+    try:
+        rescore_popularity()
+    except QuotaExceeded:
+        raise SystemExit(1)
 
 
 def cmd_build(args):

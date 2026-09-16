@@ -72,7 +72,7 @@ export default function PopularityRanking() {
       <h2 className="section-title">注目度ランキング(YouTube再生数)</h2>
       <p className="section-note">
         「コンビ名 漫才」でのYouTube検索上位10本のうち、コンビ名を単語として含む動画(自分のチャンネルの動画は全件)の再生数合計。
-        同名の楽曲・ゲーム・スポーツ・ニュースは除外。動画数は合計に含めた本数。対象は3回戦以上の出場経験があるコンビで、
+        字面で判別できない同名の楽曲・番組などは手動で除外。動画数は合計に含めた本数。対象は3回戦以上の出場経験があるコンビで、
         取得日はコンビごとに異なる(約2週間周期の自動更新)。
       </p>
       {table(rows.slice(0, TOP), false)}

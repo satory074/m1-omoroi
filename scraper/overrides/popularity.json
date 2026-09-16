@@ -2,35 +2,91 @@
   "_comment": "注目度(YouTube再生数)の手動除外。キー=コンビID。excludeChannels はチャンネル名の部分一致(NFKC・大小無視)、excludeIds は動画ID。自動ルール(youtube_popularity.py の _accept)で判別できない一般語のコンビ名向け。fetch/rescore の両方で適用される",
   "6212": {
     "note": "チル — 『チルるーム』『東京チル・ドレン』『チル漫才』など一般語としての用例",
-    "excludeChannels": ["チルるーム", "東京チル・ドレン", "チルアウトーク", "かまいたちチャンネル", "バッツネVICE"]
+    "excludeChannels": [
+      "チルるーム",
+      "東京チル・ドレン",
+      "チルアウトーク",
+      "かまいたちチャンネル",
+      "バッツネVICE"
+    ]
   },
   "12533": {
     "note": "オーケストラ — 別コンビ『メンバー』のオーケストラ企画や楽団演奏",
-    "excludeChannels": ["メンバーチャンネル", "RCCテレビ", "感動ストーリーラボ", "ちょこちっぷくっきー", "oricon", "しもふりチューブ"]
+    "excludeChannels": [
+      "メンバーチャンネル",
+      "RCCテレビ",
+      "感動ストーリーラボ",
+      "ちょこちっぷくっきー",
+      "oricon",
+      "しもふりチューブ"
+    ]
   },
   "1404": {
     "note": "エジソン — 楽曲・偉人解説・別コンビのネタタイトル",
-    "excludeChannels": ["THE FIRST TAKE", "しくじり先生", "吉本興業チャンネル", "ワタナベお笑い公式チャンネル"]
+    "excludeChannels": [
+      "THE FIRST TAKE",
+      "しくじり先生",
+      "吉本興業チャンネル",
+      "ワタナベお笑い公式チャンネル"
+    ]
   },
   "27862": {
     "note": "ジェームズ — 無関係チャンネル『ジェームズJ』",
-    "excludeChannels": ["ジェームズJ"]
+    "excludeChannels": [
+      "ジェームズJ"
+    ]
   },
   "1625": {
     "note": "ボヘミアン — 楽曲『ボヘミアン』『ボヘミアン・ラプソディ』と同名の劇団",
-    "excludeChannels": ["saotin", "hiroace156", "ちーた", "宇宙世紀ボーイズ", "たまちゃんshop", "Twitterで話題の動画", "面白き日々を日常に", "よしもと漫才劇場チャンネル"],
-    "excludeIds": ["VBjkzgJOo4Y"]
+    "excludeChannels": [
+      "saotin",
+      "hiroace156",
+      "ちーた",
+      "宇宙世紀ボーイズ",
+      "たまちゃんshop",
+      "Twitterで話題の動画",
+      "面白き日々を日常に",
+      "よしもと漫才劇場チャンネル"
+    ],
+    "excludeIds": [
+      "VBjkzgJOo4Y"
+    ]
   },
   "7913": {
     "note": "LOVE — =LOVE(イコラブ)、LOVE PHANTOM など",
-    "excludeChannels": ["ぶたマンモスハウス", "はてなブロック", "戦国おもしろ列伝", "緑おじぃのショート", "ラブレターズ"]
+    "excludeChannels": [
+      "ぶたマンモスハウス",
+      "はてなブロック",
+      "戦国おもしろ列伝",
+      "緑おじぃのショート",
+      "ラブレターズ"
+    ]
   },
   "30027": {
     "note": "ドラゴン — Dragon Ash・ドラゴンボール・『燃えてるドラゴン』など",
-    "excludeChannels": ["ニューヨーク Official Channel", "R藤本", "style yes douga", "おもろい動画", "東京ホテイソン"]
+    "excludeChannels": [
+      "ニューヨーク Official Channel",
+      "R藤本",
+      "style yes douga",
+      "おもろい動画",
+      "東京ホテイソン"
+    ]
   },
   "14840": {
     "note": "号泣 — 感情表現としての『号泣』",
-    "excludeChannels": ["感情の鏡", "鶏肋動画CH", "Terry Yates", "juliana albino", "戦国おもしろ列伝"]
+    "excludeChannels": [
+      "感情の鏡",
+      "鶏肋動画CH",
+      "Terry Yates",
+      "juliana albino",
+      "戦国おもしろ列伝"
+    ]
+  },
+  "4821": {
+    "note": "G-SHOCK — 腕時計のG-SHOCK(しくじり先生の開発秘話・自衛隊あるある等)",
+    "excludeChannels": [
+      "しくじり先生",
+      "自衛隊チャンネル"
+    ]
   }
 }

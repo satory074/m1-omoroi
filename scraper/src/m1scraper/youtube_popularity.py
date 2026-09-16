@@ -10,18 +10,19 @@
 1. overrides/popularity.json で除外指定された動画ID・チャンネルは不採用
 2. 自分のチャンネル(チャンネル名がコンビ名で始まり、続きが区切りか「チャンネル」等の接尾語)の
    動画は無条件で採用(タイトルにコンビ名が無い自チャンネル動画を取りこぼさない)
-3. 第三者の動画はカテゴリが 音楽/スポーツ/ゲーム/ニュース なら不採用
-   (同名の楽曲「エジソン」やゲーム実況「賞金1000万円」対策)
-4. タイトル・説明文・チャンネル名・タグのいずれかにコンビ名が境界つきで含まれれば採用。
+3. タイトル・説明文・チャンネル名・タグのいずれかにコンビ名が境界つきで含まれれば採用。
    単なる部分一致だと シャララ⊂シャラララックス、2000⊂ヨネダ2000、百恵⊂山口百恵 のように
    一般語のコンビ名で無関係な動画が素通りし、3回戦止まりの組が上位に並んでしまう。
-   境界は隣接1文字の文字種で見る(カナ→カナ・漢字→漢字・英数→英数/カナ/漢字 の連結は不採用、
-   ひらがなの助詞「の」「が」等は許容)。
+   境界は隣接1文字の文字種で見る(カナ→カナ・漢字→漢字・英数→英数/カナ の連結は不採用、
+   英数→漢字は助数詞「万」「回」「年」等のみ不採用、ひらがなの助詞「の」「が」等は許容)。
    これらのフィルタが無いと動画の少ない組の検索結果が無関係な高再生動画で埋まる(まっかちん5,200万回など)。
+   動画カテゴリでの除外は行わない — よしもと漫才劇場公式や四千頭身公式が「ゲーム」で投稿していたり、
+   クマムシの歌ネタが「音楽」(VEVO)だったりと、公式動画の取りこぼしが実測で多かった(2026-09)。
 
-判定ルールを変えたら `m1 rescore-popularity` で全組を一括再集計する(蓄積済みの動画IDに対して
-videos.list を叩くだけなので search を再消費しない。全組で約260units)。
-ローリング更新に任せると2週間ほど新旧ルールが混在する。
+判定ルール(FILTER_VERSION)か overrides を変えると、次回の fetch-popularity が自動で
+rescore(全組の一括再集計)を先に行う。蓄積済みの動画IDに videos.list を叩くだけなので
+search を再消費しない(全組で約220units)。手動なら `m1 rescore-popularity`。
+ローリング更新に任せると2週間ほど新旧ルールが混在するので必ず一括で適用する。
 
 - 対象: 3回戦以上に出場経験のあるコンビ(約1,300組)
 - search.list は100units/回、無料枠10,000units/日 → 約95組/日。
@@ -33,6 +34,7 @@ videos.list を叩くだけなので search を再消費しない。全組で約
 - work/popularity.json はコミット対象(CIビルドでも使われる)
 """
 
+import hashlib
 import json
 import os
 import re
@@ -54,9 +56,8 @@ TOP_N = 10
 UNITS_PER_COMBI = 101
 DAILY_UNIT_BUDGET = 9_500
 
-# YouTube動画カテゴリ: 10=Music 17=Sports 20=Gaming 25=News & Politics
-# 第三者の動画がこれらなら、コンビ名を含んでいても同名の別物とみなす(自チャンネルは対象外)
-EXCLUDED_CATEGORIES = frozenset({"10", "17", "20", "25"})
+# 採用判定ルールの版。判定を変えたら上げる(popularity.json の filter スタンプと不一致なら自動で再集計)
+FILTER_VERSION = 3
 
 # コンビ名の直後にこれらが続く場合は文字種に関わらず境界とみなす
 # (自チャンネル名「ネルソンズチャンネル」「ジャルジャルタワー」「コットンシアター」「例えば炎研究所」等)。
@@ -68,6 +69,9 @@ ALLOWED_SUFFIXES = (
 )
 # ひらがなで終わる名前の直後に来てよい助詞(「いぬのコント」「千年ぶりのYouTube」)
 _PARTICLES = frozenset("のがはをにでともやへかねよ")
+# 数字で終わる名前の直後に来たら数量表現とみなす助数詞(「賞金1000万円」「4000年に一度」「1000回目」)。
+# それ以外の漢字は連結タイトルとして許容(「ヨネダ2000最高」)
+_COUNTERS = frozenset("万億兆千百十円回年月日時分秒人本件位点個台名枚期弾度歳才番組曲章巻冊倍割段階種問話")
 # チャンネル名先頭の【公式】(公式) 等
 _LEADING_BRACKETS = re.compile(r"^(?:[【\[(（][^】\])）]*[】\])）]\s*)+")
 
@@ -193,7 +197,12 @@ def _edge_ok(edge: str | None, neighbor: str | None, after: bool) -> bool:
     if edge == "kanji":
         return cls != "kanji"  # 山口|百恵、若林|号泣
     if edge == "alnum":
-        return cls == "hira"  # ヨネダ|2000、賞金|1000|万円 は不可。「EXITの」は助詞なので可
+        if cls == "hira":
+            return True  # 「EXITの」「ヨネダ2000が」は助詞
+        if cls == "kanji":
+            # 後ろの助数詞は数量(1000|万円、4000|年)。それ以外の漢字や前側の漢字は連結表記として許容
+            return not after or neighbor not in _COUNTERS
+        return False  # ヨネダ|2000、love|phantom
     if edge == "hira":
         return cls != "hira" or (after and neighbor in _PARTICLES)  # ぺ|こぱ 不可、いぬ|の 可
     return True
@@ -241,7 +250,15 @@ def _load_overrides() -> dict[str, dict]:
     if not path.exists():
         return {}
     data = json.loads(path.read_text(encoding="utf-8"))
-    return {str(k): v for k, v in data.items()}
+    return {str(k): v for k, v in data.items() if not str(k).startswith("_")}
+
+
+def filter_stamp(overrides: dict) -> str:
+    """判定ルールの版 + overrides 内容のハッシュ。popularity.json の `filter` と比較して再集計要否を決める。"""
+    digest = hashlib.sha1(
+        json.dumps(overrides, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    ).hexdigest()[:8]
+    return f"{FILTER_VERSION}:{digest}"
 
 
 def _excluded_by_override(item: dict, override: dict | None) -> bool:
@@ -259,8 +276,6 @@ def _accept(item: dict, matcher: NameMatcher, override: dict | None = None) -> b
     sn = item.get("snippet", {})
     if matcher.is_own_channel(sn.get("channelTitle", "")):
         return True
-    if sn.get("categoryId") in EXCLUDED_CATEGORIES:
-        return False
     fields = [sn.get("title", ""), sn.get("description", ""), sn.get("channelTitle", "")]
     fields += sn.get("tags", [])
     return any(matcher.contains(f) for f in fields)
@@ -327,18 +342,46 @@ def _require_api_key() -> str:
     return api_key
 
 
-def fetch_popularity(limit: int | None = None):
-    api_key = _require_api_key()
-
-    pop_path = WORK_DIR / "popularity.json"
+def _load_popularity(pop_path) -> dict:
     data = {"source": SOURCE, "hits": {}}
     if pop_path.exists():
         prev = json.loads(pop_path.read_text(encoding="utf-8"))
         if prev.get("source") == data["source"]:
             data = prev
+    return data
 
+
+def fetch_popularity(limit: int | None = None, client: httpx.Client | None = None):
+    api_key = _require_api_key()
+    pop_path = WORK_DIR / "popularity.json"
     targets = select_targets()
     overrides = _load_overrides()
+    stamp = filter_stamp(overrides)
+
+    own_client = client is None
+    if own_client:
+        client = httpx.Client(timeout=30.0, headers={"User-Agent": USER_AGENT})
+    try:
+        data = _load_popularity(pop_path)
+        if data["hits"] and data.get("filter") != stamp:
+            print(
+                f"[fetch-popularity] 採用判定ルール/overrides が変わっている"
+                f" (filter {data.get('filter')} → {stamp})。先に全組を再集計します"
+            )
+            try:
+                rescore_popularity(client=client)
+            except QuotaExceeded:
+                print("[fetch-popularity] 再集計中にAPIクォータ超過。翌日再実行してください")
+                return
+            data = _load_popularity(pop_path)
+        _fetch_rolling(client, api_key, pop_path, data, targets, overrides, stamp, limit)
+    finally:
+        if own_client:
+            client.close()
+
+
+def _fetch_rolling(client, api_key, pop_path, data, targets, overrides, stamp, limit):
+    data["filter"] = stamp
     todo = plan_todo(targets, data["hits"])
     if limit:
         todo = todo[:limit]
@@ -351,41 +394,40 @@ def fetch_popularity(limit: int | None = None):
     today = date.today().isoformat()
     units = 0
     done = 0
-    with httpx.Client(timeout=30.0, headers={"User-Agent": USER_AGENT}) as client:
-        for n, t in enumerate(todo, 1):
-            if units + UNITS_PER_COMBI > DAILY_UNIT_BUDGET:
-                print(
-                    f"[fetch-popularity] 無料枠の目安({DAILY_UNIT_BUDGET}units)に到達。"
-                    "翌日再実行してください"
-                )
-                break
-            try:
-                video_ids = search_video_ids(client, api_key, t["name"])
-                units += 100
-                views = fetch_view_counts(
-                    client, api_key, video_ids, t["name"], overrides.get(str(t["id"]))
-                )
-                units += (len(video_ids) + 49) // 50
-            except QuotaExceeded:
-                print("[fetch-popularity] APIクォータ超過。翌日再実行してください")
-                break
-            except httpx.HTTPError as e:
-                print(f"[fetch-popularity] {t['name']}: 取得失敗 ({e}) スキップ")
-                time.sleep(2)
-                continue
-            # ids は検索結果全件(フィルタ前)。フィルタ規則の変更時に
-            # rescore-popularity が videos.list だけで再集計する(searchの100unitsを再消費しない)
-            data["hits"][str(t["id"])] = {
-                "n": sum(views),
-                "at": today,
-                "v": len(views),
-                "ids": video_ids,
-            }
-            done += 1
-            if n % 25 == 0 or n == len(todo):
-                pop_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-                print(f"[fetch-popularity] {n}/{len(todo)}", flush=True)
-            time.sleep(0.2)
+    for n, t in enumerate(todo, 1):
+        if units + UNITS_PER_COMBI > DAILY_UNIT_BUDGET:
+            print(
+                f"[fetch-popularity] 無料枠の目安({DAILY_UNIT_BUDGET}units)に到達。"
+                "翌日再実行してください"
+            )
+            break
+        try:
+            video_ids = search_video_ids(client, api_key, t["name"])
+            units += 100
+            views = fetch_view_counts(
+                client, api_key, video_ids, t["name"], overrides.get(str(t["id"]))
+            )
+            units += (len(video_ids) + 49) // 50
+        except QuotaExceeded:
+            print("[fetch-popularity] APIクォータ超過。翌日再実行してください")
+            break
+        except httpx.HTTPError as e:
+            print(f"[fetch-popularity] {t['name']}: 取得失敗 ({e}) スキップ")
+            time.sleep(2)
+            continue
+        # ids は検索結果全件(フィルタ前)。フィルタ規則の変更時に
+        # rescore-popularity が videos.list だけで再集計する(searchの100unitsを再消費しない)
+        data["hits"][str(t["id"])] = {
+            "n": sum(views),
+            "at": today,
+            "v": len(views),
+            "ids": video_ids,
+        }
+        done += 1
+        if n % 25 == 0 or n == len(todo):
+            pop_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+            print(f"[fetch-popularity] {n}/{len(todo)}", flush=True)
+        time.sleep(0.2)
 
     pop_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     print(
@@ -398,7 +440,7 @@ def rescore_popularity(client: httpx.Client | None = None):
     """蓄積済みの動画ID(hits[*].ids)に対して現在の採用判定を適用し直し、n/v を書き換える。
 
     search は再消費せず videos.list のみ(ユニーク動画IDを50件ずつ)。取得日 at は維持する。
-    クォータ超過時は何も書き換えずに終了する。
+    クォータ超過時は何も書き換えずに QuotaExceeded を投げる。
     """
     api_key = _require_api_key()
     pop_path = WORK_DIR / "popularity.json"
@@ -428,9 +470,8 @@ def rescore_popularity(client: httpx.Client | None = None):
             if own_client:
                 time.sleep(0.1)
     except QuotaExceeded:
-        raise SystemExit(
-            "[rescore-popularity] APIクォータ超過。翌日再実行してください(何も書き換えていません)"
-        )
+        print("[rescore-popularity] APIクォータ超過。翌日再実行してください(何も書き換えていません)")
+        raise
     finally:
         if own_client:
             client.close()
@@ -449,6 +490,7 @@ def rescore_popularity(client: httpx.Client | None = None):
         if (old_n, old_v) != (hit["n"], hit["v"]):
             changes.append((old_n - hit["n"], name, old_n, hit["n"], old_v, hit["v"]))
 
+    data["filter"] = filter_stamp(overrides)
     pop_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     changes.sort(key=lambda c: -abs(c[0]))
     print(

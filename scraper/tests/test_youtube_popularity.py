@@ -9,7 +9,9 @@ from m1scraper.youtube_popularity import (
     QuotaExceeded,
     _load_overrides,
     accept_video,
+    fetch_popularity,
     fetch_view_counts,
+    filter_stamp,
     plan_todo,
     rescore_popularity,
     search_video_ids,
@@ -128,8 +130,14 @@ def test_accept_fields_and_normalization():
         ("太宰", "又吉直樹『太宰治』をインプット", False),
         # 英数は英数/カナ/漢字と連結したら別語、ひらがな(助詞)は可
         ("2000", "【ヨネダ2000】M-1グランプリ2022決勝ネタ「餅つき」", False),
+        ("LOVE", "#B'z #lovephantom", False),
+        # 数字の後ろの漢字は助数詞なら数量表現、それ以外は連結タイトル(前側の漢字も許容)
         ("1000", "漫才グランプリで賞金1000万円を目指すゲーム", False),
+        ("1000", "タイムリープ1000回目のやつ", False),
+        ("4000", "4000年に一度咲く金指 コント「クレーム処理」", False),
         ("1000", "コンビ「1000」がメディア初出演", True),
+        ("ヨネダ2000", "ヨネダ2000最高", True),
+        ("EXIT", "元EXIT", True),
         ("EXIT", "EXITの単独ライブ！ネタあり歌あり", True),
         ("ヨネダ2000", "ヨネダ2000がM-1決勝まであたためていた幻のネタ", True),
         # ひらがな終わりは助詞なら可、それ以外のひらがな連結は不可
@@ -182,22 +190,19 @@ def test_own_channel(name, channel, expected):
     assert NameMatcher(name).is_own_channel(channel) is expected
 
 
-def test_own_channel_video_counts_regardless_of_title_and_category():
-    # タイトルにコンビ名が無くても、音楽カテゴリでも自チャンネルなら採用(歌ネタ芸人の自チャンネル等)
-    v = _video(1, title="24時間やった歌ネタを2分30秒にまとめてみた", channel="メンバーチャンネル", category="10")
+def test_own_channel_video_counts_regardless_of_title():
+    # タイトルにコンビ名が無くても自チャンネルなら採用
+    v = _video(1, title="24時間やった歌ネタを2分30秒にまとめてみた", channel="メンバーチャンネル")
     assert accept_video(v, "メンバー")
     assert not accept_video(v, "オーケストラ")
 
 
-def test_third_party_music_gaming_sports_news_excluded():
-    assert not accept_video(
-        _video(1, title="水曜日のカンパネラ - エジソン / THE FIRST TAKE", channel="THE FIRST TAKE", category="10"),
-        "エジソン",
+def test_category_is_not_used():
+    # よしもと漫才劇場公式は「ゲーム」(20)、歌ネタのVEVOは「音楽」(10) で投稿されるため、カテゴリでは除外しない
+    assert accept_video(
+        _video(1, title="ヨネダ2000【神保町よしもと漫才劇場『ネタフェスティバル2025』】", category="20"), "ヨネダ2000"
     )
-    assert not accept_video(_video(1, title="賞金1000万円を目指すゲーム 1000", channel="牛沢", category="20"), "1000")
-    # 同じ動画でもエンタメ(24)・コメディ(23)・カテゴリ不明なら通常判定
-    assert accept_video(_video(1, title="エジソン【よしもと漫才劇場 8周年記念SPネタ】", category="24"), "エジソン")
-    assert accept_video(_video(1, title="エジソン【よしもと漫才劇場 8周年記念SPネタ】"), "エジソン")
+    assert accept_video(_video(1, title="クマムシ - あったかいんだからぁ♪", channel="KumamushiVEVO", category="10"), "クマムシ")
 
 
 def test_overrides_exclude_channels_and_ids():
@@ -222,7 +227,14 @@ def test_load_overrides(tmp_path, monkeypatch):
     (tmp_path / "popularity.json").write_text(
         json.dumps({"_comment": "x", "6212": {"excludeChannels": ["チルるーム"]}}), encoding="utf-8"
     )
-    assert _load_overrides()["6212"] == {"excludeChannels": ["チルるーム"]}
+    assert _load_overrides() == {"6212": {"excludeChannels": ["チルるーム"]}}  # "_comment" は除く
+
+
+def test_filter_stamp_changes_with_overrides():
+    a = filter_stamp({})
+    b = filter_stamp({"1": {"excludeChannels": ["x"]}})
+    assert a != b and a.startswith(f"{youtube_popularity.FILTER_VERSION}:")
+    assert filter_stamp({"1": {"excludeChannels": ["x"]}}) == b
 
 
 # ---------------------------------------------------------------------------
@@ -325,7 +337,7 @@ def test_plan_todo_missing_first_then_oldest():
 
 def test_rescore_popularity(tmp_path, monkeypatch):
     monkeypatch.setattr(youtube_popularity, "WORK_DIR", tmp_path)
-    monkeypatch.setattr(youtube_popularity, "OVERRIDES_DIR", tmp_path)
+    monkeypatch.setattr(youtube_popularity, "OVERRIDES_DIR", tmp_path / "overrides")  # work とは別ディレクトリ
     monkeypatch.setenv("YOUTUBE_API_KEY", "KEY")
     records = [
         {"id": 10, "name": "シャララ", "history": {"2024": {"results": {"third": "fail"}}}},
@@ -375,12 +387,13 @@ def test_rescore_popularity(tmp_path, monkeypatch):
     assert out["hits"]["20"] == {"n": 5300, "at": "2026-09-05", "v": 2, "ids": ["shared", "m1"]}
     # 対象外の組はそのまま
     assert out["hits"]["30"] == hits["30"]
+    assert out["filter"] == filter_stamp({})
     assert sorted(c[1] for c in changes) == ["シャララ", "メンバー"]
 
 
 def test_rescore_popularity_quota_exceeded_writes_nothing(tmp_path, monkeypatch):
     monkeypatch.setattr(youtube_popularity, "WORK_DIR", tmp_path)
-    monkeypatch.setattr(youtube_popularity, "OVERRIDES_DIR", tmp_path)
+    monkeypatch.setattr(youtube_popularity, "OVERRIDES_DIR", tmp_path / "overrides")  # work とは別ディレクトリ
     monkeypatch.setenv("YOUTUBE_API_KEY", "KEY")
     (tmp_path / "combi.jsonl").write_text(
         json.dumps({"id": 1, "name": "a", "history": {"2024": {"results": {"third": "fail"}}}}) + "\n",
@@ -390,6 +403,77 @@ def test_rescore_popularity_quota_exceeded_writes_nothing(tmp_path, monkeypatch)
     (tmp_path / "popularity.json").write_text(original, encoding="utf-8")
 
     with _client(lambda request: _quota_response()) as client:
-        with pytest.raises(SystemExit):
+        with pytest.raises(QuotaExceeded):
             rescore_popularity(client=client)
     assert (tmp_path / "popularity.json").read_text(encoding="utf-8") == original
+
+
+def _setup_fetch(tmp_path, monkeypatch, pop):
+    monkeypatch.setattr(youtube_popularity, "WORK_DIR", tmp_path)
+    monkeypatch.setattr(youtube_popularity, "OVERRIDES_DIR", tmp_path / "overrides")  # work とは別ディレクトリ
+    monkeypatch.setenv("YOUTUBE_API_KEY", "KEY")
+    monkeypatch.setattr(youtube_popularity.time, "sleep", lambda s: None)
+    (tmp_path / "combi.jsonl").write_text(
+        json.dumps({"id": 1, "name": "シャララ", "history": {"2024": {"results": {"third": "fail"}}}}) + "\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "popularity.json").write_text(json.dumps(pop), encoding="utf-8")
+
+
+def test_fetch_popularity_rescores_first_when_filter_stamp_differs(tmp_path, monkeypatch):
+    _setup_fetch(
+        tmp_path,
+        monkeypatch,
+        {"source": youtube_popularity.SOURCE, "filter": "old", "hits": {"1": {"n": 999, "at": "2026-09-01", "v": 2, "ids": ["s1", "s2"]}}},
+    )
+    calls = []
+
+    def handler(request):
+        calls.append(request.url.path)
+        if request.url.path.endswith("/videos"):
+            ids = request.url.params["id"].split(",")
+            videos = {
+                "s1": _video(100, title="シャララ‐『漫才』", vid="s1"),
+                "s2": _video(10_000_000, channel="シャラララックス【岡山弁アニメ】", vid="s2"),
+                "n1": _video(7, title="シャララ 漫才 新作", vid="n1"),
+            }
+            return httpx.Response(200, json={"items": [videos[i] for i in ids if i in videos]})
+        return httpx.Response(200, json={"items": [{"id": {"videoId": "n1"}}]})
+
+    with _client(handler) as client:
+        fetch_popularity(client=client)
+
+    # 再集計(videos) → 通常のローリング(search → videos)
+    assert [p.rsplit("/", 1)[1] for p in calls] == ["videos", "search", "videos"]
+    out = json.loads((tmp_path / "popularity.json").read_text(encoding="utf-8"))
+    assert out["filter"] == filter_stamp({})
+    # ローリングで今日の検索結果に置き換わる(再集計後の値ではなく最新)
+    assert out["hits"]["1"]["n"] == 7 and out["hits"]["1"]["ids"] == ["n1"]
+
+
+def test_fetch_popularity_skips_rescore_when_stamp_matches(tmp_path, monkeypatch):
+    _setup_fetch(
+        tmp_path,
+        monkeypatch,
+        {"source": youtube_popularity.SOURCE, "filter": filter_stamp({}), "hits": {"1": {"n": 5, "at": "2026-09-01", "v": 1, "ids": ["s1"]}}},
+    )
+    calls = []
+
+    def handler(request):
+        calls.append(request.url.path.rsplit("/", 1)[1])
+        if request.url.path.endswith("/videos"):
+            return httpx.Response(200, json={"items": [_video(3, title="シャララ 漫才", vid="n1")]})
+        return httpx.Response(200, json={"items": [{"id": {"videoId": "n1"}}]})
+
+    with _client(handler) as client:
+        fetch_popularity(client=client)
+    assert calls == ["search", "videos"]
+
+
+def test_fetch_popularity_stops_when_rescore_hits_quota(tmp_path, monkeypatch):
+    pop = {"source": youtube_popularity.SOURCE, "hits": {"1": {"n": 5, "at": "2026-09-01", "v": 1, "ids": ["s1"]}}}
+    _setup_fetch(tmp_path, monkeypatch, pop)
+    with _client(lambda request: _quota_response()) as client:
+        fetch_popularity(client=client)
+    # 何も書き換えない(search も撃たない)
+    assert json.loads((tmp_path / "popularity.json").read_text(encoding="utf-8")) == pop
