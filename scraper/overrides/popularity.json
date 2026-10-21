@@ -1,5 +1,5 @@
 {
-  "_comment": "注目度(YouTube再生数)の手動除外。キー=コンビID。excludeChannels はチャンネル名の部分一致(NFKC・大小無視)、excludeIds は動画ID。自動ルール(youtube_popularity.py の _accept)で判別できない一般語のコンビ名向け。fetch/rescore の両方で適用される",
+  "_comment": "注目度(YouTube再生数)の手動除外。キー=コンビID。excludeChannels はチャンネル名の部分一致(NFKC・大小無視)、excludeIds は動画ID、excludeMembers はメンバー名(完全一致。その名前を検索にも判定にも使わない: 同姓同名の有名人など)。自動ルール(youtube_popularity.py の _accept / MemberMatcher)で判別できない一般語のコンビ名・個人名向け。fetch/rescore の両方で適用される",
   "6212": {
     "note": "チル — 『チルるーム』『東京チル・ドレン』『チル漫才』など一般語としての用例",
     "excludeChannels": [

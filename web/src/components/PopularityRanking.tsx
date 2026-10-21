@@ -19,7 +19,7 @@ export default function PopularityRanking() {
 
   const names = new Map(index.map((r) => [r[0], r[1]]))
   const rows = Object.entries(pop.hits)
-    .map(([id, h]) => ({ id: Number(id), n: h.n, v: h.v, at: h.at }))
+    .map(([id, h]) => ({ id: Number(id), n: h.n, v: h.v, m: h.m ?? 0, at: h.at }))
     .filter((r) => names.has(r.id) && r.n > 0)
     .sort((a, b) => b.n - a.n)
   if (rows.length === 0) return null
@@ -42,6 +42,7 @@ export default function PopularityRanking() {
             <th>順位</th>
             <th>コンビ</th>
             <th>再生数</th>
+            <th>うちメンバー名義</th>
             <th>動画数</th>
             {showReach && <th>最高到達</th>}
           </tr>
@@ -54,6 +55,7 @@ export default function PopularityRanking() {
                 <Link to={`/combi/${r.id}`}>{names.get(r.id)}</Link>
               </td>
               <td className="no">{formatHits(r.n)}</td>
+              <td className="no">{r.m > 0 ? formatHits(r.m) : '-'}</td>
               <td className="no">{r.v ?? '-'}</td>
               {showReach && <td>{ROUND_LABEL[reach.get(r.id) ?? 'third']}</td>}
             </tr>
@@ -71,9 +73,11 @@ export default function PopularityRanking() {
       </p>
       <h2 className="section-title">注目度ランキング(YouTube再生数)</h2>
       <p className="section-note">
-        「コンビ名 漫才」でのYouTube検索上位10本のうち、コンビ名を単語として含む動画(自分のチャンネルの動画は全件)の再生数合計。
-        字面で判別できない同名の楽曲・番組などは手動で除外。動画数は合計に含めた本数。対象は3回戦以上の出場経験があるコンビで、
-        取得日はコンビごとに異なる(約2週間周期の自動更新)。
+        「コンビ名 漫才」と「メンバー名」それぞれのYouTube検索上位10本のうち、コンビ名またはメンバー名を単語として含む動画
+        (自分・本人のチャンネルの動画は全件)の再生数合計。同じ動画は1回だけ数える。「うちメンバー名義」はコンビ名では拾えず
+        メンバー名だけで拾った動画の分。愛称や短い名前(粗品・せいや等)は本人チャンネルの動画のみ対象。
+        字面で判別できない同名の楽曲・番組・同姓同名は手動で除外。動画数は合計に含めた本数(メンバー名義分を含む)。
+        対象は3回戦以上の出場経験があるコンビで、取得日はコンビごとに異なる(約4週間周期の自動更新)。
       </p>
       {table(rows.slice(0, TOP), false)}
 

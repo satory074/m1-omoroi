@@ -1507,9 +1507,10 @@ def build():
     pop_path = WORK_DIR / "popularity.json"
     if pop_path.exists():
         pop = json.loads(pop_path.read_text(encoding="utf-8"))
-        # ids は再集計用の作業データなので配信には含めない
+        # ids(再集計用の候補動画)と q(クエリ版)は作業データなので配信には含めない。m(メンバー名義の内訳)は配信する
         for hit in pop.get("hits", {}).values():
             hit.pop("ids", None)
+            hit.pop("q", None)
         _write(DATA_DIR / "popularity.json", pop)
 
     finals_dir = WORK_DIR / "finals"

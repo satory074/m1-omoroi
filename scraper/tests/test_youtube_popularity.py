@@ -5,10 +5,16 @@ import pytest
 
 from m1scraper import youtube_popularity
 from m1scraper.youtube_popularity import (
+    MEMBER_TOP_N,
+    QUERY_VERSION,
+    MemberMatcher,
     NameMatcher,
     QuotaExceeded,
+    _effective_members,
     _load_overrides,
+    _member_tier,
     accept_video,
+    count_views,
     fetch_popularity,
     fetch_view_counts,
     filter_stamp,
@@ -50,6 +56,7 @@ def test_search_video_ids():
     def handler(request):
         assert request.url.params["q"] == "真空ジェシカ 漫才"
         assert request.url.params["type"] == "video"
+        assert request.url.params["maxResults"] == "10"
         return httpx.Response(
             200,
             json={
@@ -62,7 +69,7 @@ def test_search_video_ids():
         )
 
     with _client(handler) as client:
-        assert search_video_ids(client, "KEY", "真空ジェシカ") == ["abc", "def"]
+        assert search_video_ids(client, "KEY", "真空ジェシカ 漫才") == ["abc", "def"]
 
 
 def test_search_quota_exceeded():
@@ -256,7 +263,7 @@ def test_fetch_view_counts_filters_unrelated():
         )
 
     with _client(handler) as client:
-        assert fetch_view_counts(client, "KEY", ["a", "b", "c"], "まっかちん") == [1000, 500]
+        assert fetch_view_counts(client, "KEY", ["a", "b", "c"], "まっかちん")[0] == [1000, 500]
 
 
 def test_fetch_view_counts_applies_override():
@@ -267,10 +274,10 @@ def test_fetch_view_counts_applies_override():
         )
 
     with _client(handler) as client:
-        assert fetch_view_counts(client, "KEY", ["a", "b"], "チル") == [1000, 5]
+        assert fetch_view_counts(client, "KEY", ["a", "b"], "チル")[0] == [1000, 5]
         assert fetch_view_counts(
             client, "KEY", ["a", "b"], "チル", {"excludeChannels": ["東京チル・ドレン"]}
-        ) == [5]
+        )[0] == [5]
 
 
 def test_fetch_view_counts_batches_and_sums():
@@ -287,7 +294,7 @@ def test_fetch_view_counts_batches_and_sums():
 
     video_ids = [f"v{i}" for i in range(60)]  # 50件/バッチで2回に分割される
     with _client(handler) as client:
-        views = fetch_view_counts(client, "KEY", video_ids, "和牛")
+        views, _ = fetch_view_counts(client, "KEY", video_ids, "和牛")
 
     assert calls == [50, 10]
     assert len(views) == 60
@@ -307,7 +314,7 @@ def test_fetch_view_counts_skips_missing_statistics():
         )
 
     with _client(handler) as client:
-        assert fetch_view_counts(client, "KEY", ["a", "b"], "吉田たち") == [1000]
+        assert fetch_view_counts(client, "KEY", ["a", "b"], "吉田たち")[0] == [1000]
 
 
 def test_select_targets_third_round_or_higher(tmp_path, monkeypatch):
@@ -381,10 +388,10 @@ def test_rescore_popularity(tmp_path, monkeypatch):
 
     out = json.loads((tmp_path / "popularity.json").read_text(encoding="utf-8"))
     assert out["source"] == youtube_popularity.SOURCE
-    # シャララ: 本人の1本のみ。at と ids は維持
-    assert out["hits"]["10"] == {"n": 100, "at": "2026-09-01", "v": 1, "ids": ["s1", "s2", "shared", "gone"]}
+    # シャララ: 本人の1本のみ。at と ids は維持(q は書かない=再検索ではない)
+    assert out["hits"]["10"] == {"n": 100, "at": "2026-09-01", "v": 1, "m": 0, "ids": ["s1", "s2", "shared", "gone"]}
     # メンバー: 自チャンネル2本
-    assert out["hits"]["20"] == {"n": 5300, "at": "2026-09-05", "v": 2, "ids": ["shared", "m1"]}
+    assert out["hits"]["20"] == {"n": 5300, "at": "2026-09-05", "v": 2, "m": 0, "ids": ["shared", "m1"]}
     # 対象外の組はそのまま
     assert out["hits"]["30"] == hits["30"]
     assert out["filter"] == filter_stamp({})
@@ -408,14 +415,15 @@ def test_rescore_popularity_quota_exceeded_writes_nothing(tmp_path, monkeypatch)
     assert (tmp_path / "popularity.json").read_text(encoding="utf-8") == original
 
 
-def _setup_fetch(tmp_path, monkeypatch, pop):
+def _setup_fetch(tmp_path, monkeypatch, pop, records=None):
     monkeypatch.setattr(youtube_popularity, "WORK_DIR", tmp_path)
     monkeypatch.setattr(youtube_popularity, "OVERRIDES_DIR", tmp_path / "overrides")  # work とは別ディレクトリ
     monkeypatch.setenv("YOUTUBE_API_KEY", "KEY")
     monkeypatch.setattr(youtube_popularity.time, "sleep", lambda s: None)
+    # 既定はメンバー無しの組 → コンビ名検索1回だけ
+    records = records or [{"id": 1, "name": "シャララ", "history": {"2024": {"results": {"third": "fail"}}}}]
     (tmp_path / "combi.jsonl").write_text(
-        json.dumps({"id": 1, "name": "シャララ", "history": {"2024": {"results": {"third": "fail"}}}}) + "\n",
-        encoding="utf-8",
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records), encoding="utf-8"
     )
     (tmp_path / "popularity.json").write_text(json.dumps(pop), encoding="utf-8")
 
@@ -477,3 +485,135 @@ def test_fetch_popularity_stops_when_rescore_hits_quota(tmp_path, monkeypatch):
         fetch_popularity(client=client)
     # 何も書き換えない(search も撃たない)
     assert json.loads((tmp_path / "popularity.json").read_text(encoding="utf-8")) == pop
+
+
+# ---------------------------------------------------------------------------
+# メンバー名
+# ---------------------------------------------------------------------------
+
+
+def test_member_search_unions_ids_and_tracks_member_only_views(tmp_path, monkeypatch):
+    records = [
+        {
+            "id": 1,
+            "name": "かまいたち",
+            "history": {"2024": {"results": {"final": "pass"}}},
+            "members": [{"name": "山内健司"}, {"name": '平井"ファラオ"光'}, {"name": "kento fukaya"}],
+        }
+    ]
+    _setup_fetch(tmp_path, monkeypatch, {"source": youtube_popularity.SOURCE, "filter": filter_stamp({}), "hits": {}}, records)
+    calls = []
+
+    def handler(request):
+        kind = request.url.path.rsplit("/", 1)[1]
+        calls.append(kind)
+        if kind == "search":
+            if calls.count("search") == 1:
+                assert request.url.params["q"] == "かまいたち 漫才"
+                return httpx.Response(200, json={"items": [{"id": {"videoId": "shared"}}, {"id": {"videoId": "c1"}}]})
+            # 演算子の `"` は除去、空白を含む名は引用符で囲む
+            assert request.url.params["q"] == '山内健司|平井ファラオ光|"kento fukaya"'
+            assert request.url.params["maxResults"] == str(MEMBER_TOP_N)
+            return httpx.Response(200, json={"items": [{"id": {"videoId": "shared"}}, {"id": {"videoId": "m1"}}]})
+        videos = {
+            "shared": _video(100, title="かまいたち 山内健司", vid="shared"),  # 両検索に出る → 1回だけ、コンビ名で採用
+            "c1": _video(10, title="かまいたち 漫才", vid="c1"),
+            "m1": _video(5, title="山内健司 ソロ企画", vid="m1"),  # メンバー名でのみ採用 → m
+        }
+        ids = request.url.params["id"].split(",")
+        return httpx.Response(200, json={"items": [videos[i] for i in ids if i in videos]})
+
+    with _client(handler) as client:
+        fetch_popularity(client=client)
+
+    assert calls == ["search", "search", "videos"]
+    hit = json.loads((tmp_path / "popularity.json").read_text(encoding="utf-8"))["hits"]["1"]
+    assert hit["ids"] == ["shared", "c1", "m1"]
+    assert (hit["n"], hit["v"], hit["m"], hit["q"]) == (115, 3, 5, QUERY_VERSION)
+
+
+@pytest.mark.parametrize(
+    "name, snippet, expected",
+    [
+        ("粗品", {"channelTitle": "粗品 Official Channel"}, True),
+        ("粗品", {"channelTitle": "【公式】粗品チャンネル"}, True),
+        ("せいや", {"channelTitle": "せいやch"}, True),
+        ("石川", {"channelTitle": "石川テレビ"}, False),  # NameMatcher.is_own_channel なら通ってしまう
+        ("石川", {"channelTitle": "石川県"}, False),
+        ("粗品", {"channelTitle": "粗品の部屋"}, False),
+        ("粗品", {"title": "粗品 新ネタ 2026", "channelTitle": "お笑い切り抜き"}, False),  # 本文一致では採用しない
+    ],
+)
+def test_weak_member_name_counts_only_strict_own_channel(name, snippet, expected):
+    assert _member_tier(name) == "weak"
+    assert MemberMatcher([name]).matches(snippet) is expected
+
+
+def test_strong_member_text_match_and_member_only_breakdown():
+    assert [_member_tier(n) for n in ("山内健司", "愛植男", "野田クリスタル", "ナオ・デストラーデ")] == ["strong"] * 4
+    assert [_member_tier(n) for n in ("大ちゃん", "赤ワイン", "ガン太", "ひかる", "ほりおしんのすけ", "ハリー")] == ["weak"] * 6
+    items = [
+        _video(100, title="かまいたち 漫才"),
+        _video(50, title="山内健司 ソロ企画"),
+        _video(30, title="かまいたち 山内健司"),  # コンビ名でも採用される動画は m に入れない
+        _video(7, title="山内健司郎のラジオ"),  # 漢字→漢字の連結は別人
+    ]
+    views, member_only = count_views(items, "かまいたち", None, MemberMatcher(["山内健司", "濱家隆一"]))
+    assert views == [100, 50, 30] and member_only == [50]
+
+
+def test_fetch_stops_at_search_call_cap_without_partial_entry(tmp_path, monkeypatch):
+    records = [
+        {"id": i, "name": f"c{i}", "history": {"2024": {"results": {"third": "fail"}}}, "members": [{"name": f"山田太郎{i}"}]}
+        for i in (1, 2)
+    ]
+    _setup_fetch(tmp_path, monkeypatch, {"source": youtube_popularity.SOURCE, "filter": filter_stamp({}), "hits": {}}, records)
+    monkeypatch.setattr(youtube_popularity, "SEARCH_CALLS_PER_DAY", 3)  # 1組=2回なので2組目は入らない
+    calls = []
+
+    def handler(request):
+        calls.append(request.url.path.rsplit("/", 1)[1])
+        if request.url.path.endswith("/videos"):
+            return httpx.Response(200, json={"items": [_video(1, title="c1 漫才", vid="v")]})
+        return httpx.Response(200, json={"items": [{"id": {"videoId": "v"}}]})
+
+    with _client(handler) as client:
+        fetch_popularity(client=client)
+
+    assert calls.count("search") == 2
+    assert list(json.loads((tmp_path / "popularity.json").read_text(encoding="utf-8"))["hits"]) == ["1"]
+
+
+def test_plan_todo_old_query_version_before_stale():
+    targets = [{"id": i, "name": f"c{i}"} for i in (1, 2, 3, 4)]
+    hits = {
+        "2": {"n": 10, "at": "2026-08-05"},  # 旧クエリ版(q なし)
+        "3": {"n": 20, "at": "2026-08-01", "q": QUERY_VERSION},
+        "4": {"n": 30, "at": "2026-07-01", "q": QUERY_VERSION},
+    }
+    # 未取得(1) → 旧クエリ版(2) → 現行版は古い順(4 → 3)
+    assert [t["id"] for t in plan_todo(targets, hits)] == [1, 2, 4, 3]
+
+
+def test_select_targets_attributes_member_to_latest_combi(tmp_path, monkeypatch):
+    person = {"name": "永田敬介", "kana": "ナガタケイスケ", "birth": "1990年01月20日"}
+    twin = {"name": "同点さん", "kana": "ドウテンサン", "birth": "2000年01月01日"}
+    third = {"2024": {"results": {"third": "fail"}}}
+    records = [
+        {"id": 1, "name": "スタローン", "history": {"2015": {"results": {"third": "fail"}}}, "members": [person, {"name": "相方A"}]},
+        {"id": 2, "name": "コーツ", "history": {**third, "2026": {"results": {"first": "pass"}}}, "members": [person, {"name": "相方B"}]},
+        {"id": 3, "name": "ムネタ", "history": third, "members": [{"name": "ムネタ"}, {"name": ""}]},
+        {"id": 4, "name": "同点A", "history": third, "members": [twin]},
+        {"id": 5, "name": "同点B", "history": third, "members": [twin]},
+    ]
+    (tmp_path / "combi.jsonl").write_text(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records), encoding="utf-8"
+    )
+    monkeypatch.setattr(youtube_popularity, "WORK_DIR", tmp_path)
+
+    t = {x["id"]: x for x in select_targets()}
+    assert t[1]["members"] == ["相方A"]  # 解散済み(2015)のレコードからは本人を外す
+    assert t[2]["members"] == ["永田敬介", "相方B"] and t[2]["last"] == 2026
+    assert t[3]["members"] == []  # コンビ名と同じ名前・空名は落とす
+    assert t[4]["members"] == t[5]["members"] == ["同点さん"]  # 同点は両方
+    assert _effective_members(t[2], {"excludeMembers": ["相方B"]}) == ["永田敬介"]

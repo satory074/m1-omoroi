@@ -1,5 +1,6 @@
 # 注目度(YouTube再生数)の日次ローリング更新。
-# 無料枠(約95組/日)ぶんだけ取得し、未取得を優先しつつ全組を約2週間周期で更新する。
+# search.list は1日100回の独立枠(2026-06〜)。1組=コンビ名+メンバー名の2回なので95回で約47組/日を取得し、
+# 未取得 → 旧クエリ版 → 取得日の古い順で全組を約4週間周期で更新する。
 # data/ へのコミットで deploy.yml が発火し、サイトにも自動反映される。
 name: Update popularity
 
@@ -10,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       rescore:
-        description: '採用判定ルール変更後の一括再集計(蓄積済み動画IDに videos.list のみ、約260units)'
+        description: '採用判定ルール変更後の一括再集計(蓄積済み動画IDに videos.list のみ、約1,600units。search枠は消費しない)'
         type: boolean
         default: false
 

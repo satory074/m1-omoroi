@@ -83,7 +83,8 @@ export interface CombiDetail {
 }
 
 export interface Popularity {
-  hits: Record<string, { n: number; at: string; v?: number }>
+  // n=採用動画の再生数合計, v=採用本数, m=うちメンバー名だけで採用した動画の再生数(m ≤ n。旧形式のエントリには無い)
+  hits: Record<string, { n: number; at: string; v?: number; m?: number }>
 }
 
 export interface RankingItem {
