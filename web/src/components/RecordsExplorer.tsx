@@ -240,7 +240,7 @@ export default function RecordsExplorer() {
         <table className="history">
           <thead>
             <tr>
-              <th>コンビ</th>
+              <th className="sticky-name">コンビ</th>
               <th>結成年</th>
               <th>{tier.yearLabel}</th>
               <th>{tier.spanLabel}</th>
@@ -249,7 +249,7 @@ export default function RecordsExplorer() {
           <tbody>
             {formedRows.map((r) => (
               <tr key={`${r.id ?? r.name}-${r.year}`}>
-                <td className="year" style={{ fontSize: 14 }}>
+                <td className="year sticky-name" style={{ fontSize: 14 }}>
                   {combiCell(r.id, r.name)}
                 </td>
                 <td className="no">{r.formed}</td>
@@ -280,7 +280,7 @@ export default function RecordsExplorer() {
         <table className="history">
           <thead>
             <tr>
-              <th>メンバー</th>
+              <th className="sticky-name">メンバー</th>
               <th>コンビ</th>
               <th>{tier.yearLabel}</th>
               <th>年齢</th>
@@ -291,7 +291,7 @@ export default function RecordsExplorer() {
               const hot = r.age === minAge || r.age === maxAge
               return (
                 <tr key={`${r.id ?? r.combi}-${r.name}-${r.year}`}>
-                  <td className="year" style={{ fontSize: 14 }}>
+                  <td className="year sticky-name" style={{ fontSize: 14 }}>
                     {r.name}
                   </td>
                   <td>{combiCell(r.id, r.combi)}</td>
@@ -319,7 +319,7 @@ export default function RecordsExplorer() {
           <thead>
             <tr>
               <th>順位</th>
-              <th>コンビ</th>
+              <th className="sticky-name">コンビ</th>
               <th>{tier.countLabel}</th>
               {isChampion && <th>優勝年</th>}
             </tr>
@@ -328,7 +328,7 @@ export default function RecordsExplorer() {
             {rankingRows.map((r, i) => (
               <tr key={r.id ?? r.name}>
                 <td className="no">{rankingRanks[i]}</td>
-                <td className="year" style={{ fontSize: 14 }}>
+                <td className="year sticky-name" style={{ fontSize: 14 }}>
                   {combiCell(r.id, r.name)}
                 </td>
                 <td className="no total">{r.count}回</td>

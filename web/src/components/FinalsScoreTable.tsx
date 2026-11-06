@@ -284,7 +284,7 @@ export default function FinalsScoreTable({ finals }: Props) {
                   </button>
                 </th>
               )}
-              <th>コンビ</th>
+              <th className="sticky-name">コンビ</th>
               {judges.map((j, i) => (
                 <th key={i} className={`judge-th ${enabled[i] ? '' : 'excluded'}`} aria-sort={ariaSort(i)}>
                   <label className="judge-check">
@@ -338,7 +338,7 @@ export default function FinalsScoreTable({ finals }: Props) {
                 <tr key={row.name} className={isFinalist(row) ? 'finalist' : undefined}>
                   <td className="no">{rankByIndex[i]}</td>
                   {hasOrder && <td className="no order">{row.order ?? ''}</td>}
-                  <td>
+                  <td className="sticky-name">
                     {row.combiId != null ? <Link to={`/combi/${row.combiId}`}>{row.name}</Link> : row.name}
                     {row.finalAppearance != null && (
                       <span className="appearance-note">({row.finalAppearance}回目)</span>

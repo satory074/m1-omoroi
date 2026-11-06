@@ -40,7 +40,7 @@ export default function PopularityRanking() {
         <thead>
           <tr>
             <th>順位</th>
-            <th>コンビ</th>
+            <th className="sticky-name">コンビ</th>
             <th>再生数</th>
             <th>うちメンバー名義</th>
             <th>動画数</th>
@@ -51,7 +51,7 @@ export default function PopularityRanking() {
           {list.map((r, i) => (
             <tr key={r.id}>
               <td className="no">{i + 1}</td>
-              <td>
+              <td className="sticky-name">
                 <Link to={`/combi/${r.id}`}>{names.get(r.id)}</Link>
               </td>
               <td className="no">{formatHits(r.n)}</td>

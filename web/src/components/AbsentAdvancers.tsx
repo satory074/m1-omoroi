@@ -97,7 +97,7 @@ export default function AbsentAdvancers({
       <table className="history">
         <thead>
           <tr>
-            <th>コンビ</th>
+            <th className="sticky-name">コンビ</th>
             <th>最高到達</th>
             <th>直近の出場</th>
             <th>状況</th>
@@ -107,7 +107,7 @@ export default function AbsentAdvancers({
         <tbody>
           {list.map((r) => (
             <tr key={r.id}>
-              <td>
+              <td className="sticky-name">
                 <span className="absent-name">
                   {r.champYears.length > 0 && (
                     <span title={`${r.champYears.join('・')}年優勝`}>👑</span>

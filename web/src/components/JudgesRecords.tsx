@@ -33,7 +33,7 @@ export function JudgeCareerSection({ js }: { js: JudgesStats }) {
         <table className="history">
           <thead>
             <tr>
-              <th>審査員</th>
+              <th className="sticky-name">審査員</th>
               <th>担当</th>
               <th>採点数</th>
               <th>点差</th>
@@ -45,7 +45,7 @@ export function JudgeCareerSection({ js }: { js: JudgesStats }) {
           <tbody>
             {js.career.map((c) => (
               <tr key={c.name}>
-                <td>{c.name}</td>
+                <td className="sticky-name">{c.name}</td>
                 <td className="no" title={compressYears(c.years)}>
                   {c.yearCount}年
                 </td>
@@ -77,7 +77,7 @@ function PickCell({
     <td className="judge-pick">
       <span className="pick-score">{score}</span>
       {combis.map((c, i) => (
-        <span key={`${c.name}-${i}`}>
+        <span key={`${c.name}-${i}`} className="winner-item">
           {i > 0 && '・'}
           {c.combiId != null ? <Link to={`/combi/${c.combiId}`}>{c.name}</Link> : c.name}
           {c.combiId != null && c.combiId === championId && ' 👑'}
@@ -117,7 +117,7 @@ export function JudgesYearlySection({ js }: { js: JudgesStats }) {
           <table className="history">
             <thead>
               <tr>
-                <th>審査員</th>
+                <th className="sticky-name">審査員</th>
                 <th>平均点</th>
                 <th>平均差</th>
                 <th>最高点回数</th>
@@ -131,7 +131,7 @@ export function JudgesYearlySection({ js }: { js: JudgesStats }) {
                 .sort((a, b) => b.mean - a.mean)
                 .map((j) => (
                   <tr key={j.name}>
-                    <td>{j.canonical}</td>
+                    <td className="sticky-name">{j.canonical}</td>
                     <td className="no">{j.mean.toFixed(1)}</td>
                     <td className="no">{j.diff > 0 ? `+${j.diff.toFixed(1)}` : j.diff.toFixed(1)}</td>
                     <td className="no">{j.top}回</td>

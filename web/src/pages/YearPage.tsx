@@ -12,6 +12,9 @@ import type { ResultKey, RoundKey, YearEntry } from '../lib/types'
 type ResultFilter = 'all' | 'pass' | 'fail'
 type SortKey = 'no' | 'kana' | 'hits'
 
+/** 一覧を2段組みに切り替える幅。index.css の .board-row の狭幅ルールと対応 */
+const NARROW_QUERY = '(max-width: 640px)'
+
 function YearStrip({ years, current }: { years: number[]; current: number }) {
   const { search } = useLocation()
   const items: (number | 'gap')[] = []
@@ -112,10 +115,12 @@ export default function YearPage() {
   }, [yearFile])
 
   const parentRef = useRef<HTMLDivElement>(null)
+  // 狭幅(index.css の max-width: 640px)は2段組みで、長い名前は折り返して行が伸びるため
+  // 実寸を measureElement で測る。見積もりは1行に収まる名前の行高
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 48,
+    estimateSize: () => (window.matchMedia(NARROW_QUERY).matches ? 63 : 48),
     overscan: 12,
   })
 
@@ -220,6 +225,8 @@ export default function YearPage() {
                 return (
                   <div
                     key={v.key}
+                    data-index={v.index}
+                    ref={virtualizer.measureElement}
                     className="board-row"
                     style={{
                       position: 'absolute',
@@ -229,7 +236,7 @@ export default function YearPage() {
                       transform: `translateY(${v.start}px)`,
                     }}
                   >
-                    <span className="no">{e.no != null ? e.no : '—'}</span>
+                    <span className={e.no != null ? 'no' : 'no none'}>{e.no != null ? e.no : '—'}</span>
                     {e.id != null ? (
                       <Link className="name" to={`/combi/${e.id}`}>
                         <span className="board-avatar">

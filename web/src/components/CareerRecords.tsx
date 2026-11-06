@@ -20,7 +20,7 @@ function ReachTable({ rows }: { rows: ReachRow[] }) {
         <thead>
           <tr>
             <th>最高到達</th>
-            <th>コンビ</th>
+            <th className="sticky-name">コンビ</th>
             <th>到達年</th>
           </tr>
         </thead>
@@ -28,7 +28,7 @@ function ReachTable({ rows }: { rows: ReachRow[] }) {
           {rows.map((r) => (
             <tr key={r.id}>
               <td>{ROUND_LABEL[r.bestRound]}</td>
-              <td>
+              <td className="sticky-name">
                 <Link to={`/combi/${r.id}`}>{r.name}</Link>
               </td>
               <td className="no">{r.years.join('・')}</td>
@@ -109,7 +109,7 @@ export default function CareerRecords({ ps }: { ps: PeopleStats }) {
                 <td>{j.job}</td>
                 <td>{ROUND_LABEL[j.bestRound]}</td>
                 <td className="no">{j.count}</td>
-                <td>
+                <td className="names-cell">
                   {j.combis.map((c, i) => (
                     <span key={c.id} className="winner-item">
                       {i > 0 && '・'}

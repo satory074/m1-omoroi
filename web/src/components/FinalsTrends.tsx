@@ -55,7 +55,7 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
                 <td className="no">{r.appearances}</td>
                 <td className="no">{r.finalists}</td>
                 <td className="no">{r.wins}</td>
-                <td>
+                <td className="names-cell">
                   <WinnersCell winners={r.winners} />
                 </td>
               </tr>
@@ -84,7 +84,7 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
                 <td className="no">{r.order}番手</td>
                 <td className="no">{r.appearances}</td>
                 <td className="no">{r.wins}</td>
-                <td>
+                <td className="names-cell">
                   <WinnersCell winners={r.winners} />
                 </td>
               </tr>
@@ -148,7 +148,7 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
               <tr key={r.n}>
                 <td className="no">{r.n}回目</td>
                 <td className="no">{r.count}</td>
-                <td>
+                <td className="names-cell">
                   <WinnersCell winners={r.winners} />
                 </td>
               </tr>
@@ -173,7 +173,7 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
               <tr key={r.rank}>
                 <td className="no">{r.rank}位</td>
                 <td className="no">{r.count}</td>
-                <td>
+                <td className="names-cell">
                   <WinnersCell winners={r.winners} />
                 </td>
               </tr>

@@ -779,14 +779,80 @@ button {
   font-weight: 700;
 }
 
+/* 狭幅は2段組み: 1段目=コンビ名(全幅・折り返し可)+N年目 / 2段目=No.・注目度・結果。
+   列を横に並べたままだと名前に約50pxしか残らず2〜3文字で切れていた。
+   写真は2段にまたがるよう行の左に絶対配置する(行は virtualizer が position:absolute にして
+   いるので包含ブロックになる)。行高は名前の長さで変わるので YearPage が実寸を測っている */
 @media (max-width: 640px) {
-  .board-head,
-  .board-row {
-    grid-template-columns: 60px 1fr 96px;
+  .board-head {
+    grid-template-columns: 1fr auto;
   }
-  .board-head .hits,
-  .board-row .hits {
+  .board-head > :first-child,
+  .board-head .hits {
     display: none;
+  }
+  .board-row {
+    grid-template-columns: auto auto 1fr auto;
+    grid-template-areas:
+      'name name name name'
+      'no hits . result';
+    gap: 1px 10px;
+    height: auto;
+    padding: 9px 14px 8px 68px; /* 左 = 写真44px + 余白 */
+  }
+  .board-row .board-avatar {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .board-row .name {
+    grid-area: name;
+    align-items: baseline;
+    gap: 6px;
+  }
+  /* 写真・2段目も含めて行全体をタップ領域にする(リンクは1つのまま) */
+  .board-row a.name::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  .board-row .name .name-text {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+  }
+  .board-row .no,
+  .board-row .hits {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+  .board-row .no {
+    grid-area: no;
+  }
+  .board-row .no::before {
+    content: 'No.';
+    font-size: 11px;
+    margin-right: 1px;
+  }
+  .board-row .no.none {
+    display: none;
+  }
+  .board-row .hits {
+    grid-area: hits;
+    text-align: left;
+  }
+  /* \FE0E は iOS で ▶ が絵文字化するのを防ぐ */
+  .board-row .hits:not(:empty)::before {
+    content: '\25B6\FE0E';
+    font-size: 9px;
+    margin-right: 3px;
+    vertical-align: 1px;
+  }
+  .board-row .result {
+    grid-area: result;
+    justify-self: end;
+    font-size: 12.5px;
   }
 }
 
@@ -932,18 +998,21 @@ button {
   margin: -4px 0 8px;
 }
 
+/* position: relative は表内の .sr-only(absolute)をこの枠に閉じ込めるため。
+   無いと初期包含ブロック基準で置かれ、狭幅でページ全体が横にはみ出す */
 .history-wrap {
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 4px;
   background: #fff;
 }
 
+/* min-width は付けない。収まる表まで横スクロールさせると名前列が画面外へ流れるため */
 .history {
   width: 100%;
   border-collapse: collapse;
   font-size: 13.5px;
-  min-width: 640px;
 }
 
 .history th {
@@ -1014,6 +1083,20 @@ button {
 .history td.cell.champion {
   color: var(--gold);
   background: var(--gold-bg);
+}
+
+/* 名前を並べるセル(王者一覧など)。1行に並べると表が1,500px前後まで伸びるので折り返す。
+   項目は inline-block にして「コンビ名(年)」の途中では折らず、項目の間で折る。
+   区切りの「・」は行頭禁則の文字なので、ただの inline だと項目の間に改行位置ができない */
+.history td.names-cell,
+.history td.judge-pick {
+  white-space: normal;
+}
+
+.history td.names-cell .winner-item,
+.history td.judge-pick .winner-item {
+  display: inline-block;
+  white-space: nowrap;
 }
 
 /* ============ 決勝得点表(FinalsScoreTable) — 本家テロップ風 ============ */
@@ -1104,6 +1187,39 @@ button {
    順位・コンビ名・合計セルに色を載せて進出ラインを示す。 */
 .history tr.finalist td:not(.score) {
   background: rgba(200, 16, 46, 0.09);
+}
+
+/* 横スクロールする表で、行を識別する名前列を左端に固定する(狭幅のみ)。
+   下を流れるセルが透けないよう背景は不透明にし、8文字を超える名前は折り返して列を細く保つ。
+   進出行の固定セルは上の .finalist と同じ詳細度で上書きするので、このブロックはその後ろに置く */
+@media (max-width: 640px) {
+  .history .sticky-name {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 9.5em; /* 左右の余白込み。中身は約8文字 */
+    white-space: normal;
+    background: #fff;
+    box-shadow: inset -1px 0 var(--line);
+  }
+  .history th.sticky-name {
+    background: var(--paper-2);
+  }
+  /* 決勝の進出行は半透明の赤なので、固定セルだけ白に重ねた不透明色にする */
+  .history tr.finalist td.sticky-name {
+    background: color-mix(in srgb, var(--red) 9%, #fff);
+  }
+  .history .sticky-name .absent-name {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+  .finals-table .sticky-name .appearance-note {
+    display: block;
+    margin-left: 0;
+  }
+  .finals-table .sticky-name .revival-chip {
+    margin: 2px 0 0;
+  }
 }
 
 /* ソート用ヘッダ(順・合計) — ボタンがセル全体を埋める */

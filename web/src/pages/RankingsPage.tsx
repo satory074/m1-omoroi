@@ -77,14 +77,14 @@ function FinalsRecords({ fs }: { fs: FinalsStats }) {
           <thead>
             <tr>
               <th>年</th>
-              <th>コンビ</th>
+              <th className="sticky-name">コンビ</th>
             </tr>
           </thead>
           <tbody>
             {fs.debutFinalists.map((d) => (
               <tr key={`${d.year}-${d.name}`}>
                 <td className="no">{d.year}</td>
-                <td>
+                <td className="sticky-name">
                   {d.combiId != null ? <Link to={`/combi/${d.combiId}`}>{d.name}</Link> : d.name}
                   {d.recordedOnly && ' ※'}
                 </td>
@@ -106,7 +106,7 @@ function FinalsRecords({ fs }: { fs: FinalsStats }) {
             <tr>
               <th>順位</th>
               <th>年</th>
-              <th>コンビ</th>
+              <th className="sticky-name">コンビ</th>
               <th>得点</th>
               <th>偏差値</th>
             </tr>
@@ -116,7 +116,7 @@ function FinalsRecords({ fs }: { fs: FinalsStats }) {
               <tr key={`${d.year}-${d.name}`}>
                 <td className="no">{d.rank}</td>
                 <td className="no">{d.year}</td>
-                <td>{d.combiId != null ? <Link to={`/combi/${d.combiId}`}>{d.name}</Link> : d.name}</td>
+                <td className="sticky-name">{d.combiId != null ? <Link to={`/combi/${d.combiId}`}>{d.name}</Link> : d.name}</td>
                 <td className="no">{d.total}</td>
                 <td className="no">{d.deviation.toFixed(1)}</td>
               </tr>
