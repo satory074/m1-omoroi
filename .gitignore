@@ -11,6 +11,7 @@ scraper/work/*
 !scraper/work/archive_years.json
 !scraper/work/finals/
 !scraper/work/popularity.json
+!scraper/work/official_videos.json
 
 # Node
 web/node_modules/

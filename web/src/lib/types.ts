@@ -87,6 +87,39 @@ export interface Popularity {
   hits: Record<string, { n: number; at: string; v?: number; m?: number }>
 }
 
+/** M-1公式YouTubeの動画1本へのリンク(official_videos.json の combis 側) */
+export interface OfficialVideoLink {
+  /** YouTube の動画ID */
+  v: string
+  /** 種類(プレイリスト名から年を除いたもの): 3回戦ネタ / 1回戦TOP3 / ナイスアマチュア賞 / 直撃！インタビュー */
+  k: string
+  /** 出番・順位: 2組目 / 1位通過(説明文に記載がある動画のみ) */
+  p?: string
+  /** 開催日と会場: 11/3(火) 東京 KANDA SQUARE HALL */
+  at?: string
+}
+
+export interface OfficialPlaylist {
+  id: string
+  title: string
+  /** 公開中の動画本数 */
+  count: number
+}
+
+/** data/official_videos.json。いま公開中のものだけ(ネタ動画はシーズン後に消えるので過去年は少ない) */
+export interface OfficialVideos {
+  channel: string
+  fetchedAt: string | null
+  years: Record<
+    string,
+    {
+      playlists: Partial<Record<RoundKey, OfficialPlaylist[]>>
+      /** コンビID → 回戦 → 動画 */
+      combis: Record<string, Partial<Record<RoundKey, OfficialVideoLink[]>>>
+    }
+  >
+}
+
 export interface RankingItem {
   id: number
   name: string

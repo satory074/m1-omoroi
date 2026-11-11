@@ -1,8 +1,10 @@
 import { Link, useParams } from 'react-router-dom'
 
 import CombiPhoto from '../components/CombiPhoto'
-import { useCombiDetail, usePopularity } from '../lib/api'
+import { VideoLinks } from '../components/OfficialVideo'
+import { useCombiDetail, useOfficialVideos, usePopularity } from '../lib/api'
 import { formationInfo } from '../lib/eligibility'
+import { combiVideos } from '../lib/officialVideos'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits } from '../lib/rounds'
 import type { ResultKey } from '../lib/types'
 
@@ -11,6 +13,7 @@ export default function CombiPage() {
   const id = Number(idParam)
   const { data: combi, isLoading, isError } = useCombiDetail(Number.isFinite(id) ? id : null)
   const { data: popularity } = usePopularity()
+  const { data: official } = useOfficialVideos()
 
   if (isError) return <div className="error-box">このコンビのデータを読み込めませんでした。</div>
   if (isLoading || !combi) return <div className="loading">読み込み中…</div>
@@ -19,6 +22,7 @@ export default function CombiPage() {
   const years = Object.keys(combi.history)
     .map(Number)
     .sort((a, b) => b - a)
+  const hasVideos = years.some((y) => ROUND_ORDER.some((rk) => combiVideos(official, y, id, rk).length > 0))
 
   return (
     <>
@@ -110,6 +114,7 @@ export default function CombiPage() {
                       <td key={rk} className={`cell ${res}`} title={disp.label}>
                         <span aria-hidden>{disp.sym}</span>
                         <span className="sr-only">{disp.label}</span>
+                        <VideoLinks links={combiVideos(official, y, id, rk)} name={combi.name} />
                       </td>
                     )
                   })}
@@ -121,6 +126,12 @@ export default function CombiPage() {
       </div>
       <p className="legend">
         ◎ シード通過 / ○ 通過 / × 敗退 / ★ 優勝
+        {hasVideos && (
+          <>
+            {' / '}
+            <span className="yt-icon" aria-hidden /> M-1公式YouTubeの動画
+          </>
+        )}
       </p>
 
       {combi.legacy

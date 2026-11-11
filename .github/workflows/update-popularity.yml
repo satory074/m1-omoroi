@@ -1,6 +1,8 @@
 # 注目度(YouTube再生数)の日次ローリング更新。
 # search.list は1日100回の独立枠(2026-06〜)。1組=コンビ名+メンバー名の2回なので95回で約47組/日を取得し、
 # 未取得 → 旧クエリ版 → 取得日の古い順で全組を約4週間周期で更新する。
+# あわせて M-1公式YouTube の回戦別プレイリスト/動画(年度ページのリンク)も取り直す
+# (playlists/playlistItems のみ1日30unit前後。search枠は使わない)。
 # data/ へのコミットで deploy.yml が発火し、サイトにも自動反映される。
 name: Update popularity
 
@@ -38,6 +40,8 @@ jobs:
             exit 0
           fi
           uv sync
+          # 公式動画の取得に失敗しても注目度の更新は止めない(work は前回分のまま残る)
+          uv run m1 fetch-official-videos || echo "::warning::公式YouTube動画の取得に失敗(前回分を維持)"
           if [ "${{ inputs.rescore }}" = "true" ]; then
             uv run m1 rescore-popularity
           fi
@@ -48,7 +52,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add scraper/work/popularity.json data/popularity.json
-          # build は data/meta.json 等も再生成するが注目度更新では popularity.json のみ反映する。
+          git add scraper/work/official_videos.json data/official_videos.json 2>/dev/null || true
+          # build は data/meta.json 等も再生成するが注目度更新では popularity/official_videos のみ反映する。
           # 未stageの再生成物が残ると後続の git pull --rebase が失敗するため破棄する
           git checkout -- .
           if git diff --cached --quiet; then

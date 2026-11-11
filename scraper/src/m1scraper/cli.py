@@ -166,6 +166,15 @@ def cmd_rescore_popularity(args):
         raise SystemExit(1)
 
 
+def cmd_fetch_official_videos(args):
+    from .youtube_official import QuotaExceeded, fetch_official_videos
+
+    try:
+        fetch_official_videos()
+    except QuotaExceeded:
+        raise SystemExit("[official] YouTube API の枠切れ。work は前回のまま")
+
+
 def cmd_build(args):
     from .build_json import build
 
@@ -215,6 +224,12 @@ def main():
         help="取得済み動画IDから注目度を一括再集計(searchを消費しない。判定ルール変更後に実行)",
     )
     p.set_defaults(func=cmd_rescore_popularity)
+
+    p = sub.add_parser(
+        "fetch-official-videos",
+        help="M-1公式YouTubeの回戦別プレイリストと動画を取得(playlists/playlistItemsのみ、searchを消費しない)",
+    )
+    p.set_defaults(func=cmd_fetch_official_videos)
 
     p = sub.add_parser("build", help="work/* から data/* を生成")
     p.set_defaults(func=cmd_build)

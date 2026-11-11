@@ -1513,6 +1513,18 @@ def build():
             hit.pop("q", None)
         _write(DATA_DIR / "popularity.json", pop)
 
+    # M-1公式YouTubeの回戦別動画。work は「いま公開中のもの」を毎日取り直したもの(youtube_official.py)。
+    # 紐付けは年度データの出場組が相手なので、シーズン更新で結果が増えると紐付けも追随する
+    ov_path = WORK_DIR / "official_videos.json"
+    if ov_path.exists():
+        from .youtube_official import load_overrides, match_official_videos, print_report
+
+        official, ov_report = match_official_videos(
+            json.loads(ov_path.read_text(encoding="utf-8")), year_files, load_overrides()
+        )
+        print_report(ov_report)
+        _write(DATA_DIR / "official_videos.json", official)
+
     finals_dir = WORK_DIR / "finals"
     finals_years = []
     all_finals = []

@@ -1,0 +1,12 @@
+{
+  "_note": "公式YouTube動画のコンビ紐付けの手動補正(youtube_official.match_official_videos)。byVideo=動画ID→{動画上の名前: コンビID}(同名コンビの判別。出典=公式会場JSON /schedule/json/{会場id}.json の entrant id)、byName=年→{動画上の名前: コンビID}(YouTube側の誤字など。長音の―/ー・漢数字の二/カナのニの揺れは照合キーで吸収済みなので書かなくてよい)",
+  "byVideo": {
+    "GOEL8u4cG2k": {
+      "メリールー": 45064
+    },
+    "xai7VO7SsS4": {
+      "黄昏": 43256
+    }
+  },
+  "byName": {}
+}

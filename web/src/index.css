@@ -856,6 +856,126 @@ button {
   }
 }
 
+/* ============ M-1公式YouTube ============ */
+/* 赤い角丸に白い三角(YouTube のロゴ画像そのものは使わない)。▶ の文字は iOS で絵文字化するので CSS で描く */
+.yt-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  position: relative;
+  width: 20px;
+  height: 14px;
+  border-radius: 4px;
+  background: #e00;
+  vertical-align: -2px;
+}
+
+.yt-icon::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-style: solid;
+  border-width: 4px 0 4px 7px;
+  border-color: transparent transparent transparent #fff;
+  transform: translate(-40%, -50%);
+}
+
+/* 見た目は小さく、押せる範囲は広く(負マージンで行高・列幅を押し広げない)。
+   狭幅の年度一覧では a.name::after が行全体を覆うタップ領域なので、z-index でその上に出す */
+.yt-link {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  margin: -6px -5px;
+  border-radius: 4px;
+}
+
+.yt-link:hover .yt-icon,
+.yt-link:focus-visible .yt-icon {
+  background: #a00;
+}
+
+.history td.cell .yt-link {
+  margin: -6px -6px -6px 0;
+  vertical-align: middle;
+}
+
+/* 回戦タブの「動画あり」印 */
+.funnel-step .label .yt-icon {
+  width: 14px;
+  height: 10px;
+  border-radius: 3px;
+  margin-left: 5px;
+  vertical-align: -1px;
+}
+
+.funnel-step .label .yt-icon::after {
+  border-width: 3px 0 3px 5px;
+}
+
+/* 選択中の回戦のプレイリスト */
+.round-videos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: -6px 0 14px;
+  font-size: 13px;
+}
+
+.round-videos-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.round-videos-pl {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.round-videos-pl:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.round-videos-pl small {
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.round-videos-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.round-videos-note .yt-icon,
+.legend .yt-icon {
+  width: 16px;
+  height: 11px;
+  border-radius: 3px;
+}
+
+.round-videos-note .yt-icon::after,
+.legend .yt-icon::after {
+  border-width: 3px 0 3px 5px;
+}
+
 /* ============ 結果バッジ ============ */
 .result {
   display: inline-flex;

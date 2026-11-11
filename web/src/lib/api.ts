@@ -10,6 +10,7 @@ import type {
   FinalsStats,
   JudgesStats,
   MetaFile,
+  OfficialVideos,
   PeopleStats,
   Popularity,
   Rankings,
@@ -54,6 +55,16 @@ export function usePopularity(enabled = true) {
     queryKey: ['popularity'],
     queryFn: () => fetchJsonOrNull<Popularity>('popularity.json'),
     enabled,
+    ...STATIC,
+  })
+}
+
+/** M-1公式YouTubeの回戦別プレイリストとコンビごとの動画(約8KB gz)。
+ *  ファイルが無い(CIの初回取得前など)ときは null で、リンクを出さないだけになる */
+export function useOfficialVideos() {
+  return useQuery({
+    queryKey: ['official-videos'],
+    queryFn: () => fetchJsonOrNull<OfficialVideos>('official_videos.json'),
     ...STATIC,
   })
 }

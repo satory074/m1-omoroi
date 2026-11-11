@@ -4,10 +4,12 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 
 import AbsentAdvancers from '../components/AbsentAdvancers'
 import CombiPhoto from '../components/CombiPhoto'
-import { useMeta, usePopularity, useYear } from '../lib/api'
+import { VideoLinks } from '../components/OfficialVideo'
+import { useMeta, useOfficialVideos, usePopularity, useYear } from '../lib/api'
 import { formationInfo } from '../lib/eligibility'
+import { OFFICIAL_CHANNEL_URL, combiVideos, playlistUrl } from '../lib/officialVideos'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits, isPassing } from '../lib/rounds'
-import type { ResultKey, RoundKey, YearEntry } from '../lib/types'
+import type { OfficialPlaylist, ResultKey, RoundKey, YearEntry } from '../lib/types'
 
 type ResultFilter = 'all' | 'pass' | 'fail'
 type SortKey = 'no' | 'kana' | 'hits'
@@ -44,6 +46,59 @@ function YearStrip({ years, current }: { years: number[]; current: number }) {
   )
 }
 
+/** 選択中の回戦の M-1公式YouTube(プレイリスト)。無い回戦は公式チャンネルへ */
+function RoundVideos({
+  playlists,
+  channel,
+  round,
+  videoCount,
+  isPast,
+}: {
+  playlists: OfficialPlaylist[] | null
+  channel: string
+  round: RoundKey
+  videoCount: number
+  isPast: boolean
+}) {
+  const ext = { target: '_blank', rel: 'noopener noreferrer' } as const
+  return (
+    <div className="round-videos">
+      <span className="round-videos-head">
+        <span className="yt-icon" aria-hidden />
+        M-1公式YouTube
+      </span>
+      {playlists && playlists.length > 0 ? (
+        <>
+          {playlists.map((p) => (
+            <a key={p.id} className="round-videos-pl" href={playlistUrl(p.id)} {...ext}>
+              {p.title}
+              <small>{p.count}本</small>
+            </a>
+          ))}
+          {videoCount > 0 && (
+            <span className="round-videos-note">
+              一覧の <span className="yt-icon" aria-hidden /> から各コンビの動画へ({videoCount.toLocaleString('ja-JP')}組)
+            </span>
+          )}
+        </>
+      ) : (
+        <>
+          <a className="round-videos-pl" href={channel} {...ext}>
+            公式チャンネル
+          </a>
+          {/* データ自体が無い(null)ときは「公開されていない」と断定しない */}
+          {playlists && (
+            <span className="round-videos-note">
+              {ROUND_LABEL[round]}の動画は公開されていません
+              {isPast && '(ネタ動画はシーズン終了後に非公開になります)'}
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function YearPage() {
   const { year: yearParam } = useParams()
   const year = Number(yearParam)
@@ -56,6 +111,7 @@ export default function YearPage() {
   const { data: meta } = useMeta()
   const { data: yearFile, isLoading, isError } = useYear(Number.isFinite(year) ? year : null)
   const { data: popularity } = usePopularity()
+  const { data: official } = useOfficialVideos()
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params)
@@ -114,6 +170,12 @@ export default function YearPage() {
     return ids
   }, [yearFile])
 
+  // この回戦で公式動画のある組数(回戦の案内に出す)
+  const videoCount = useMemo(() => {
+    if (!yearFile || !official) return 0
+    return yearFile.entries.filter((e) => combiVideos(official, year, e.id, round).length > 0).length
+  }, [yearFile, official, year, round])
+
   const parentRef = useRef<HTMLDivElement>(null)
   // 狭幅(index.css の max-width: 640px)は2段組みで、長い名前は折り返して行が伸びるため
   // 実寸を measureElement で測る。見積もりは1行に収まる名前の行高
@@ -130,6 +192,7 @@ export default function YearPage() {
   const isArchive = yearFile.source === 'official-archive'
   const activeRounds = ROUND_ORDER.filter((rk) => (roundCounts.get(rk) ?? 0) > 0)
   const passCount = rows.filter((e) => isPassing(e.results[round])).length
+  const yearVideos = official?.years[String(year)]
 
   return (
     <>
@@ -152,7 +215,15 @@ export default function YearPage() {
               style={{ flex: `${Math.log10(Math.max(count, 1)) + 1} 1 0` }}
               onClick={() => setParam('round', rk)}
             >
-              <span className="label">{ROUND_LABEL[rk]}</span>
+              <span className="label">
+                {ROUND_LABEL[rk]}
+                {(yearVideos?.playlists[rk]?.length ?? 0) > 0 && (
+                  <>
+                    <span className="yt-icon" title="M-1公式YouTubeに動画あり" aria-hidden />
+                    <span className="sr-only">(公式動画あり)</span>
+                  </>
+                )}
+              </span>
               <span className="count">
                 {count.toLocaleString('ja-JP')}
                 <small>組</small>
@@ -161,6 +232,16 @@ export default function YearPage() {
           )
         })}
       </div>
+
+      {official !== undefined && (
+        <RoundVideos
+          playlists={official ? (yearVideos?.playlists[round] ?? []) : null}
+          channel={official?.channel ?? OFFICIAL_CHANNEL_URL}
+          round={round}
+          videoCount={videoCount}
+          isPast={meta ? year < meta.latestYear : false}
+        />
+      )}
 
       <div className="toolbar">
         <div className="seg" role="group" aria-label="通過・敗退の絞り込み">
@@ -257,6 +338,7 @@ export default function YearPage() {
                         {disp.sym}
                       </span>
                       {disp.label || e.raw?.[round] || '不明'}
+                      <VideoLinks links={combiVideos(official, year, e.id, round)} name={e.name} />
                     </span>
                     <span className="hits">{hits != null ? formatHits(hits) : ''}</span>
                   </div>
