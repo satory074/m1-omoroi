@@ -1,11 +1,12 @@
 import { Link, useParams } from 'react-router-dom'
 
+import BestChip from '../components/BestChip'
 import CombiPhoto from '../components/CombiPhoto'
 import { VideoLinks } from '../components/OfficialVideo'
 import { useCombiDetail, useOfficialVideos, usePopularity } from '../lib/api'
 import { formationInfo } from '../lib/eligibility'
 import { combiVideos } from '../lib/officialVideos'
-import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits } from '../lib/rounds'
+import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, bestResultOfHistory, formatHits } from '../lib/rounds'
 import type { ResultKey } from '../lib/types'
 
 export default function CombiPage() {
@@ -36,6 +37,8 @@ export default function CombiPage() {
         <div>
           <h1 className="page-title combi-name">
             {combi.name}
+            {/* 年の文脈が無いページなので通算(全出場年)の最高戦績 */}
+            <BestChip level={bestResultOfHistory(combi.history)} />
             {combi.kana && combi.kana !== combi.name && (
               <span className="combi-kana">{combi.kana}</span>
             )}

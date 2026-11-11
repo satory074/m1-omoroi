@@ -1,9 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter } from 'react-router-dom'
+import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 
-import App from './App'
+import { routes } from './routes'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -12,12 +12,24 @@ const queryClient = new QueryClient({
 
 const basename = import.meta.env.BASE_URL.replace(/\/$/, '')
 
+// 直接開いた(URL入力・外部リンク)最初の履歴エントリーは history.state が空で、
+// React Router はその location.key を一律 "default" にする。すると ScrollRestoration と
+// scrollMemory.ts が、同じタブで以前 "default" として覚えた位置を別のページにも当ててしまう
+// (別のページを直接開いたのに途中から表示される)。ルーターが読む前に固有のキーを振っておく。
+// history.state に入れるので、再読み込みや他サイトから戻ったときは同じキーのまま復元される
+if (!window.history.state?.key) {
+  window.history.replaceState(
+    { ...window.history.state, key: Math.random().toString(36).slice(2, 10) },
+    '',
+  )
+}
+
+const router = createBrowserRouter(routes, { basename })
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter basename={basename}>
-        <App />
-      </BrowserRouter>
+      <RouterProvider router={router} />
     </QueryClientProvider>
   </StrictMode>,
 )

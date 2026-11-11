@@ -1,20 +1,16 @@
-import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
+import { Navigate, NavLink, Outlet, ScrollRestoration } from 'react-router-dom'
 
 import CombiSearch from './components/CombiSearch'
 import { useMeta } from './lib/api'
-import CombiPage from './pages/CombiPage'
-import FinalsPage from './pages/FinalsPage'
-import RankingsPage from './pages/RankingsPage'
-import StatsPage from './pages/StatsPage'
-import YearPage from './pages/YearPage'
 
-function HomeRedirect() {
+export function HomeRedirect() {
   const { data: meta, isError } = useMeta()
   if (isError) return <div className="error-box">データを読み込めませんでした。再読み込みしてください。</div>
   if (!meta) return <div className="loading">読み込み中…</div>
   return <Navigate to={`/years/${meta.latestYear}`} replace />
 }
 
+/** 全ページ共通の枠(ヘッダー・フッター)。中身は <Outlet /> に入る */
 export default function App() {
   return (
     <div className="app">
@@ -32,25 +28,19 @@ export default function App() {
             <NavLink to="/" end>
               年度別 結果
             </NavLink>
-            <NavLink to="/rankings">記録ランキング</NavLink>
-            <NavLink to="/stats">統計</NavLink>
+            <NavLink to="/stats">記録・統計</NavLink>
             <NavLink to="/finals">決勝の得点</NavLink>
           </nav>
         </div>
       </header>
 
       <main className="app-main">
-        <Routes>
-          <Route path="/" element={<HomeRedirect />} />
-          <Route path="/years/:year" element={<YearPage />} />
-          <Route path="/combi/:id" element={<CombiPage />} />
-          <Route path="/rankings" element={<RankingsPage />} />
-          <Route path="/stats" element={<StatsPage />} />
-          <Route path="/finals" element={<FinalsPage />} />
-          <Route path="/finals/:year" element={<FinalsPage />} />
-          <Route path="*" element={<div className="error-box">ページが見つかりません</div>} />
-        </Routes>
+        <Outlet />
       </main>
+      {/* 戻る/進むでは離れたときの位置へ、新しいページへ進んだときは先頭へ。
+          同じページ内でURLだけ変える操作(絞り込み・検索パネル)は preventScrollReset で除外している。
+          年度一覧の内側スクロールはこれが扱わないので YearPage が自前で戻す(lib/scrollMemory.ts) */}
+      <ScrollRestoration />
 
       <footer className="site-footer">
         <div className="site-footer-inner">

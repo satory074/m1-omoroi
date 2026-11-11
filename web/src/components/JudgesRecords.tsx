@@ -18,7 +18,7 @@ function compressYears(years: number[]): string {
   return runs.join('・')
 }
 
-/** 審査員の通算記録(記録ランキングページ) */
+/** 審査員の通算記録(記録・統計の「審査員」タブ) */
 export function JudgeCareerSection({ js }: { js: JudgesStats }) {
   return (
     <>
@@ -87,7 +87,7 @@ function PickCell({
   )
 }
 
-/** 審査員の年別採点傾向+最終決戦の得票(統計ページ) */
+/** 審査員の年別採点傾向+最終決戦の得票(記録・統計の「審査員」タブ) */
 export function JudgesYearlySection({ js }: { js: JudgesStats }) {
   const years = js.byYear.map((y) => y.year)
   const [year, setYear] = useState(years[years.length - 1])

@@ -27,6 +27,8 @@ export interface YearEntry {
   raw?: Partial<Record<RoundKey, string>>
   agency?: string
   photo?: string
+  /** その年まで(その年を含む)の最高戦績。1..6=回戦、7=優勝(rounds.ts の BEST_CHAMPION)。結果が無い組は無し */
+  best?: number
 }
 
 export interface YearFile {

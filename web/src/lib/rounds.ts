@@ -30,6 +30,32 @@ export function bestRoundLabel(best: number): string | null {
   return key ? ROUND_LABEL[key] : null
 }
 
+/** 最高戦績の「優勝」。BEST_ROUND_KEYS の決勝(6)の1つ上。
+ *  ビルド側 build_json.py の BEST_CHAMPION と一致させること(年度JSONの best に入る)。 */
+export const BEST_CHAMPION = BEST_ROUND_KEYS.length + 1
+
+/** 最高戦績の表示ラベル(1..6=回戦、7=優勝)。0や範囲外は null。 */
+export function bestResultLabel(level: number): string | null {
+  return level === BEST_CHAMPION ? '優勝' : bestRoundLabel(level)
+}
+
+/** 1年分の results の戦績段階。build_json.py の _result_level と同じ(到達はキーの有無、合否は問わない) */
+export function resultLevel(results: Partial<Record<RoundKey, ResultKey>>): number {
+  if (results.final === 'champion') return BEST_CHAMPION
+  let level = 0
+  BEST_ROUND_KEYS.forEach((rk, i) => {
+    if (results[rk]) level = i + 1
+  })
+  return level
+}
+
+/** 全出場年を通じた最高戦績(コンビ詳細の見出し用) */
+export function bestResultOfHistory(
+  history: Record<string, { results: Partial<Record<RoundKey, ResultKey>> }>,
+): number {
+  return Math.max(0, ...Object.values(history).map((h) => resultLevel(h.results)))
+}
+
 export const RESULT_DISPLAY: Record<ResultKey, { sym: string; label: string }> = {
   pass: { sym: '○', label: '通過' },
   seed_pass: { sym: '◎', label: 'シード通過' },

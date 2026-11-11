@@ -137,7 +137,7 @@ export default function CombiSearch() {
       if (composingRef.current) return
       const next = new URLSearchParams(params)
       next.set('q', trimmed)
-      setParams(next, { replace: true })
+      setParams(next, { replace: true, preventScrollReset: true })
     }, URL_SYNC_MS)
     return () => clearTimeout(t)
   }, [expanded, query, urlQuery, params, setParams])
@@ -169,10 +169,12 @@ export default function CombiSearch() {
     return () => document.removeEventListener('mousedown', onDown)
   }, [showMenu])
 
+  // パネルの開閉・タブ・並び替えはページ遷移ではないので、ScrollRestoration に先頭へ戻させない
+  // (閉じる navigate(-1) は「戻る」なので、開く前の位置に戻る)
   const setUrl = (mutate: (p: URLSearchParams) => void, push = false) => {
     const next = new URLSearchParams(params)
     mutate(next)
-    setParams(next, push ? undefined : { replace: true })
+    setParams(next, { replace: !push, preventScrollReset: true })
   }
 
   /** 候補リストから展開パネルへ移る。push なので戻るボタンで閉じられる */

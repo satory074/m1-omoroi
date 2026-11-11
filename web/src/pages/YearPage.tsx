@@ -1,14 +1,16 @@
-import { useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 
 import AbsentAdvancers from '../components/AbsentAdvancers'
+import BestChip from '../components/BestChip'
 import CombiPhoto from '../components/CombiPhoto'
 import { VideoLinks } from '../components/OfficialVideo'
 import { useMeta, useOfficialVideos, usePopularity, useYear } from '../lib/api'
 import { formationInfo } from '../lib/eligibility'
 import { OFFICIAL_CHANNEL_URL, combiVideos, playlistUrl } from '../lib/officialVideos'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits, isPassing } from '../lib/rounds'
+import { loadRow, saveRow } from '../lib/scrollMemory'
 import type { OfficialPlaylist, ResultKey, RoundKey, YearEntry } from '../lib/types'
 
 type ResultFilter = 'all' | 'pass' | 'fail'
@@ -16,6 +18,9 @@ type SortKey = 'no' | 'kana' | 'hits'
 
 /** 一覧を2段組みに切り替える幅。index.css の .board-row の狭幅ルールと対応 */
 const NARROW_QUERY = '(max-width: 640px)'
+
+/** 行高の見積もり。狭幅は1行に収まる名前の実測値(長い名前は measureElement で実寸に直る) */
+const estimateRow = () => (window.matchMedia(NARROW_QUERY).matches ? 63 : 48)
 
 function YearStrip({ years, current }: { years: number[]; current: number }) {
   const { search } = useLocation()
@@ -103,6 +108,7 @@ export default function YearPage() {
   const { year: yearParam } = useParams()
   const year = Number(yearParam)
   const [params, setParams] = useSearchParams()
+  const location = useLocation()
 
   const roundParam = (params.get('round') as RoundKey) || 'first'
   const resultFilter = (params.get('result') as ResultFilter) || 'all'
@@ -117,7 +123,8 @@ export default function YearPage() {
     const next = new URLSearchParams(params)
     if (value) next.set(key, value)
     else next.delete(key)
-    setParams(next, { replace: true })
+    // 同じページ内の絞り込みなので、ScrollRestoration に先頭へ戻させない
+    setParams(next, { replace: true, preventScrollReset: true })
   }
 
   const roundCounts = useMemo(() => {
@@ -182,9 +189,31 @@ export default function YearPage() {
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => (window.matchMedia(NARROW_QUERY).matches ? 63 : 48),
+    estimateSize: estimateRow,
     overscan: 12,
+    // 戻る/進むで来たときは、離れたときに先頭に見えていた行から始める(scrollMemory.ts)。
+    // 作り直した直後は上の行がどれも未実測で見積もり高さで並ぶので、行番号×見積もりがちょうどその行の位置になる
+    initialOffset: () => (loadRow(location.key) ?? 0) * estimateRow(),
   })
+
+  // ページを開いたまま別の年へ移って戻った場合(2026→2025→戻る)は作り直されないので、
+  // 履歴エントリーが変わったときに覚えている行へ移す。最初の表示は initialOffset が済ませている。
+  // 覚えが無いまま別の年へ移ったときは先頭から(ウィンドウも先頭へ戻るので揃える)。
+  // 同じ年の絞り込み・並び替え(パスが同じ)は従来どおり位置に触らない
+  const restored = useRef({ key: location.key, path: location.pathname })
+  useLayoutEffect(() => {
+    if (restored.current.key === location.key || rows.length === 0) return
+    const pathChanged = restored.current.path !== location.pathname
+    restored.current = { key: location.key, path: location.pathname }
+    const row = loadRow(location.key)
+    if (row != null && row < rows.length) virtualizer.scrollToIndex(row, { align: 'start' })
+    else if (pathChanged) virtualizer.scrollToOffset(0)
+  }, [location.key, location.pathname, rows.length, virtualizer])
+
+  const rememberRow = (top: number) => {
+    const item = virtualizer.getVirtualItemForOffset(top)
+    if (item) saveRow(location.key, item.index)
+  }
 
   if (isError) return <div className="error-box">{year}年のデータを読み込めませんでした。</div>
   if (isLoading || !yearFile) return <div className="loading">読み込み中…</div>
@@ -286,7 +315,11 @@ export default function YearPage() {
         {rows.length === 0 ? (
           <div className="board-empty">該当するコンビがいません</div>
         ) : (
-          <div className="board-scroll" ref={parentRef}>
+          <div
+            className="board-scroll"
+            ref={parentRef}
+            onScroll={(ev) => rememberRow(ev.currentTarget.scrollTop)}
+          >
             <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
               {virtualizer.getVirtualItems().map((v) => {
                 const e = rows[v.index]
@@ -325,12 +358,14 @@ export default function YearPage() {
                         </span>
                         <span className="name-text">{e.name}</span>
                         {chip}
+                        <BestChip level={e.best} until={year} />
                       </Link>
                     ) : (
                       <span className="name">
                         <span className="board-avatar" />
                         <span className="name-text">{e.name}</span>
                         {chip}
+                        <BestChip level={e.best} until={year} />
                       </span>
                     )}
                     <span className={`result ${res}`}>
@@ -348,6 +383,9 @@ export default function YearPage() {
           </div>
         )}
       </div>
+      <p className="legend">
+        コンビ名の横の「最高」は、{year}年まで({year}年を含む)の最高戦績。後の年の成績は含みません。
+      </p>
 
       <AbsentAdvancers year={year} enteredIds={enteredIds} isArchive={isArchive} />
     </>

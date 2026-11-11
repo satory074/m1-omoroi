@@ -1,225 +1,159 @@
-import { Link } from 'react-router-dom'
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import type { ReactNode } from 'react'
+import { Navigate, NavLink, useParams } from 'react-router-dom'
 
+import CareerRecords from '../components/CareerRecords'
+import CombiRecords from '../components/CombiRecords'
+import FinalsRecords from '../components/FinalsRecords'
 import FinalsTrends from '../components/FinalsTrends'
-import { JudgesYearlySection } from '../components/JudgesRecords'
+import { JudgeCareerSection, JudgesYearlySection } from '../components/JudgesRecords'
+import PopularityRanking from '../components/PopularityRanking'
 import RecordsExplorer from '../components/RecordsExplorer'
-import { useFinalsStats, useJudgesStats, useStats } from '../lib/api'
-import { ROUND_LABEL, ROUND_ORDER } from '../lib/rounds'
-import type { YearStats } from '../lib/types'
+import TournamentStats from '../components/TournamentStats'
+import {
+  useFinalsStats,
+  useJudgesStats,
+  usePeopleStats,
+  useRankings,
+  useStats,
+} from '../lib/api'
 
-// datavizスキルで検証済みのカテゴリカルパレット(赤=1回戦, 金=2回戦, 青=3回戦)
-const SERIES = [
-  { key: 'first', label: '1回戦', color: '#c8102e' },
-  { key: 'second', label: '2回戦', color: '#d99f23' },
-  { key: 'third', label: '3回戦', color: '#3468c0' },
+/**
+ * 記録・統計(旧「記録ランキング」と「統計」を統合)。テーマ別のタブをパス(/stats/:section)で分け、
+ * 各タブは自分の JSON だけを取りに行く。ランキング(順位付け)と傾向(分布)を同じテーマの中に並べる。
+ * タブをクエリにしないのは、ヘッダーの検索パネルが ?tab= を使っていて衝突するため。
+ */
+const SECTIONS = [
+  { key: '', label: '大会' },
+  { key: 'combi', label: 'コンビ' },
+  { key: 'finals', label: '決勝' },
+  { key: 'judges', label: '審査員' },
+  { key: 'people', label: '人物' },
+  { key: 'popularity', label: '注目度' },
 ] as const
 
-const MUTED = '#8a8378'
-const GRID = '#e2dcd0'
+type SectionKey = (typeof SECTIONS)[number]['key']
 
-function passRate(y: YearStats, rk: (typeof SERIES)[number]['key']): number | null {
-  const r = y.byRound[rk]
-  // 合格者しか記録が残っていない年(通過=出場)は通過率を計算できない
-  if (!r || r.appeared <= r.passed) return null
-  return Math.round((r.passed / r.appeared) * 1000) / 10
+/** 読み込み中・失敗・ファイル無し(fetchJsonOrNull が null)を各タブで同じ見せ方にする */
+function Loaded<T>({
+  q,
+  children,
+}: {
+  q: { data: T | null | undefined; isError: boolean }
+  children: (data: T) => ReactNode
+}) {
+  if (q.isError) return <div className="error-box">データを読み込めませんでした。再読み込みしてください。</div>
+  if (q.data === undefined) return <div className="loading">読み込み中…</div>
+  if (q.data === null) return <div className="board-empty">このデータはまだありません。</div>
+  return <>{children(q.data)}</>
 }
 
-const tooltipStyle = {
-  background: '#fff',
-  border: `1px solid ${GRID}`,
-  borderRadius: 4,
-  fontSize: 12.5,
-  fontFamily: 'inherit',
+function TournamentTab() {
+  const q = useStats()
+  return (
+    <>
+      <p className="page-lede">
+        エントリー数と回戦ごとの通過の推移。2001〜2010年は公式アーカイブに残っている範囲のみです。
+      </p>
+      <Loaded q={q}>{(data) => <TournamentStats data={data} />}</Loaded>
+    </>
+  )
+}
+
+function CombiTab() {
+  const q = useRankings()
+  return (
+    <>
+      <p className="page-lede">
+        公式コンビ情報(2015年以降)から集計したコンビの通算記録。各ランキング上位15組(同点は全組表示)。
+        決勝の記録は「決勝」タブ、人の記録は「人物」タブへ。
+      </p>
+      <Loaded q={q}>{(data) => <CombiRecords data={data} />}</Loaded>
+    </>
+  )
+}
+
+function FinalsTab() {
+  const q = useFinalsStats()
+  return (
+    <>
+      <p className="page-lede">全21大会(2001〜2025)の決勝得点表・最終決戦データから集計。</p>
+      <Loaded q={q}>
+        {(fs) => (
+          <>
+            <h2 className="page-title stats-group">決勝の記録</h2>
+            <FinalsRecords fs={fs} />
+            <h2 className="page-title stats-group">決勝の傾向</h2>
+            <FinalsTrends fs={fs} />
+          </>
+        )}
+      </Loaded>
+    </>
+  )
+}
+
+function JudgesTab() {
+  const q = useJudgesStats()
+  return (
+    <>
+      <p className="page-lede">全21大会の決勝得点表と最終決戦の投票から集計した審査員の記録と傾向。</p>
+      <Loaded q={q}>
+        {(js) => (
+          <>
+            <JudgeCareerSection js={js} />
+            <JudgesYearlySection js={js} />
+          </>
+        )}
+      </Loaded>
+    </>
+  )
+}
+
+function PeopleTab() {
+  const q = usePeopleStats()
+  return (
+    <>
+      <p className="page-lede">
+        公式コンビ情報のプロフィール(生年月日・出身地・所属・職業・人数)から集計した人の記録。
+      </p>
+      <Loaded q={q}>
+        {(ps) => (
+          <>
+            <h2 className="page-title stats-group">キャリア・人物の記録</h2>
+            <CareerRecords ps={ps} />
+          </>
+        )}
+      </Loaded>
+      <RecordsExplorer />
+    </>
+  )
+}
+
+const TABS: Record<SectionKey, () => ReactNode> = {
+  '': TournamentTab,
+  combi: CombiTab,
+  finals: FinalsTab,
+  judges: JudgesTab,
+  people: PeopleTab,
+  popularity: PopularityRanking,
 }
 
 export default function StatsPage() {
-  const { data, isLoading, isError } = useStats()
-  const { data: finalsStats } = useFinalsStats()
-  const { data: judgesStats } = useJudgesStats()
-  if (isError) return <div className="error-box">統計を読み込めませんでした。</div>
-  if (isLoading || !data) return <div className="loading">読み込み中…</div>
-
-  const byYear = [...data.byYear].sort((a, b) => a.year - b.year)
-  const entriesData = byYear.map((y) => ({ year: String(y.year), entries: y.entries }))
-  const rateData = byYear.map((y) => ({
-    year: String(y.year),
-    first: passRate(y, 'first'),
-    second: passRate(y, 'second'),
-    third: passRate(y, 'third'),
-  }))
-
-  const lastIndex = (key: (typeof SERIES)[number]['key']) => {
-    for (let i = rateData.length - 1; i >= 0; i--) if (rateData[i][key] != null) return i
-    return -1
-  }
-  const endLabel =
-    (name: string, color: string, targetIndex: number) =>
-    (props: { x?: number | string; y?: number | string; index?: number }) => {
-      if (props.index !== targetIndex || props.x == null || props.y == null) return <g />
-      return (
-        <text x={Number(props.x) + 8} y={Number(props.y) + 4} fill={color} fontSize={12} fontWeight={700}>
-          {name}
-        </text>
-      )
-    }
+  const { section = '' } = useParams()
+  const current = SECTIONS.find((s) => s.key === section)
+  if (!current) return <Navigate to="/stats" replace />
+  const Tab = TABS[current.key]
 
   return (
     <>
-      <h1 className="page-title">統計</h1>
-      <p className="page-lede">
-        収録データからの集計。2001〜2010年は公式アーカイブに残っている範囲のみです。
-      </p>
-
-      <section className="chart-card">
-        <h2 className="section-title">エントリー数の推移</h2>
-        <p className="section-note">2011〜2014年は大会休止。2001〜2010年は記録に残るコンビ数</p>
-        <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={entriesData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke={GRID} strokeDasharray="2 4" vertical={false} />
-            <XAxis
-              dataKey="year"
-              tick={{ fontSize: 11, fill: MUTED }}
-              tickLine={false}
-              axisLine={{ stroke: GRID }}
-              interval={2}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: MUTED }}
-              tickLine={false}
-              axisLine={false}
-              width={48}
-              tickFormatter={(v: number) => v.toLocaleString('ja-JP')}
-            />
-            <Tooltip
-              contentStyle={tooltipStyle}
-              formatter={(v) => [`${Number(v).toLocaleString('ja-JP')}組`, 'エントリー']}
-              cursor={{ fill: 'rgba(34, 30, 26, 0.06)' }}
-            />
-            <Bar dataKey="entries" fill="#c8102e" radius={[3, 3, 0, 0]} maxBarSize={28} />
-          </BarChart>
-        </ResponsiveContainer>
-      </section>
-
-      <section className="chart-card">
-        <h2 className="section-title">回戦別 通過率の推移</h2>
-        <div className="chart-legend">
-          {SERIES.map((s) => (
-            <span key={s.key}>
-              <i style={{ background: s.color }} />
-              {s.label}
-            </span>
-          ))}
-        </div>
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={rateData} margin={{ top: 8, right: 64, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke={GRID} strokeDasharray="2 4" vertical={false} />
-            <XAxis
-              dataKey="year"
-              tick={{ fontSize: 11, fill: MUTED }}
-              tickLine={false}
-              axisLine={{ stroke: GRID }}
-              interval={2}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: MUTED }}
-              tickLine={false}
-              axisLine={false}
-              width={40}
-              unit="%"
-            />
-            <Tooltip
-              contentStyle={tooltipStyle}
-              formatter={(v, name) => [`${v}%`, SERIES.find((s) => s.key === name)?.label ?? name]}
-            />
-            {SERIES.map((s) => (
-              <Line
-                key={s.key}
-                dataKey={s.key}
-                stroke={s.color}
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
-                connectNulls
-                label={endLabel(s.label, s.color, lastIndex(s.key))}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-        <p className="legend">通過率 = 通過数 ÷ 出場数。合格者しか記録がない年は除外</p>
-      </section>
-
-      <h2 className="section-title">年度別の出場・通過数</h2>
-      <div className="history-wrap">
-        <table className="history stats-table">
-          <thead>
-            <tr>
-              <th>年</th>
-              <th>エントリー</th>
-              {ROUND_ORDER.map((rk) => (
-                <th key={rk}>{ROUND_LABEL[rk]}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[...byYear].reverse().map((y) => (
-              <tr key={y.year}>
-                <td className="year">{y.year}</td>
-                <td className="no">{y.entries.toLocaleString('ja-JP')}</td>
-                {ROUND_ORDER.map((rk) => {
-                  const r = y.byRound[rk]
-                  return (
-                    <td key={rk} className="no">
-                      {r
-                        ? `${r.passed.toLocaleString('ja-JP')}/${r.appeared.toLocaleString('ja-JP')}`
-                        : ''}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="legend">各セルは「通過数/出場数」</p>
-
-      {finalsStats && (
-        <>
-          <h1 className="page-title" style={{ marginTop: 40 }}>
-            決勝の傾向
-          </h1>
-          <p className="page-lede">
-            全21大会(2001〜2025)の決勝データから見る傾向。コンビ別のランキングは
-            <Link to="/rankings">記録ランキング</Link>へ。
-          </p>
-          <FinalsTrends fs={finalsStats} />
-        </>
-      )}
-
-      {judgesStats && (
-        <>
-          <h1 className="page-title" style={{ marginTop: 40 }}>
-            審査員の傾向
-          </h1>
-          <p className="page-lede">
-            決勝得点表・最終決戦の投票から集計。審査員別の通算記録は
-            <Link to="/rankings">記録ランキング</Link>へ。
-          </p>
-          <JudgesYearlySection js={judgesStats} />
-        </>
-      )}
-
-      <RecordsExplorer />
+      <h1 className="page-title">記録・統計</h1>
+      <nav className="stats-tabs" aria-label="記録・統計のテーマ">
+        {SECTIONS.map((s) => (
+          <NavLink key={s.key} to={s.key ? `/stats/${s.key}` : '/stats'} end>
+            {s.label}
+          </NavLink>
+        ))}
+      </nav>
+      <Tab />
     </>
   )
 }

@@ -302,12 +302,71 @@ def best_round(rec: dict) -> int:
     combi/index.json の5要素目として配る。int にしているのはラウンドキー文字列より
     gzip後で約12KB小さいため(実測: int +12.8KB / 文字列 +24.5KB)。
     """
-    best = 0
-    for hist in (rec.get("history") or {}).values():
-        for rk in (hist.get("results") or {}):
-            if rk in MAIN_ROUNDS:
-                best = max(best, MAIN_ROUNDS.index(rk) + 1)
-    return best
+    return max(
+        (_round_level(hist.get("results") or {}) for hist in (rec.get("history") or {}).values()),
+        default=0,
+    )
+
+
+def _round_level(results: dict) -> int:
+    """1年分の results の到達段階。0=なし、1..6 が MAIN_ROUNDS に対応(合否は問わない)。"""
+    level = 0
+    for rk in results:
+        if rk in MAIN_ROUNDS:
+            level = max(level, MAIN_ROUNDS.index(rk) + 1)
+    return level
+
+
+# 最高戦績の「優勝」。MAIN_ROUNDS の決勝(6)の1つ上。web/src/lib/rounds.ts の BEST_CHAMPION と一致させる
+BEST_CHAMPION = len(MAIN_ROUNDS) + 1
+
+
+def _result_level(results: dict) -> int:
+    """1年分の results の戦績段階。_round_level に「優勝=BEST_CHAMPION」を足したもの。"""
+    if results.get("final") == "champion":
+        return BEST_CHAMPION
+    return _round_level(results)
+
+
+def annotate_best_results(year_files: dict[int, dict], records: list[dict]) -> int:
+    """各年度エントリーに best = その年まで(その年を含む)の最高戦績 を付ける。戻り値は付与件数。
+
+    値は 1..6 = MAIN_ROUNDS、7 = 優勝(BEST_CHAMPION)。0(結果が1つも無い)はキーを付けない。
+    後の年の成績は混ぜない(2016年の一覧に、2018年に優勝した組の「優勝」を出さない)。
+    id の無いアーカイブ行は他の年と紐付けられないので、その年の results だけで決める。
+    merge_archive_history の後に呼ぶこと(2001〜2010の出場を history に入れてから数えるため)。
+    フロントは年度一覧のコンビ名横のバッジに使う(YearPage.tsx)。
+    """
+    by_id = {r["id"]: r for r in records}
+    # コンビごとに (年, 段階) を年順に並べ、累積最大で「その年まで」を引けるようにする
+    running: dict[int, list[tuple[int, int]]] = {}
+    for rid, rec in by_id.items():
+        pairs = sorted(
+            (int(y), _result_level(h.get("results") or {})) for y, h in (rec.get("history") or {}).items()
+        )
+        acc, best = [], 0
+        for y, lv in pairs:
+            best = max(best, lv)
+            acc.append((y, best))
+        running[rid] = acc
+
+    def until(rid, year: int) -> int:
+        best = 0
+        for y, lv in running.get(rid, []):
+            if y > year:
+                break
+            best = lv
+        return best
+
+    count = 0
+    for year, yf in year_files.items():
+        for e in yf["entries"]:
+            own = _result_level(e.get("results") or {})
+            lv = max(own, until(e.get("id"), year)) if e.get("id") is not None else own
+            if lv:
+                e["best"] = lv
+                count += 1
+    return count
 
 
 def build_member_index(records: list[dict]) -> tuple[list[list[str]], int]:
@@ -405,13 +464,32 @@ def merge_archive_history(records: list[dict], year_files: dict[int, dict]) -> i
             rec = by_id.get(e.get("id"))
             if rec is None:
                 continue
-            # アーカイブ(2001〜2010)とDB(2015+)は年が重ならない
-            rec.setdefault("history", {})[str(year)] = {
-                "no": e.get("no"),
-                "results": e["results"],
+            # アーカイブ(2001〜2010)とDB(2015+)は年が重ならないので、既に行があれば
+            # 同じ年の別の行 = アーカイブ上で全半角違いに分かれた同じコンビ(2008年の
+            # 「NON STYLE」=決勝優勝 と「ＮＯＮ ＳＴＹＬＥ」=準決勝まで 等、約20件)。
+            # 後勝ちで上書きすると優勝や決勝進出が消えるので、回戦ごとに和を取る
+            hist = rec.setdefault("history", {})
+            prev = hist.get(str(year))
+            hist[str(year)] = {
+                "no": e.get("no") if prev is None or prev.get("no") is None else prev["no"],
+                "results": e["results"] if prev is None else _merge_results(prev["results"], e["results"]),
             }
             added += 1
     return added
+
+
+# 同じ回戦に2つの結果があるときの優先度。分割された行の境目では、次の回戦が
+# 別表記で載っているため「推定敗退」が出る。直接観測した結果を優先する
+_RESULT_STRENGTH = {"champion": 5, "seed_pass": 4, "pass": 3, "fail": 2, "fail_inferred": 1}
+
+
+def _merge_results(a: dict, b: dict) -> dict:
+    """2つの results を回戦ごとに合わせた新しい dict(年度ファイル側の results は書き換えない)。"""
+    out = dict(a)
+    for rk, res in b.items():
+        if rk not in out or _RESULT_STRENGTH.get(res, 0) > _RESULT_STRENGTH.get(out[rk], 0):
+            out[rk] = res
+    return out
 
 
 def _make_final_identity(all_finals: list[dict]):
@@ -1439,6 +1517,9 @@ def build():
     # 2001〜2010のアーカイブ参加を該当コンビの history に逆マージ(詳細ページで pre-2015 を表示)
     merged = merge_archive_history(records, year_files)
     print(f"[build] アーカイブ参加を {merged} 行 combi履歴へ統合")
+    # 年度一覧のバッジ用に「その年までの最高戦績」を各エントリーへ(アーカイブ統合後に数える)
+    best_count = annotate_best_results(year_files, records)
+    print(f"[build] 最高戦績 best を {best_count} 行へ付与")
 
     # 準々決勝以上の進出コンビを最高到達ラウンド別に集計(2001〜2010のマージ済み history を含める)
     advancers = build_advancers(records)

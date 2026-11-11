@@ -8,14 +8,15 @@ const TOP = 30
 const HIDDEN_TOP = 15
 
 /**
- * 注目度(YouTube再生数)ランキング。popularity.json はCIが日次ローリング更新するため
+ * 注目度(YouTube再生数)ランキング。記録・統計の「注目度」タブ。popularity.json はCIが日次ローリング更新するため
  * build に焼き込まず、フロントで combi索引・advancers と動的に結合する。
  */
 export default function PopularityRanking() {
   const { data: pop } = usePopularity()
   const { data: index } = useCombiIndex(!!pop)
   const { data: advancers } = useAdvancers()
-  if (!pop || !index) return null
+  if (pop === null) return <div className="board-empty">注目度のデータはまだありません。</div>
+  if (!pop || !index) return <div className="loading">読み込み中…</div>
 
   const names = new Map(index.map((r) => [r[0], r[1]]))
   const rows = Object.entries(pop.hits)
@@ -67,7 +68,6 @@ export default function PopularityRanking() {
 
   return (
     <>
-      <h1 className="page-title">注目度</h1>
       <p className="page-lede">
         YouTube再生数からみた現在の注目度。年度別の結果ページのソートにも使われている指標。
       </p>

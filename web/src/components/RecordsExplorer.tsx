@@ -193,9 +193,7 @@ export default function RecordsExplorer() {
 
   return (
     <>
-      <h1 className="page-title" style={{ marginTop: 40 }}>
-        記録(優勝・準々決勝以上)
-      </h1>
+      <h2 className="page-title stats-group">記録(優勝・準々決勝以上)</h2>
       <p className="page-lede">
         歴代王者(2001〜2025年の全21回)と、準々決勝以上に到達したコンビを最高到達ラウンド(決勝／準決勝／準々決勝)別に集計。2001〜2010は出身地・生年が揃わない組が多く、集計は判明分のみです。
       </p>

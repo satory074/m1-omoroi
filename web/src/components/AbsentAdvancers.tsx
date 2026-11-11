@@ -6,7 +6,6 @@ import { formationInfo, isEligible, m1LimitYears } from '../lib/eligibility'
 import { ROUND_LABEL, formatHits } from '../lib/rounds'
 import type { RoundKey } from '../lib/types'
 
-const SHOWN = 20 // 注目度上位この件数までを最初に見せ、残りは details で展開
 const TIERS: RoundKey[] = ['final', 'semifinal', 'quarterfinal']
 
 /** 未エントリーの内訳。解散データが無いので断定せず、前後の出場から機械的に分ける */
@@ -88,9 +87,8 @@ export default function AbsentAdvancers({
 
   if (rows.length === 0) return null
 
+  // 折り畳まず全件を出す(100組前後。以前は上位20組+「残りN組を表示」だった)
   const shownRows = tier === 'all' ? rows : rows.filter((r) => r.tier === tier)
-  const head = shownRows.slice(0, SHOWN)
-  const rest = shownRows.slice(SHOWN)
 
   const table = (list: Row[]) => (
     <div className="history-wrap">
@@ -179,15 +177,7 @@ export default function AbsentAdvancers({
       {shownRows.length === 0 ? (
         <div className="board-empty">該当するコンビがいません</div>
       ) : (
-        <>
-          {table(head)}
-          {rest.length > 0 && (
-            <details className="streak-details absent-rest">
-              <summary>残り{rest.length}組を表示</summary>
-              {table(rest)}
-            </details>
-          )}
-        </>
+        table(shownRows)
       )}
     </section>
   )

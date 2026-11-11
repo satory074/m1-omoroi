@@ -114,3 +114,36 @@ def test_legacy_link_rejects_pre_formation_year():
 def test_norm_name_folds_width():
     assert _norm_name("ＮＯＮ ＳＴＹＬＥ") == "NON STYLE"
     assert _norm_name("ルート３３") == "ルート33"
+
+
+def test_merge_archive_keeps_results_of_split_rows():
+    """全半角違いで同じ年に2行ある組は、どちらの行の結果も失わない(後勝ちで消さない)。
+
+    実例: 2008年 NON STYLE は「ＮＯＮ ＳＴＹＬＥ」(準決勝まで)と「NON STYLE」(決勝優勝)に
+    分かれており、上書きすると詳細ページから優勝が消えていた。
+    """
+    records = [_rec(900002, "NON STYLE", {})]
+    semi = {"second": "pass", "third": "pass", "semifinal": "pass"}
+    year_files = {
+        2008: {
+            "source": "official-archive",
+            "entries": [
+                {"id": 900002, "results": {"final": "champion"}},
+                {"id": 900002, "results": semi},
+            ],
+        },
+        2001: {
+            "source": "official-archive",
+            "entries": [
+                # 分割の境目に出る推定敗退より、別の行で観測された通過を優先する
+                {"id": 900002, "results": {"first": "pass", "second": "fail_inferred"}},
+                {"id": 900002, "results": {"second": "pass", "third": "fail_inferred"}},
+            ],
+        },
+    }
+    merge_archive_history(records, year_files)
+    hist = records[0]["history"]
+    assert hist["2008"]["results"] == {"final": "champion", **semi}
+    assert hist["2001"]["results"] == {"first": "pass", "second": "pass", "third": "fail_inferred"}
+    # 年度ファイル側の行は書き換えない(一覧の表示は元のまま)
+    assert year_files[2008]["entries"][1]["results"] == semi

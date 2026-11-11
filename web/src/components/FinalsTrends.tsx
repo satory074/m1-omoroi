@@ -4,7 +4,7 @@ import { competitionRanks } from '../lib/rank'
 import type { FinalsStats } from '../lib/types'
 import { WinnersCell } from './RankTable'
 
-/** 決勝の傾向(分布・傾向系): 出番順別/王者の1本目順位/結成年数別/事務所別。統計ページが表示 */
+/** 決勝の傾向(分布・傾向系): 出番順別/王者の1本目順位/結成年数別/事務所別。記録・統計の「決勝」タブが表示 */
 export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
   const unknown = fs.formationYears.unknownFormed
   const hasUnknown = unknown.final + unknown.semifinal + unknown.quarterfinal > 0

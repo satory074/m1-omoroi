@@ -13,7 +13,7 @@ export interface RankRow {
   detail?: string
 }
 
-/** 同点込みランキングリスト(記録ランキング/統計ページ共用) */
+/** 同点込みランキングリスト(記録・統計の各タブ共用) */
 export function RankTable({ items, unit }: { items: RankRow[]; unit: string }) {
   // 同値は順位を共有する(標準競技順位: 1,1,3,…)
   const rank = competitionRanks(items, (it) => it.value)
