@@ -26,6 +26,11 @@ if (!window.history.state?.key) {
 
 const router = createBrowserRouter(routes, { basename })
 
+// 開発時だけ、画面を移るたびにアクセシビリティの最低条件を監査して console に出す(src/dev/audit.ts)
+if (import.meta.env.DEV) {
+  void import('./dev/audit').then((m) => m.installAudit())
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
