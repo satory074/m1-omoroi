@@ -1,0 +1,44 @@
+/* ============ サイト間ナビ(逆リンクバー → satory074.com/apps) ============
+   正準仕様: basecamp/docs/app-backlink.md。ほかのサイトと同じ見た目・位置にそろえる(このサイトだけ変えない)。
+   本文を隠さないよう、body 側に高さ分の余白を取る */
+.app-backlink-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: var(--z-backlink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 12px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--c-surface-2) 90%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--c-border);
+  font-size: var(--fs-1);
+}
+
+.app-backlink-bar a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  /* 押せる範囲を 24px 以上に(負のマージンで見た目の高さは変えない) */
+  padding: 8px 14px;
+  margin: -8px 0;
+  color: var(--c-text-muted);
+  text-decoration: none;
+}
+
+.app-backlink-bar a:hover {
+  color: var(--c-accent);
+}
+
+body {
+  padding-bottom: calc(48px + env(safe-area-inset-bottom));
+}
+
+/* ページ内リンクの飛び先が下の固定バーに隠れないように */
+html {
+  scroll-padding-bottom: calc(48px + env(safe-area-inset-bottom));
+}

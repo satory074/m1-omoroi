@@ -394,7 +394,7 @@ export default function CombiSearch() {
         <>
           <div className="search-panel-backdrop" onMouseDown={closePanel} />
           <section className="search-panel" id="search-panel" role="region" aria-label="検索結果">
-            <div className="loading">読み込み中…</div>
+            <div className="page-state">読み込み中…</div>
           </section>
         </>
       )}

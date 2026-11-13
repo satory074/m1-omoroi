@@ -1,0 +1,56 @@
+/* ============ M-1公式YouTube への印とリンク ============
+   赤い角丸に白い三角(YouTube のロゴ画像そのものは使わない)。▶ の文字は iOS で絵文字になるので CSS で描く */
+.yt-icon {
+  display: inline-block;
+  flex: none;
+  position: relative;
+  width: 20px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--c-youtube);
+  vertical-align: -2px;
+}
+
+.yt-icon::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-style: solid;
+  border-width: 4px 0 4px 7px;
+  border-color: transparent transparent transparent var(--c-on-accent);
+  transform: translate(-40%, -50%);
+}
+
+/* 見た目は小さく、押せる範囲は 24px 以上(負のマージンで行の高さは押し広げない) */
+.yt-link {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  margin: -6px -4px;
+  border-radius: var(--radius-s);
+}
+
+.yt-link:hover .yt-icon,
+.yt-link:focus-visible .yt-icon {
+  background: var(--c-youtube-hover);
+}
+
+/* 回戦ナビや注記の中の小さな印 */
+.step-label .yt-icon,
+.legend .yt-icon,
+.history-legend .yt-icon {
+  width: 16px;
+  height: 11px;
+  border-radius: 3px;
+}
+
+.step-label .yt-icon::after,
+.legend .yt-icon::after,
+.history-legend .yt-icon::after {
+  border-width: 3px 0 3px 5px;
+}

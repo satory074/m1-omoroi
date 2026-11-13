@@ -223,7 +223,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: var(--tap-min);
+  min-height: 28px; /* label 全体が押せる範囲。下の並べ替えボタンと離して、押し間違えないように */
+  margin-bottom: var(--space-1);
   cursor: pointer;
 }
 

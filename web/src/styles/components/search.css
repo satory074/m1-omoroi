@@ -1,0 +1,245 @@
+/* ============ ヘッダーの検索(CombiSearch.tsx の候補 / SearchPanel.tsx の展開パネル) ============ */
+.combi-search {
+  position: relative;
+}
+
+.combi-search-menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  z-index: var(--z-popover);
+  margin: 0;
+  padding: var(--space-1);
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-pop);
+}
+
+.combi-search-group {
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  font-size: var(--fs-1);
+  font-weight: var(--fw-bold);
+  color: var(--c-text-muted);
+  border-top: 1px solid var(--c-border-subtle);
+}
+
+.combi-search-menu > [role='group']:first-child .combi-search-group {
+  border-top: 0;
+}
+
+.combi-search-option,
+.combi-search-more {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-height: var(--tap-comfort);
+  align-items: center;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+
+.combi-search-option.active,
+.combi-search-more.active,
+.combi-search-more:hover {
+  background: var(--c-surface-2);
+}
+
+.combi-search-name {
+  font-weight: var(--fw-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 芸人名の行は「芸人名 ／ コンビ名」。主役は芸人名なので、詰まる時はコンビ名側を削る */
+.combi-search-option.member .combi-search-name {
+  flex: 0 1 auto;
+}
+
+.combi-search-sub {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+.combi-search-sub::before {
+  content: '／';
+  margin: 0 2px;
+}
+
+.combi-search-years {
+  flex: none;
+  margin-left: auto;
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+.combi-search-empty,
+.combi-search-pending {
+  padding: var(--space-3);
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+/* 「他 N 件」は展開パネルへの導線なので、押せることが分かる見た目にする */
+.combi-search-more {
+  font-size: var(--fs-2);
+  font-weight: var(--fw-bold);
+  color: var(--c-accent);
+}
+
+/* ---------- 展開パネル ---------- */
+.search-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-backdrop);
+  background: var(--c-backdrop);
+}
+
+.search-panel {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  z-index: var(--z-popover);
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(80dvh, 720px);
+  /* 上部(件数・種類・並び順)を固定し、下のリストだけをスクロールさせる */
+  display: flex;
+  flex-direction: column;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-pop);
+}
+
+.search-panel-head {
+  flex: none;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.search-panel-count {
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-panel-count strong {
+  font-size: var(--fs-4);
+  color: var(--c-text);
+}
+
+.search-panel-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* 結果の種類は ARIA のタブ(パネルの中身の切り替え)なので、選択中は aria-selected */
+.segmented [aria-selected='true'] {
+  background: var(--c-text);
+  color: var(--c-bg);
+  font-weight: var(--fw-bold);
+}
+
+.search-panel-note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+.search-panel-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 絞り込みが追いついていない間は薄く見せる(useDeferredValue で1テンポ遅れる) */
+.search-panel-list[aria-busy='true'] {
+  opacity: 0.55;
+}
+
+/* 行の高さ 56px は SearchPanel の estimateSize と対応するので変えないこと */
+.search-panel-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name hits'
+    'meta hits';
+  align-content: center;
+  gap: 0 var(--space-3);
+  height: 56px;
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--c-border-subtle);
+  text-decoration: none;
+  color: var(--c-text);
+}
+
+.search-panel-row:hover,
+.search-panel-row:focus-visible {
+  background: var(--c-surface-2);
+  color: var(--c-text);
+}
+
+.search-panel-name {
+  grid-area: name;
+  min-width: 0;
+  font-weight: var(--fw-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-panel-sub {
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+.search-panel-sub::before {
+  content: '／';
+  margin: 0 2px 0 var(--space-1);
+}
+
+.search-panel-meta {
+  grid-area: meta;
+  min-width: 0;
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-panel-round::before {
+  content: '・';
+}
+
+.search-panel-hits {
+  grid-area: hits;
+  align-self: center;
+  color: var(--c-text-muted);
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .search-panel {
+    right: auto;
+    left: 0;
+    width: 100%;
+    max-height: min(78dvh, 640px);
+  }
+}

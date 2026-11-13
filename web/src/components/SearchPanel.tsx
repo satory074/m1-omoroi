@@ -200,7 +200,7 @@ export default function SearchPanel({
             「{query}」の検索結果 <strong>{total.toLocaleString('ja-JP')}</strong> 件
           </div>
           <div className="search-panel-controls">
-            <div className="seg" role="tablist" aria-label="結果の種類" ref={tablistRef}>
+            <div className="segmented" role="tablist" aria-label="結果の種類" ref={tablistRef}>
               {PANEL_TABS.map((t) => (
                 <button
                   key={t}
@@ -209,7 +209,7 @@ export default function SearchPanel({
                   aria-selected={t === tab}
                   aria-controls="search-panel-list"
                   tabIndex={t === tab ? 0 : -1}
-                  className={t === tab ? 'active' : ''}
+                  type="button"
                   onClick={() => onTab(t)}
                   onKeyDown={onTabKeyDown}
                 >
@@ -217,17 +217,16 @@ export default function SearchPanel({
                 </button>
               ))}
             </div>
-            <select
-              value={sort}
-              onChange={(e) => onSort(e.target.value as PanelSort)}
-              aria-label="並び順"
-            >
-              {PANEL_SORTS.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+            <label className="select">
+              <span className="sr-only">並び順</span>
+              <select value={sort} onChange={(e) => onSort(e.target.value as PanelSort)}>
+                {PANEL_SORTS.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           {sort === 'pop' && (
             <p className="search-panel-note">
@@ -246,7 +245,7 @@ export default function SearchPanel({
           onKeyDown={onListKeyDown}
         >
           {rows.length === 0 ? (
-            <div className="board-empty">該当するコンビ・芸人がいません</div>
+            <div className="page-state">該当するコンビ・芸人がいません</div>
           ) : (
             <div
               role="list"

@@ -4,6 +4,7 @@ import { useAdvancers, useCombiIndex, usePopularity } from '../lib/api'
 import { ROUND_LABEL, formatHits } from '../lib/rounds'
 import type { RoundKey } from '../lib/types'
 import HistoryTable from './HistoryTable'
+import { Loading } from './PageState'
 import { competitionRanks } from '../lib/rank'
 
 const TOP = 30
@@ -17,8 +18,8 @@ export default function PopularityRanking() {
   const { data: pop } = usePopularity()
   const { data: index } = useCombiIndex(!!pop)
   const { data: advancers } = useAdvancers()
-  if (pop === null) return <div className="board-empty">注目度のデータはまだありません。</div>
-  if (!pop || !index) return <div className="loading">読み込み中…</div>
+  if (pop === null) return <p className="page-state">注目度のデータはまだありません。</p>
+  if (!pop || !index) return <Loading />
 
   const names = new Map(index.map((r) => [r[0], r[1]]))
   const rows = Object.entries(pop.hits)

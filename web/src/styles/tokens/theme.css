@@ -48,6 +48,13 @@
   --c-chart-grid: #ebebf0;
   --c-chart-axis: #5c5c6b;
 
+  /* 浮かぶもの(検索候補・検索パネル)の影と、パネルの後ろの暗幕 */
+  --shadow-pop: 0 12px 32px rgb(18 18 25 / 0.18);
+  --c-backdrop: rgb(18 18 25 / 0.32);
+  /* YouTube のリンクの印(ロゴ画像は使わず、赤い角丸に白い三角を CSS で描く) */
+  --c-youtube: #e00000;
+  --c-youtube-hover: #a80000;
+
   /* 書体: Noto Sans JP の1書体で見出しから本文・数字まで(ユーザー指定) */
   --font-body: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
 }
