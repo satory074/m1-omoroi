@@ -7,6 +7,7 @@ import BestChip from '../components/BestChip'
 import CombiPhoto from '../components/CombiPhoto'
 import { VideoLinks } from '../components/OfficialVideo'
 import { useMeta, useOfficialVideos, usePopularity, useYear } from '../lib/api'
+import { NARROW_QUERY } from '../lib/breakpoints'
 import { formationInfo } from '../lib/eligibility'
 import { OFFICIAL_CHANNEL_URL, combiVideos, playlistUrl } from '../lib/officialVideos'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits, isPassing } from '../lib/rounds'
@@ -16,8 +17,6 @@ import type { OfficialPlaylist, ResultKey, RoundKey, YearEntry } from '../lib/ty
 type ResultFilter = 'all' | 'pass' | 'fail'
 type SortKey = 'no' | 'kana' | 'hits'
 
-/** 一覧を2段組みに切り替える幅。index.css の .board-row の狭幅ルールと対応 */
-const NARROW_QUERY = '(max-width: 640px)'
 
 /** 行高の見積もり。狭幅は1行に収まる名前の実測値(長い名前は measureElement で実寸に直る) */
 const estimateRow = () => (window.matchMedia(NARROW_QUERY).matches ? 63 : 48)

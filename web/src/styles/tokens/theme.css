@@ -1,0 +1,62 @@
+/* ============ 色と書体のトークン(案C スタジオ / 2026-11-13 決定) ============
+   色は「意味」で名付ける。部品は必ずここの変数を通して色を使う(scripts/check-css.mjs が直書きを検出する)。
+   文字に使う組み合わせは 4.5:1 以上、枠線・フォーカス・グラフは 3:1 以上(scripts/check-tokens.mjs が検証する)。
+   舞台色(--c-stage*)は「今年の大会」と「決勝」の帯だけに使う。そこ以外は白地で静かにする。 */
+:root {
+  /* 紙面(白地) */
+  --c-bg: #ffffff;
+  --c-surface: #ffffff;
+  --c-surface-2: #f2f2f5; /* 帯・表の見出し行・選択中の行 */
+  --c-text: #16161d;
+  --c-text-muted: #5c5c6b; /* 補助文字。白地 6.6:1 / surface-2 5.9:1 */
+  --c-border: #d4d4dc; /* 区切り線(装飾。文字・操作部品の境界には使わない) */
+  --c-border-subtle: #ebebf0; /* 表の行の区切り */
+  --c-border-strong: #7a7a8a; /* 入力欄・切替ボタンの枠(3:1 以上) */
+
+  /* 強調(M-1の赤) — 通過・選択中・ブランド */
+  --c-accent: #c8102e;
+  --c-accent-strong: #9c0c23;
+  --c-on-accent: #ffffff;
+  --c-accent-tint: #fbe9ec; /* 赤の淡い面(最終決戦の進出行など。必ず文字や線の印と併用する) */
+
+  /* 王者の金(白地で使う濃い金) */
+  --c-gold: #8a6a12;
+  --c-gold-bg: #faf5e8;
+
+  /* 舞台(放送画面の帯) */
+  --c-stage: #121219;
+  --c-stage-2: #1e1e28; /* 帯の中の面 */
+  --c-stage-3: #2c2c38; /* 得点チップの上端 */
+  --c-stage-line: #34343f;
+  --c-on-stage: #f4f4f6;
+  --c-on-stage-muted: #b4b4c2;
+  --c-stage-gold: #e2b740; /* 舞台の上の金(数字・選択中) */
+
+  /* 意味の別名 */
+  --c-pass: var(--c-accent);
+  --c-fail: var(--c-text-muted);
+  --c-champion: var(--c-gold);
+  --c-link: var(--c-text);
+  --c-link-hover: var(--c-accent);
+  --c-focus: #1f5fd1; /* 赤・金・黒どの地の上でも見える青。舞台の上は .on-stage で金に替える */
+
+  /* グラフ(白地で 3:1 以上。第6段階で dataviz の検証スクリプトで確かめ直す) */
+  --c-chart-1: #c8102e;
+  --c-chart-2: #2f5da8;
+  --c-chart-3: #8a6a12;
+  --c-chart-4: #5c5c6b;
+  --c-chart-grid: #ebebf0;
+  --c-chart-axis: #5c5c6b;
+
+  /* 書体: Noto Sans JP の1書体で見出しから本文・数字まで(ユーザー指定) */
+  --font-body: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+}
+
+/* 舞台色の帯の中では、フォーカス枠とリンク色を舞台用に替える */
+.on-stage {
+  --c-focus: var(--c-stage-gold);
+  --c-link: var(--c-on-stage);
+  --c-link-hover: var(--c-stage-gold);
+  background: var(--c-stage);
+  color: var(--c-on-stage);
+}

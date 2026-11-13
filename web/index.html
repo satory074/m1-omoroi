@@ -5,6 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="only light" />
+    <meta name="theme-color" content="#ffffff" />
     <meta
       name="description"
       content="M-1グランプリの1回戦から決勝までの通過・敗退を全コンビ分たどれる非公式ファンサイト"
@@ -21,8 +22,10 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- 書体は Noto Sans JP の1書体だけ。太さは 400/700/900 の3つ(styles/tokens/scale.css の --fw-* と一致させる。
+         scripts/check-css.mjs がこの一覧にない太さの指定を検出する)。Google Fonts は使う文字の分だけ配信する -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap"
       rel="stylesheet"
     />
   </head>

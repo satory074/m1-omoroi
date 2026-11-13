@@ -1,0 +1,57 @@
+/* ============ 寸法のトークン ============
+   文字サイズは8段だけ。rem なので端末の文字サイズ設定に従う(1rem = 16px)。
+   12px(--fs-1)はチップ・バッジの短いラベル専用。読ませる文章は 14px(--fs-2)以上。 */
+:root {
+  --fs-1: 0.75rem; /* 12px チップ */
+  --fs-2: 0.875rem; /* 14px 注記・表の補足・凡例 */
+  --fs-3: 1rem; /* 16px 本文・表 */
+  --fs-4: 1.125rem; /* 18px 強調した数字・小見出し */
+  --fs-5: 1.375rem; /* 22px h3 */
+  --fs-6: 1.75rem; /* 28px h2 */
+  --fs-7: 2.25rem; /* 36px h1 */
+  --fs-8: 2.875rem; /* 46px トップの見出し */
+
+  /* 読み込んでいる太さだけ(index.html の Google Fonts と一致させる) */
+  --fw-regular: 400;
+  --fw-bold: 700;
+  --fw-black: 900;
+
+  --lh-tight: 1.25;
+  --lh-snug: 1.45;
+  --lh-body: 1.7;
+
+  /* 余白は4pxきざみ */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+  --space-10: 64px;
+
+  --radius-s: 4px;
+  --radius-m: 8px;
+  --radius-pill: 999px;
+
+  /* 押せる大きさ: 最低 24px(WCAG 2.2 の 2.5.8)、主要な操作は 44px */
+  --tap-min: 24px;
+  --tap-comfort: 44px;
+
+  --container: 1120px;
+  --gutter: 16px;
+
+  --z-sticky: 30;
+  --z-backlink: 40;
+  --z-header: 50;
+  --z-backdrop: 55;
+  --z-popover: 60;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --gutter: 32px;
+  }
+}

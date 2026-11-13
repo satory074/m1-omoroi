@@ -7,11 +7,11 @@
     "predev": "node scripts/copy-data.mjs",
     "dev": "vite",
     "prebuild": "node scripts/copy-data.mjs",
-    "build": "tsc -b && vite build",
+    "build": "node scripts/check-tokens.mjs && tsc -b && vite build",
     "postbuild": "cp dist/index.html dist/404.html",
     "lint": "oxlint",
     "preview": "vite preview",
-    "check": "node scripts/check-bundle.mjs"
+    "check": "node scripts/check-tokens.mjs && node scripts/check-css.mjs && node scripts/check-bundle.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",

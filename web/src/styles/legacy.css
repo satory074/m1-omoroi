@@ -1,61 +1,23 @@
-/* ============ デザイントークン ============
-   舞台の黒(ヘッダー) × 合格発表の紙(データ面) × M-1の朱 × 王者の金 */
+/* ============ 改修前のスタイル(移行中) ============
+   2026-11-13 までの index.css をそのまま legacy 層に入れたもの。base より後・新しい部品より前の層なので、
+   新しく書いた components/pages 層のスタイルが常に勝つ。部品を作り直したら、その部品の分をここから消す。
+   第7段階でこのファイルごと削除する。
+   旧変数は新しいトークンの別名にしてあるので、色と書体はすでに新しい配色(案C)で描かれる。 */
+@layer legacy {
 :root {
-  --stage: #121010;
-  --stage-2: #1e1a18;
-  --ink: #221e1a;
-  --paper: #faf8f4;
-  --paper-2: #f2eee6;
-  --line: #e2dcd0;
-  --red: #c8102e;
-  --red-dark: #9c0c23;
-  --gold: #a5762a;
-  --gold-bg: #f7efdc;
-  --silver: #7d8a99;
-  --bronze: #a6693b;
-  --muted: #8a8378;
-  --font-jp: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
-  --font-num: "Barlow Condensed", "Zen Kaku Gothic New", sans-serif;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html {
-  -webkit-text-size-adjust: 100%;
-  color-scheme: only light;
-}
-
-body {
-  margin: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-jp);
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-a {
-  color: inherit;
-}
-
-button {
-  font-family: inherit;
-}
-
-:focus-visible {
-  outline: 2px solid var(--red);
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    transition: none !important;
-    animation: none !important;
-  }
+  --stage: var(--c-stage);
+  --stage-2: var(--c-stage-2);
+  --ink: var(--c-text);
+  --paper: var(--c-bg);
+  --paper-2: var(--c-surface-2);
+  --line: var(--c-border);
+  --red: var(--c-accent);
+  --red-dark: var(--c-accent-strong);
+  --gold: var(--c-gold);
+  --gold-bg: var(--c-gold-bg);
+  --muted: var(--c-text-muted);
+  --font-jp: var(--font-body);
+  --font-num: var(--font-body);
 }
 
 /* ============ アプリ骨格 ============ */
@@ -102,6 +64,7 @@ button {
   align-items: baseline;
   gap: 10px;
   text-decoration: none;
+  color: inherit; /* 旧 index.css の a{color:inherit} に頼っていた分(第2段階でヘッダーごと作り直す) */
 }
 
 .brand-m1 {
@@ -271,7 +234,7 @@ button {
 
 .funnel-step .count small {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--muted);
 }
 
@@ -627,7 +590,7 @@ button {
 }
 
 .search-panel-sub {
-  font-weight: 500;
+  font-weight: 400;
   font-size: 12.5px;
   color: var(--muted);
 }
@@ -730,7 +693,7 @@ button {
 
 .board-row .no {
   font-family: var(--font-num);
-  font-weight: 500;
+  font-weight: 400;
   font-size: 17px;
   color: var(--muted);
   letter-spacing: 0.02em;
@@ -826,7 +789,7 @@ button {
 }
 .best-chip-prefix {
   font-size: 9.5px;
-  font-weight: 600;
+  font-weight: 700;
   margin-right: 2px;
   opacity: 0.8;
 }
@@ -1038,7 +1001,7 @@ button {
 .round-videos-pl small {
   font-family: var(--font-num);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--muted);
 }
 
@@ -1159,7 +1122,7 @@ button {
 
 .combi-kana {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--muted);
   letter-spacing: 0.1em;
 }
@@ -1346,7 +1309,7 @@ button {
 .finals-table td.no.score .score-rank {
   font-family: var(--font-num);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   color: #9aa1ab;
   margin-left: 3px;
 }
@@ -1380,7 +1343,7 @@ button {
 /* 合計列: 本家の総得点(金)を踏襲して太字ゴールド */
 .finals-table td.no.total {
   font-family: var(--font-num);
-  font-weight: 800;
+  font-weight: 900;
   font-size: 17px;
   color: var(--gold);
 }
@@ -1608,16 +1571,6 @@ button {
   text-decoration: underline;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
-}
 
 /* ============ ランキング ============ */
 .rank-grid {
@@ -1681,7 +1634,7 @@ button {
 
 .rank-value small {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--muted);
   margin-left: 2px;
 }
@@ -1715,7 +1668,7 @@ button {
 .streak-head {
   margin: 0;
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 700;
 }
 .streak-names {
   margin: 10px 0 2px;
@@ -1728,7 +1681,7 @@ button {
   flex: 0 0 auto;
   font-family: var(--font-num);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--muted);
   white-space: nowrap;
 }
@@ -2007,3 +1960,4 @@ html {
   color: var(--muted);
 }
 
+}

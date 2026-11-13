@@ -1,0 +1,86 @@
+/* ============ 土台(要素そのものの既定) ============
+   legacy 層より前に置くので、legacy 側に同じ要素の指定があればそちらが勝つ。
+   ここには「全ページ共通で、部品のクラスに依存しない」ものだけを書く。 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  /* ダークモードは作らない(ユーザー決定)。端末の自動ダーク化で配色が崩れないよう明るい配色に固定する */
+  color-scheme: only light;
+}
+
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-body);
+  font-size: var(--fs-3);
+  line-height: var(--lh-body);
+  /* 和文の行頭・行末の約物の空きを詰めない(本文はベタ組み)。見出しだけ palt で詰める */
+  font-feature-settings: normal;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: var(--lh-tight);
+  font-weight: var(--fw-black);
+  /* 見出しだけ約物を詰める。text-wrap: pretty は Safari の日本語で不具合があるので使わない */
+  font-feature-settings: 'palt';
+  text-wrap: balance;
+}
+
+a {
+  color: var(--c-link);
+}
+
+a:hover {
+  color: var(--c-link-hover);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* 表の数字は桁をそろえる */
+table,
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 画面には出さず、読み上げにだけ渡す */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

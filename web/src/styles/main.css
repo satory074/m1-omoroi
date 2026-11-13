@@ -1,0 +1,13 @@
+/* ============ スタイルの入口 ============
+   層の順番(後ろほど強い。同じ層の中では従来どおり詳細度で決まる):
+   tokens  … 色・寸法の変数(tokens/)
+   base    … 要素そのものの既定(base.css)
+   legacy  … 改修前のスタイル。移行が終わった部品から消していく(legacy.css)
+   layout / components / pages … 作り直した部品。legacy より必ず勝つので詳細度の競争をしなくてよい
+   utilities … 例外的な上書き */
+@layer tokens, base, legacy, layout, components, pages, utilities;
+
+@import './tokens/scale.css' layer(tokens);
+@import './tokens/theme.css' layer(tokens);
+@import './base.css' layer(base);
+@import './legacy.css';
