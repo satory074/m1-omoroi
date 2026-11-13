@@ -38,7 +38,8 @@ const SORT_LABEL: Record<SortKey, string> = {
 
 /** 行の高さ。広い画面は CSS で 56px に固定、狭い画面は名前の折り返しで変わるので実測する(見積もりは1行の名前) */
 const estimateRow = () => (window.matchMedia(NARROW_QUERY).matches ? 64 : 56)
-/** 一覧の上に貼り付く帯(回戦・件数)の高さの目安。行で位置を戻すとき、行がこの下に来るようにする */
+/** 一覧の上に貼り付く帯(回戦・件数・列見出し)の高さの初期値。実際の高さは描画後に測って使う
+ *  (広い画面は列見出しがあるので 64px 前後、狭い画面は 48px 前後。決め打ちだと戻した行が帯の下にもぐる) */
 const STATUS_BAR = 48
 
 /** その年の一覧で使う URL のクエリを作る。検索パネル(q/tab/qsort)と focus は持ち越さない */
@@ -186,13 +187,18 @@ function YearBoard({
   const statusRef = useRef<HTMLDivElement>(null)
   // 一覧の上端の、文書の先頭からの位置。仮想リストはこれを基準に行を並べる
   const [margin, setMargin] = useState(0)
+  // 貼り付く帯の実際の高さ。行で位置を戻すとき、行がこの帯のすぐ下に来るようにする
+  const [statusH, setStatusH] = useState(STATUS_BAR)
   // 0件 → 1件以上になると一覧の要素ができるので、その時に測り直す
   const empty = rows.length === 0
 
   useLayoutEffect(() => {
     const el = listRef.current
     if (!el) return
-    const measure = () => setMargin(Math.round(el.getBoundingClientRect().top + window.scrollY))
+    const measure = () => {
+      setMargin(Math.round(el.getBoundingClientRect().top + window.scrollY))
+      if (statusRef.current) setStatusH(statusRef.current.offsetHeight)
+    }
     measure()
     const ro = new ResizeObserver(measure)
     if (headRef.current) ro.observe(headRef.current)
@@ -208,7 +214,7 @@ function YearBoard({
     estimateSize: estimateRow,
     overscan: 12,
     scrollMargin: margin,
-    scrollPaddingStart: STATUS_BAR,
+    scrollPaddingStart: statusH,
     getItemKey: (i) => rows[i].id ?? `${rows[i].name}-${rows[i].no}`,
   })
 
@@ -222,7 +228,7 @@ function YearBoard({
       frame = requestAnimationFrame(() => {
         // 別のページへ移った後のスクロール(先頭へ戻す等)を、このページの位置として覚えないため
         if (window.history.state?.key !== key) return
-        const below = statusRef.current?.getBoundingClientRect().bottom ?? STATUS_BAR
+        const below = statusRef.current?.getBoundingClientRect().bottom ?? statusH
         const offset = window.scrollY + Math.max(below, 0)
         if (offset <= margin) {
           clearRow(key)
@@ -237,7 +243,7 @@ function YearBoard({
       cancelAnimationFrame(frame)
       window.removeEventListener('scroll', onScroll)
     }
-  }, [key, margin, virtualizer])
+  }, [key, margin, statusH, virtualizer])
 
   // 戻ってきたとき(または ?focus= でコンビ詳細から来たとき)に、行で位置を合わせる。履歴エントリーごとに1回だけ
   const restored = useRef<string | null>(null)
@@ -260,10 +266,10 @@ function YearBoard({
   useLayoutEffect(() => {
     if (lastSignature.current === signature) return
     lastSignature.current = signature
-    if (margin > 0 && window.scrollY + STATUS_BAR > margin) {
-      window.scrollTo({ top: margin - STATUS_BAR })
+    if (margin > 0 && window.scrollY + statusH > margin) {
+      window.scrollTo({ top: margin - statusH })
     }
-  }, [signature, margin])
+  }, [signature, margin, statusH])
 
   return (
     <>
