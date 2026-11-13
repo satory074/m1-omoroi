@@ -7,6 +7,9 @@ M-1グランプリのファンサイト。年度×回戦の合格者/敗退者�
 - `scraper/` — Python (**uv必須**)。公式サイト m-1gp.com / Wikipedia / YouTube Data API からデータ収集し `data/` にJSONを生成
 - `data/` — 配信用JSONの正本(コミット対象)。スキーマは `scraper/src/m1scraper/build_json.py` 参照
 - `web/` — Vite + React + TS のSPA。ビルド前に `scripts/copy-data.mjs` が `../data` → `public/data` へコピー
+  - **見た目(2026-11 全面改修中・ブランチ `redesign`)**: 案C「スタジオ」(白地+M-1の赤、舞台色 `--c-stage` の帯は「トップの今年の大会」と「決勝」だけ)、書体は Noto Sans JP の1書体(400/700/900)。ダークモードは作らない(ユーザー決定)
+  - **スタイルは `web/src/styles/`**: `main.css` が `@layer tokens, base, legacy, layout, components, pages, utilities` の順を固定。色・文字サイズ・余白は `tokens/theme.css`・`tokens/scale.css` の変数だけを使う(直書きは `npm run check` が落とす)。`legacy.css` は改修前の index.css で、部品を作り直したらその分を消す(新しい層が常に勝つので詳細度の競争は不要)
+  - ルート: `/`=トップ(`HomePage`)、`/years`・`/finals` は最新年へ転送、`/finals/:year`・`/stats/*` は遅延読み込み(recharts を最初の JS から外す)。不正な年・ID は `NotFound`(行き止まりにしない)。ページの `<title>` は `lib/useDocumentTitle.ts`
 
 ## コマンド
 
@@ -25,6 +28,8 @@ uv run pytest
 
 # フロント (web/ で実行)
 npm run dev / npm run build
+npm run check   # build の後に: 色トークンのコントラスト比・CSSの直書き/未読み込みの太さ・最初に読むJSの大きさ(gzip 130KB 上限)
+# 開発時はブラウザのコンソールに画面ごとのアクセシビリティ監査が出る(src/dev/audit.ts。手動は __audit())
 ```
 
 ## データソースの要点

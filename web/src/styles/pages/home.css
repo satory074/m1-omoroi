@@ -1,0 +1,301 @@
+/* ============ トップページ ============
+   大胆にするのは「今年の大会」の舞台色の帯だけ(案C の2か所のうち1つ)。ほかは白地で静かにする */
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-9);
+  align-items: center;
+  padding: var(--space-9) 0 var(--space-8);
+}
+
+.home-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.home-title {
+  margin: 0;
+  font-size: var(--fs-8);
+  line-height: 1.3;
+}
+
+.home-lede {
+  margin: 0;
+  font-size: var(--fs-4);
+  color: var(--c-text-muted);
+  max-width: 34em;
+}
+
+/* 見た目は大きな検索欄だが、実体はヘッダーの検索欄を指す label */
+.home-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 560px;
+  min-height: 56px;
+  padding: 0 var(--space-6);
+  border: 2px solid var(--c-text);
+  border-radius: var(--radius-pill);
+  color: var(--c-text-muted);
+  font-size: var(--fs-4);
+  cursor: text;
+}
+
+.home-search svg {
+  flex: none;
+  color: var(--c-text);
+}
+
+.home-search:hover {
+  border-color: var(--c-accent);
+}
+
+.home-updated {
+  margin: 0;
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+.home-champion {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-m);
+}
+
+.home-champion figcaption {
+  font-size: var(--fs-2);
+  font-weight: var(--fw-bold);
+  color: var(--c-gold);
+}
+
+.home-champion-name {
+  font-size: var(--fs-7);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  text-decoration: none;
+  font-feature-settings: 'palt';
+}
+
+.home-champion p {
+  margin: 0;
+  color: var(--c-text-muted);
+}
+
+.home-champion-link {
+  margin-top: var(--space-2);
+  font-weight: var(--fw-bold);
+}
+
+/* ---------- 今年の大会(舞台色の帯。画面幅いっぱい) ---------- */
+/* 背景だけを画面の左右端まで伸ばす(影を左右に広げて上下を切り取る)。
+   width: 100vw はスクロールバーの幅だけ横にはみ出すので使わない */
+.home-season {
+  padding: var(--space-8) 0 var(--space-9);
+  box-shadow: 0 0 0 100vmax var(--c-stage);
+  clip-path: inset(0 -100vmax);
+}
+
+.home-season-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.home-season-head h2 {
+  margin: 0;
+  font-size: var(--fs-6);
+}
+
+.home-season-head p {
+  margin: 0;
+  color: var(--c-on-stage-muted);
+}
+
+.home-season-all {
+  margin-left: auto;
+  font-weight: var(--fw-bold);
+  color: var(--c-stage-gold);
+}
+
+.home-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.home-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: 100%;
+  padding: var(--space-4);
+  border-radius: var(--radius-m);
+  background: var(--c-stage-2);
+  color: var(--c-on-stage);
+  text-decoration: none;
+}
+
+a.home-step-body:hover {
+  background: var(--c-stage-3);
+  color: var(--c-on-stage);
+}
+
+/* 結果待ちの回戦は赤い枠でも示す(色だけでなく「結果待ち」の文字も出している) */
+.home-step.waiting .home-step-body {
+  box-shadow: inset 0 0 0 2px var(--c-accent);
+}
+
+.home-step-round {
+  font-weight: var(--fw-bold);
+}
+
+.home-step-count {
+  font-size: var(--fs-6);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  color: var(--c-stage-gold);
+}
+
+.home-step.upcoming .home-step-count {
+  color: var(--c-on-stage-muted);
+}
+
+.home-step-count small {
+  margin-left: 2px;
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  color: var(--c-on-stage-muted);
+}
+
+.home-step-note {
+  font-size: var(--fs-2);
+  color: var(--c-on-stage-muted);
+}
+
+/* ---------- 記録・統計 / 年度別 ---------- */
+.home-section {
+  padding: var(--space-8) 0 0;
+}
+
+.home-section h2 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--fs-6);
+}
+
+.home-note {
+  margin: calc(-1 * var(--space-2)) 0 var(--space-4);
+  color: var(--c-text-muted);
+  font-size: var(--fs-2);
+}
+
+.home-stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.home-stats a {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  height: 100%;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-m);
+  text-decoration: none;
+}
+
+.home-stats a:hover {
+  border-color: var(--c-text);
+  color: var(--c-text);
+}
+
+.home-stats-name {
+  font-size: var(--fs-5);
+  font-weight: var(--fw-black);
+}
+
+.home-stats-desc {
+  color: var(--c-text-muted);
+  font-size: var(--fs-2);
+}
+
+.home-years {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.home-years a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-comfort);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--c-surface-2);
+  font-weight: var(--fw-bold);
+  text-decoration: none;
+}
+
+.home-years a:hover {
+  background: var(--c-text);
+  color: var(--c-bg);
+}
+
+@media (max-width: 900px) {
+  .home-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+    padding: var(--space-7) 0 var(--space-7);
+  }
+  .home-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .home-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .home-title {
+    font-size: var(--fs-6);
+  }
+  .home-lede {
+    font-size: var(--fs-3);
+  }
+  .home-search {
+    font-size: var(--fs-3);
+    padding: 0 var(--space-4);
+  }
+  .home-champion-name {
+    font-size: var(--fs-6);
+  }
+  .home-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .home-step-count {
+    font-size: var(--fs-5);
+  }
+  .home-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .home-season-all {
+    margin-left: 0;
+  }
+}

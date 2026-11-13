@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom'
 
 import { useCombiIndex, useCombiMembers, usePopularity } from '../lib/api'
 import {
@@ -37,6 +37,8 @@ type Row = { kind: 'hit'; hit: Hit } | { kind: 'more'; tab: PanelTab; total: num
  */
 export default function CombiSearch() {
   const navigate = useNavigate()
+  const navigationType = useNavigationType()
+  const location = useLocation()
   const [params, setParams] = useSearchParams()
 
   // 展開状態はURLが正。これでブラウザの戻るがそのままパネルを閉じる操作になる
@@ -52,6 +54,8 @@ export default function CombiSearch() {
   // 一度フォーカスされたら索引を取りに行く。以後降ろさない(再フォーカスで取り直さないため)。
   // 共有リンクで開いた場合はフォーカス操作が無いので最初から立てる
   const [armed, setArmed] = useState(() => params.get('q') !== null)
+  // 芸人名の索引(約1.2MB gz)は文字を打ち始めてから取りに行く。フォーカスしただけでは読まない
+  const [membersArmed, setMembersArmed] = useState(() => params.get('q') !== null)
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -66,14 +70,14 @@ export default function CombiSearch() {
   const needle = useDeferredValue(query.trim())
 
   const { data: index } = useCombiIndex(armed)
-  const { data: memberKeys, isPending: membersPending } = useCombiMembers(armed)
+  const { data: memberKeys, isPending: membersPending } = useCombiMembers(membersArmed)
   const { data: popularity } = usePopularity(armed)
 
   const combiKeys = useMemo(() => (index ? getCombiKeys(index) : null), [index])
   const q = useMemo(() => normalize(needle), [needle])
 
   // members.json 待ちか。取得が確定して null(=ファイル無し)なら待たない
-  const memberPending = armed && membersPending
+  const memberPending = membersArmed && membersPending
 
   const popOf = useMemo(() => {
     const hitMap = popularity?.hits
@@ -115,6 +119,16 @@ export default function CombiSearch() {
 
   const combiRowCount = results.combi.length + (results.combiTotal > results.combi.length ? 1 : 0)
   const showMenu = open && needle.length > 0 && !expanded
+
+  // 戻る/進むで URL の q が変わったら入力欄を合わせる。
+  // 入力値は初回しか URL から読まないので、展開パネルで組を選んで(入力欄は空になる)から戻ると、
+  // パネルは開くのに検索語が空で「0 件」になっていた。打鍵中の URL 同期は replace なのでここは走らない
+  useEffect(() => {
+    if (navigationType !== 'POP' || urlQuery === null || composingRef.current) return
+    setQuery((cur) => (cur.trim() === urlQuery ? cur : urlQuery))
+    setMembersArmed(true)
+    setArmed(true)
+  }, [location.key, navigationType, urlQuery])
 
   // クエリが変わるたびにハイライトをリセット
   useEffect(() => {
@@ -298,6 +312,8 @@ export default function CombiSearch() {
     <div className={`combi-search${expanded ? ' expanded' : ''}`} ref={wrapRef} role="search">
       <input
         ref={inputRef}
+        // トップページの大きな検索欄(label htmlFor="site-search")がここを指す
+        id="site-search"
         type="search"
         // 展開中は combobox をやめる。タブと select と仮想リストを含むパネルは listbox になれない
         role="combobox"
@@ -320,6 +336,7 @@ export default function CombiSearch() {
         value={query}
         onChange={(e) => {
           setArmed(true)
+          if (e.target.value.trim()) setMembersArmed(true)
           setQuery(e.target.value)
           setOpen(true)
         }}

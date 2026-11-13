@@ -3,21 +3,42 @@ import { Link, useParams } from 'react-router-dom'
 import BestChip from '../components/BestChip'
 import CombiPhoto from '../components/CombiPhoto'
 import { VideoLinks } from '../components/OfficialVideo'
-import { useCombiDetail, useOfficialVideos, usePopularity } from '../lib/api'
+import { ErrorState, Loading, NotFound } from '../components/PageState'
+import { useCombiDetail, useMeta, useOfficialVideos, usePopularity } from '../lib/api'
 import { formationInfo } from '../lib/eligibility'
 import { combiVideos } from '../lib/officialVideos'
-import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, bestResultOfHistory, formatHits } from '../lib/rounds'
+import { parseId } from '../lib/params'
+import {
+  RESULT_DISPLAY,
+  ROUND_LABEL,
+  ROUND_ORDER,
+  bestResultOfHistory,
+  formatHits,
+  furthestRound,
+} from '../lib/rounds'
 import type { ResultKey } from '../lib/types'
+import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 export default function CombiPage() {
   const { id: idParam } = useParams()
-  const id = Number(idParam)
-  const { data: combi, isLoading, isError } = useCombiDetail(Number.isFinite(id) ? id : null)
+  const parsed = parseId(idParam)
+  const { data: combi, isError } = useCombiDetail(parsed)
   const { data: popularity } = usePopularity()
   const { data: official } = useOfficialVideos()
+  const { data: meta } = useMeta()
+  useDocumentTitle(combi ? `${combi.name}のM-1戦績` : null)
 
-  if (isError) return <div className="error-box">このコンビのデータを読み込めませんでした。</div>
-  if (isLoading || !combi) return <div className="loading">読み込み中…</div>
+  if (parsed === null || combi === null) {
+    return (
+      <NotFound title="コンビが見つかりません">
+        <p>このコンビは記録にありません。名前で探すときは、上の検索欄を使ってください。</p>
+      </NotFound>
+    )
+  }
+  if (isError) return <ErrorState message="このコンビのデータを読み込めませんでした。" />
+  if (!combi) return <Loading />
+  const id = parsed
+  const finalsYears = new Set(meta?.finalsYears ?? [])
 
   const hits = popularity?.hits[String(id)]
   const years = Object.keys(combi.history)
@@ -97,7 +118,13 @@ export default function CombiPage() {
               return (
                 <tr key={y}>
                   <td className="year">
-                    <Link to={`/years/${y}`}>{y}</Link>
+                    {/* その年の一覧の、この組が最後に出た回戦を開き、この組の行へ移る(?focus) */}
+                    <Link
+                      to={`/years/${y}?round=${furthestRound(h.results) ?? 'first'}&focus=${id}`}
+                      aria-label={`${y}年の一覧でこのコンビを見る`}
+                    >
+                      {y}
+                    </Link>
                     {fi && (
                       <span
                         className={`formed-chip${fi.isLastYear ? ' lastyear' : ''}`}
@@ -113,10 +140,23 @@ export default function CombiPage() {
                     const res = h.results[rk] as ResultKey | undefined
                     if (!res) return <td key={rk} className="none" />
                     const disp = RESULT_DISPLAY[res]
+                    // 決勝に出た年は、記号からその年の得点表へ移れる
+                    const toFinals = rk === 'final' && finalsYears.has(y)
                     return (
-                      <td key={rk} className={`cell ${res}`} title={disp.label}>
-                        <span aria-hidden>{disp.sym}</span>
-                        <span className="sr-only">{disp.label}</span>
+                      <td key={rk} className={`cell ${res}`}>
+                        {toFinals ? (
+                          <Link to={`/finals/${y}`} className="cell-link">
+                            <span aria-hidden>{disp.sym}</span>
+                            <span className="sr-only">
+                              {disp.label}({y}年 決勝の得点表へ)
+                            </span>
+                          </Link>
+                        ) : (
+                          <>
+                            <span aria-hidden>{disp.sym}</span>
+                            <span className="sr-only">{disp.label}</span>
+                          </>
+                        )}
                         <VideoLinks links={combiVideos(official, y, id, rk)} name={combi.name} />
                       </td>
                     )

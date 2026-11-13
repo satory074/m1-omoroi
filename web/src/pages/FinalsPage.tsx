@@ -1,25 +1,39 @@
 import { Link, useParams } from 'react-router-dom'
 
 import FinalsScoreTable from '../components/FinalsScoreTable'
+import { ErrorState, Loading, NotFound } from '../components/PageState'
 import { useFinals, useMeta } from '../lib/api'
+import { parseYear } from '../lib/params'
+import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 export default function FinalsPage() {
   const { year: yearParam } = useParams()
-  const { data: meta } = useMeta()
+  const { data: meta, isError: metaError } = useMeta()
   const finalsYears = meta?.finalsYears ?? []
-  const year = yearParam ? Number(yearParam) : (finalsYears.at(-1) ?? null)
-  const { data: finals, isLoading } = useFinals(year)
+  const year = parseYear(yearParam)
+  const hasFinals = year !== null && finalsYears.includes(year)
+  const { data: finals, isError } = useFinals(hasFinals ? year : null)
+  useDocumentTitle(finals ? `M-1グランプリ${finals.year} 決勝の得点` : null)
 
-  if (!meta || isLoading) return <div className="loading">読み込み中…</div>
-
-  if (finalsYears.length === 0 || !finals) {
+  if (metaError || isError) return <ErrorState message="決勝のデータを読み込めませんでした。" />
+  if (!meta) return <Loading />
+  if (year === null || !hasFinals) {
+    // 大会はあるが決勝がまだ(シーズン中)の年は、その年の一覧へ案内する
+    const inSeason = year !== null && meta.years.includes(year)
     return (
-      <>
-        <h1 className="page-title">決勝の得点</h1>
-        <div className="board-empty">決勝の得点データは準備中です。</div>
-      </>
+      <NotFound title={year ? `${year}年の決勝の得点はありません` : 'ページが見つかりません'}>
+        {inSeason ? (
+          <p>
+            {year}年の決勝はまだ行われていません。<Link to={`/years/${year}`}>{year}年の結果一覧</Link>
+            で、いまの勝ち上がりを見られます。
+          </p>
+        ) : (
+          <p>この年の決勝の記録はありません(2011〜2014年は大会が開かれていません)。</p>
+        )}
+      </NotFound>
     )
   }
+  if (!finals) return <Loading />
 
   return (
     <>
@@ -33,6 +47,9 @@ export default function FinalsPage() {
           ))}
       </div>
       <h1 className="page-title">M-1グランプリ {year} 決勝</h1>
+      <p className="page-crosslink">
+        <Link to={`/years/${year}?round=final`}>{year}年の全回戦の結果を見る</Link>
+      </p>
       <FinalsScoreTable key={finals.year} finals={finals} />
       <p className="legend">
         順位はファーストラウンドの得点順。優勝は最終決戦の得票で決定します。審査員のヘッダをクリックで並べ替え、チェックを外すとその審査員を除いた合計・順位に再集計されます。

@@ -1,13 +1,13 @@
 // 配信サイズ(gzip)の上限を確かめる。`npm run build` の後に実行する。
 // 最初に読み込まれる JS(index.html が直接読むもの)と CSS の合計が上限を超えたら失敗させる。
-// 上限は段階的に下げる: いまは改修前の実測(JS 約241KB)に少し余裕を足した値。
-// 第2段階で決勝・統計ページを遅延読み込みに分けたら 170KB に下げる。
+// 改修前は 236KB(gzip)。第2段階で決勝・統計ページを遅延読み込みに分けて 119KB になったので、
+// 少しの余裕を足した 130KB を上限にする(年度一覧・コンビ詳細・トップを開く人が待つ量)。
 import { readFileSync, existsSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
-const BUDGET_KB = { js: 250, css: 12 }
+const BUDGET_KB = { js: 130, css: 12 }
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const dist = join(root, 'dist')

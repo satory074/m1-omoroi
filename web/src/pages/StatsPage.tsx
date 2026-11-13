@@ -16,6 +16,7 @@ import {
   useRankings,
   useStats,
 } from '../lib/api'
+import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 /**
  * 記録・統計(旧「記録ランキング」と「統計」を統合)。テーマ別のタブをパス(/stats/:section)で分け、
@@ -140,6 +141,7 @@ const TABS: Record<SectionKey, () => ReactNode> = {
 export default function StatsPage() {
   const { section = '' } = useParams()
   const current = SECTIONS.find((s) => s.key === section)
+  useDocumentTitle(current ? `記録・統計 ${current.label}` : null)
   if (!current) return <Navigate to="/stats" replace />
   const Tab = TABS[current.key]
 

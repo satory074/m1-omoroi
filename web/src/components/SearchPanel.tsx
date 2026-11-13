@@ -100,14 +100,10 @@ export default function SearchPanel({
 
   useImperativeHandle(ref, () => ({ focusFirstRow: () => moveFocus(0) }))
 
-  // 表示中は背後をスクロールさせない。ヘッダーは sticky ではないので、
-  // ロックしないとパネルごと画面外へ流れてしまう
+  // 表示中は背後をスクロールさせない(パネルの中だけがスクロールする)。
+  // ヘッダーは上端に貼り付いているので、ページ位置を動かさなくてもパネルは常に見える
+  // (以前はヘッダーが流れていくため先頭へ戻していたが、一覧の位置を失うのでやめた)
   useEffect(() => {
-    // 戻る操作でスクロール位置が復元された直後だとヘッダーが画面外に居ることがある。
-    // そのままロックすると二度と見えないので、先に引き戻す
-    const anchor = listRef.current?.closest('.combi-search')?.getBoundingClientRect().top ?? 0
-    if (anchor < 0) window.scrollTo({ top: 0 })
-
     const { body } = document
     const prevOverflow = body.style.overflow
     const prevPad = body.style.paddingRight

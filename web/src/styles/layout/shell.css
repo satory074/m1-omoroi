@@ -1,0 +1,235 @@
+/* ============ 全ページ共通の枠: ヘッダー・本文の器・フッター ============ */
+.app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 var(--gutter) var(--space-10);
+}
+
+/* フォーカスを受けても枠を出さない(スキップリンクの飛び先として tabIndex=-1 にしているだけ) */
+.app-main:focus {
+  outline: none;
+}
+
+/* キーボードで最初に Tab を押したときだけ見える「本文へ移動」 */
+.skip-link {
+  position: absolute;
+  left: var(--space-2);
+  top: var(--space-2);
+  z-index: var(--z-popover);
+  padding: var(--space-2) var(--space-4);
+  background: var(--c-text);
+  color: var(--c-bg);
+  font-weight: var(--fw-bold);
+  border-radius: var(--radius-s);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+  color: var(--c-bg);
+}
+
+/* ---------- ヘッダー ---------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  /* 検索候補・検索パネルを本文の上に重ねるため、逆リンクバー(--z-backlink)より前 */
+  z-index: var(--z-header);
+  background: var(--c-bg);
+  border-bottom: 1px solid var(--c-border);
+  transition: transform 0.2s ease;
+}
+
+/* 下へスクロール中は隠す(App.tsx の useHideOnScroll が data-hidden を付ける)。
+   入力中・フォーカス中・検索パネルを開いている間(戻るで開き直した場合を含む)は隠さない */
+.site-header[data-hidden='true']:not(:focus-within):not(:has(.combi-search.expanded)) {
+  transform: translateY(-100%);
+}
+
+.site-header-inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-areas: 'brand nav search';
+  align-items: center;
+  column-gap: var(--space-6);
+}
+
+.brand {
+  grid-area: brand;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: var(--c-text);
+  min-height: var(--tap-comfort);
+}
+
+.brand:hover {
+  color: var(--c-text);
+}
+
+.brand-m1 {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  font-weight: var(--fw-black);
+  font-size: var(--fs-4);
+  line-height: 1;
+  padding: 5px 8px 6px;
+  border-radius: var(--radius-s);
+}
+
+.brand-name {
+  font-weight: var(--fw-black);
+  font-size: var(--fs-5);
+  line-height: 1;
+  font-feature-settings: 'palt';
+}
+
+.site-nav {
+  grid-area: nav;
+  display: flex;
+  align-self: stretch;
+}
+
+.site-nav a {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  min-height: var(--tap-comfort);
+  font-weight: var(--fw-bold);
+  text-decoration: none;
+  color: var(--c-text);
+  white-space: nowrap;
+}
+
+.site-nav a:hover {
+  color: var(--c-accent);
+}
+
+/* 選択中は色だけでなく下線(形)でも示す。box-shadow は強制カラーモードで消えるので border を使う */
+.site-nav a.active {
+  border-bottom: 3px solid var(--c-accent);
+  padding-top: 3px;
+}
+
+.combi-search {
+  grid-area: search;
+  justify-self: end;
+  width: min(100%, 320px);
+}
+
+.combi-search input[type='search'] {
+  width: 100%;
+  height: var(--tap-comfort);
+  padding: 0 var(--space-5);
+  border: 1.5px solid var(--c-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--c-surface-2);
+  color: var(--c-text);
+  /* 16px 未満だと iOS が入力時に画面を拡大する */
+  font-size: var(--fs-3);
+}
+
+.combi-search input[type='search']::placeholder {
+  color: var(--c-text-muted);
+  opacity: 1;
+}
+
+.combi-search input[type='search']:focus {
+  background: var(--c-bg);
+  border-color: var(--c-text);
+}
+
+/* 展開中は入力欄だけを背景(--z-backdrop)より前に出す。パネル(--z-popover)より後ろ */
+.combi-search.expanded input[type='search'] {
+  position: relative;
+  z-index: calc(var(--z-backdrop) + 1);
+}
+
+/* スマホ: 1段目 = ロゴ + 検索、2段目 = ナビ(横スクロール) */
+@media (max-width: 720px) {
+  .site-header-inner {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'brand search'
+      'nav nav';
+    min-height: 0;
+    padding-top: var(--space-1);
+    column-gap: var(--space-3);
+  }
+  .brand-name {
+    font-size: var(--fs-4);
+  }
+  .brand-m1 {
+    font-size: var(--fs-3);
+  }
+  .combi-search {
+    width: 100%;
+  }
+  .site-nav {
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 0 calc(var(--gutter) - var(--space-4));
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .site-nav a {
+    min-height: 40px;
+  }
+}
+
+/* ---------- フッター ---------- */
+.site-footer {
+  border-top: 1px solid var(--c-border);
+  background: var(--c-surface-2);
+}
+
+.site-footer-inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--space-6) var(--gutter) var(--space-7);
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+.site-footer-inner p {
+  margin: var(--space-2) 0 0;
+  max-width: 48em;
+}
+
+.footer-links {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+}
+
+.footer-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-comfort);
+  color: var(--c-text);
+  font-weight: var(--fw-bold);
+}
+
+.site-footer-inner p a {
+  color: var(--c-text-muted);
+}
+
+/* 固定ヘッダーの下にページ内リンクの飛び先が隠れないように(WCAG 2.4.11) */
+html {
+  scroll-padding-top: 80px;
+}

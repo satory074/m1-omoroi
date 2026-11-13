@@ -11,3 +11,6 @@
 @import './tokens/theme.css' layer(tokens);
 @import './base.css' layer(base);
 @import './legacy.css';
+@import './layout/shell.css' layer(layout);
+@import './components/basics.css' layer(components);
+@import './pages/home.css' layer(pages);

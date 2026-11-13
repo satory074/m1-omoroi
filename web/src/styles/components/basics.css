@@ -1,0 +1,95 @@
+/* ============ 共通の小部品: ボタン・ページの状態表示・見つからないページ ============ */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap-comfort);
+  padding: 0 var(--space-5);
+  border: 1.5px solid var(--c-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-weight: var(--fw-bold);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--c-text);
+  color: var(--c-text);
+}
+
+.button-primary {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: var(--c-on-accent);
+}
+
+.button-primary:hover {
+  background: var(--c-accent-strong);
+  border-color: var(--c-accent-strong);
+  color: var(--c-on-accent);
+}
+
+.page-state {
+  padding: var(--space-9) var(--space-4);
+  text-align: center;
+  color: var(--c-text-muted);
+}
+
+.page-state-error p {
+  margin: 0 0 var(--space-3);
+}
+
+.page-state-error p:first-child {
+  color: var(--c-accent-strong);
+  font-weight: var(--fw-bold);
+}
+
+.not-found {
+  padding: var(--space-7) 0 var(--space-9);
+  max-width: 40em;
+}
+
+.not-found-links {
+  list-style: none;
+  margin: var(--space-5) 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.not-found-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-comfort);
+  padding: 0 var(--space-5);
+  border: 1.5px solid var(--c-border-strong);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  font-weight: var(--fw-bold);
+}
+
+.not-found-hint {
+  color: var(--c-text-muted);
+  font-size: var(--fs-2);
+}
+
+/* 同じ年の別のページ(年度一覧 ⇄ 決勝の得点表)への案内 */
+.page-crosslink {
+  margin: 0 0 var(--space-4);
+  font-weight: var(--fw-bold);
+}
+
+.page-crosslink a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+}
+
+/* 表のセルの記号をリンクにしたもの(コンビ詳細の決勝 → 得点表)。色は結果の色のまま */
+.cell-link {
+  color: inherit;
+}

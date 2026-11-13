@@ -102,9 +102,8 @@ export function useCombiDetail(id: number | null) {
     queryKey: ['combi', id],
     queryFn: async () => {
       const shard = await fetchJson<Record<string, CombiDetail>>(`combi/${id! % 100}.json`)
-      const detail = shard[String(id)]
-      if (!detail) throw new Error('このコンビのデータが見つかりません')
-      return detail
+      // 該当が無い ID は「見つからない」(null)。通信の失敗(例外)とは分けて見せる
+      return shard[String(id)] ?? null
     },
     enabled: id !== null,
     ...STATIC,

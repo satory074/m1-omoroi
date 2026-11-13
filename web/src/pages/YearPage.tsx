@@ -7,12 +7,15 @@ import BestChip from '../components/BestChip'
 import CombiPhoto from '../components/CombiPhoto'
 import { VideoLinks } from '../components/OfficialVideo'
 import { useMeta, useOfficialVideos, usePopularity, useYear } from '../lib/api'
+import { ErrorState, Loading, NotFound } from '../components/PageState'
 import { NARROW_QUERY } from '../lib/breakpoints'
 import { formationInfo } from '../lib/eligibility'
 import { OFFICIAL_CHANNEL_URL, combiVideos, playlistUrl } from '../lib/officialVideos'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits, isPassing } from '../lib/rounds'
+import { parseYear } from '../lib/params'
 import { loadRow, saveRow } from '../lib/scrollMemory'
 import type { OfficialPlaylist, ResultKey, RoundKey, YearEntry } from '../lib/types'
+import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 type ResultFilter = 'all' | 'pass' | 'fail'
 type SortKey = 'no' | 'kana' | 'hits'
@@ -105,7 +108,8 @@ function RoundVideos({
 
 export default function YearPage() {
   const { year: yearParam } = useParams()
-  const year = Number(yearParam)
+  const parsedYear = parseYear(yearParam)
+  const year = parsedYear ?? 0
   const [params, setParams] = useSearchParams()
   const location = useLocation()
 
@@ -114,7 +118,9 @@ export default function YearPage() {
   const sort = (params.get('sort') as SortKey) || 'hits'
 
   const { data: meta } = useMeta()
-  const { data: yearFile, isLoading, isError } = useYear(Number.isFinite(year) ? year : null)
+  // 大会の無い年(2011〜2014 や未来の年)は取りに行かない
+  const known = parsedYear !== null && (!meta || meta.years.includes(parsedYear))
+  const { data: yearFile, isLoading, isError } = useYear(known ? parsedYear : null)
   const { data: popularity } = usePopularity()
   const { data: official } = useOfficialVideos()
 
@@ -139,6 +145,7 @@ export default function YearPage() {
 
   // 年切替で引き継いだ回戦がその年に存在しない場合は1回戦へフォールバック
   const round = !yearFile || (roundCounts.get(roundParam) ?? 0) > 0 ? roundParam : 'first'
+  useDocumentTitle(yearFile ? `M-1グランプリ${year} ${ROUND_LABEL[round]}の結果` : null)
 
   const rows = useMemo(() => {
     if (!yearFile) return []
@@ -214,8 +221,20 @@ export default function YearPage() {
     if (item) saveRow(location.key, item.index)
   }
 
-  if (isError) return <div className="error-box">{year}年のデータを読み込めませんでした。</div>
-  if (isLoading || !yearFile) return <div className="loading">読み込み中…</div>
+  if (parsedYear === null || (meta && !known)) {
+    const hiatus = parsedYear !== null && parsedYear >= 2011 && parsedYear <= 2014
+    return (
+      <NotFound title={parsedYear ? `${parsedYear}年の大会はありません` : 'ページが見つかりません'}>
+        <p>
+          {hiatus
+            ? 'M-1グランプリは2011〜2014年に開かれていません(2010年で一度終了し、2015年に再開)。'
+            : 'この年の記録はありません。'}
+        </p>
+      </NotFound>
+    )
+  }
+  if (isError) return <ErrorState message={`${year}年のデータを読み込めませんでした。`} />
+  if (isLoading || !yearFile) return <Loading />
 
   const isArchive = yearFile.source === 'official-archive'
   const activeRounds = ROUND_ORDER.filter((rk) => (roundCounts.get(rk) ?? 0) > 0)
@@ -230,6 +249,11 @@ export default function YearPage() {
         エントリー {yearFile.entries.length.toLocaleString('ja-JP')}組
         {isArchive && ' — 公式アーカイブ由来のため、1回戦で敗退したコンビは掲載がありません'}
       </p>
+      {meta?.finalsYears.includes(year) && (
+        <p className="page-crosslink">
+          <Link to={`/finals/${year}`}>{year}年 決勝の得点表を見る</Link>
+        </p>
+      )}
 
       <div className="funnel" role="tablist" aria-label="回戦">
         {activeRounds.map((rk) => {

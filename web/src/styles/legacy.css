@@ -20,104 +20,6 @@
   --font-num: var(--font-body);
 }
 
-/* ============ アプリ骨格 ============ */
-.app {
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-main {
-  flex: 1;
-  width: 100%;
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 0 16px 64px;
-}
-
-/* ============ ヘッダー(舞台) ============ */
-.site-header {
-  background: var(--stage);
-  color: #fff;
-  /* 検索候補・検索パネルを本文の上に重ねるためのスタッキング文脈。
-     逆リンクバー(fixed, z-index:40)より前に出す必要があるので 50 */
-  position: relative;
-  z-index: 50;
-}
-
-.site-header-inner {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 14px 16px 0;
-}
-
-.site-header-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.brand {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  text-decoration: none;
-  color: inherit; /* 旧 index.css の a{color:inherit} に頼っていた分(第2段階でヘッダーごと作り直す) */
-}
-
-.brand-m1 {
-  font-family: var(--font-num);
-  font-weight: 700;
-  font-size: 30px;
-  line-height: 1;
-  letter-spacing: 0.02em;
-  color: #fff;
-  background: var(--red);
-  padding: 4px 8px 2px;
-  border-radius: 3px;
-}
-
-.brand-name {
-  font-weight: 900;
-  font-size: 22px;
-  letter-spacing: 0.06em;
-}
-
-.brand-sub {
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-}
-
-.site-nav {
-  display: flex;
-  gap: 2px;
-  margin-top: 10px;
-  overflow-x: auto;
-}
-
-.site-nav a {
-  color: rgba(255, 255, 255, 0.75);
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 13.5px;
-  letter-spacing: 0.05em;
-  padding: 8px 14px 10px;
-  border-bottom: 3px solid transparent;
-  white-space: nowrap;
-}
-
-.site-nav a:hover {
-  color: #fff;
-}
-
-.site-nav a.active {
-  color: #fff;
-  border-bottom-color: var(--red);
-}
-
 /* ============ 年ストリップ ============ */
 .year-strip {
   display: flex;
@@ -341,47 +243,6 @@
   color: var(--muted);
 }
 
-/* ============ コンビ名・芸人名の全年度タイプアヘッド検索(ヘッダー常駐) ============ */
-.combi-search {
-  position: relative;
-  flex: 0 1 320px;
-  min-width: 180px;
-}
-
-.combi-search input[type='search'] {
-  width: 100%;
-  padding: 7px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-family: inherit;
-  font-size: 14px;
-}
-
-.combi-search input[type='search']::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-/* 展開中は入力欄だけを背景(z:55)より前に出す。.combi-search は z-index:auto で
-   スタッキング文脈を作らないため、こうしないと入力欄が暗幕に覆われてクリックも
-   奪われる。パネル(z:60)より後ろなので候補側には被らない */
-.combi-search.expanded input[type='search'] {
-  position: relative;
-  z-index: 56;
-}
-
-/* 入力中は紙面側の見た目に切り替えて、候補リストと地続きに見せる */
-.combi-search input[type='search']:focus {
-  background: #fff;
-  color: var(--ink);
-  border-color: var(--red);
-}
-
-.combi-search input[type='search']:focus::placeholder {
-  color: var(--muted);
-}
-
 .combi-search-menu {
   position: absolute;
   top: calc(100% + 4px);
@@ -483,15 +344,6 @@
   background: var(--paper-2);
 }
 
-/* 狭幅では検索欄をブランド行の下に丸ごと落とす(ナビは既に横スクロールする) */
-@media (max-width: 720px) {
-  .combi-search {
-    flex: 1 1 100%;
-  }
-  .brand-sub {
-    display: none;
-  }
-}
 
 /* ============ 検索結果の展開パネル ============ */
 .search-panel-backdrop {
@@ -1855,26 +1707,6 @@
   font-size: 12px;
   color: var(--muted);
   margin: 4px 0 0;
-}
-
-/* ============ フッター ============ */
-.site-footer {
-  border-top: 1px solid var(--line);
-  background: var(--paper-2);
-  margin-top: 48px;
-}
-
-.site-footer-inner {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 20px 16px 28px;
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.8;
-}
-
-.site-footer a {
-  color: var(--muted);
 }
 
 /* ============ サイト間ナビ（逆リンクバー） ============
