@@ -54,30 +54,6 @@
 }
 
 /* 記録・統計(審査員タブ)の年別セレクタ: year-strip をボタンで使う */
-.judges-year-strip {
-  padding: 4px 0 12px;
-}
-.judges-year-strip button {
-  font-family: var(--font-num);
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.03em;
-  color: var(--muted);
-  padding: 2px 8px;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  background: #fff;
-  cursor: pointer;
-}
-.judges-year-strip button:hover {
-  color: var(--ink);
-  border-color: var(--muted);
-}
-.judges-year-strip button.active {
-  color: #fff;
-  background: var(--ink);
-  border-color: var(--ink);
-}
 
 .year-strip .gap {
   align-self: center;
@@ -127,38 +103,8 @@
 
 /* 記録・統計のテーマ別タブ(StatsPage.tsx)。.seg と同じ見た目をリンク(NavLink)で作る。
    狭幅で6つが収まらないときは折り返す */
-.stats-tabs {
-  display: inline-flex;
-  flex-wrap: wrap;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  overflow: hidden;
-  background: #fff;
-  margin: 8px 0 14px;
-}
-.stats-tabs a {
-  padding: 8px 14px;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--muted);
-  text-decoration: none;
-  border-right: 1px solid var(--line);
-}
-.stats-tabs a:last-child {
-  border-right: none;
-}
-.stats-tabs a:hover {
-  color: var(--ink);
-}
-.stats-tabs a.active {
-  background: var(--ink);
-  color: #fff;
-}
+
 /* タブの中の大きな区切り(決勝の記録/決勝の傾向 等) */
-.stats-group {
-  margin-top: 36px;
-  font-size: 20px;
-}
 
 .toolbar select,
 .search-panel-head select {
@@ -505,11 +451,6 @@
   background: #a00;
 }
 
-.history td.cell .yt-link {
-  margin: -6px -6px -6px 0;
-  vertical-align: middle;
-}
-
 /* 回戦タブの「動画あり」印 */
 
 /* 選択中の回戦のプレイリスト */
@@ -529,18 +470,6 @@
 /* ============ 結果バッジ ============ */
 
 /* ============ 汎用 ============ */
-.page-title {
-  font-size: 24px;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  margin: 20px 0 4px;
-}
-
-.page-lede {
-  color: var(--muted);
-  font-size: 13.5px;
-  margin: 0 0 8px;
-}
 
 .loading,
 .error-box {
@@ -555,119 +484,16 @@
 
 /* ============ コンビ詳細 ============ */
 
-.section-title {
-  font-size: 17px;
-  font-weight: 900;
-  letter-spacing: 0.05em;
-  margin: 28px 0 8px;
-}
-
-.section-note {
-  font-size: 12px;
-  color: var(--muted);
-  margin: -4px 0 8px;
-}
-
 /* position: relative は表内の .sr-only(absolute)をこの枠に閉じ込めるため。
    無いと初期包含ブロック基準で置かれ、狭幅でページ全体が横にはみ出す */
-.history-wrap {
-  position: relative;
-  overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: #fff;
-}
 
 /* min-width は付けない。収まる表まで横スクロールさせると名前列が画面外へ流れるため */
-.history {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-}
-
-.history th {
-  background: var(--paper-2);
-  border-bottom: 1px solid var(--line);
-  padding: 8px 10px;
-  font-size: 11.5px;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.history td {
-  border-bottom: 1px solid var(--paper-2);
-  padding: 7px 10px;
-  white-space: nowrap;
-}
-
-.history td.year {
-  font-family: var(--font-num);
-  font-weight: 700;
-  font-size: 16px;
-}
-
-.history td.year a {
-  text-decoration: none;
-}
-
-.history td.year a:hover {
-  color: var(--red);
-}
-
-.history td.no {
-  font-family: var(--font-num);
-  font-size: 15px;
-  color: var(--muted);
-}
-
-.history td.no.total {
-  color: var(--ink);
-  font-weight: 700;
-}
 
 /* 審査員の年別表: 「点数 + その点を付けた組」のセル */
-.history td.judge-pick .pick-score {
-  font-family: var(--font-num);
-  font-size: 15px;
-  font-weight: 700;
-  margin-right: 6px;
-}
-
-.history td.cell {
-  text-align: center;
-  font-weight: 700;
-}
-
-.history td.cell.pass,
-.history td.cell.seed_pass {
-  color: var(--red);
-}
-
-.history td.cell.fail,
-.history td.cell.fail_inferred {
-  color: var(--muted);
-}
-
-.history td.cell.champion {
-  color: var(--gold);
-  background: var(--gold-bg);
-}
 
 /* 名前を並べるセル(王者一覧など)。1行に並べると表が1,500px前後まで伸びるので折り返す。
    項目は inline-block にして「コンビ名(年)」の途中では折らず、項目の間で折る。
    区切りの「・」は行頭禁則の文字なので、ただの inline だと項目の間に改行位置ができない */
-.history td.names-cell,
-.history td.judge-pick {
-  white-space: normal;
-}
-
-.history td.names-cell .winner-item,
-.history td.judge-pick .winner-item {
-  display: inline-block;
-  white-space: nowrap;
-}
 
 /* ============ 決勝得点表(FinalsScoreTable) — 本家テロップ風 ============ */
 /* 得点セルを黒背景+メタリック銀縁のチップに。本家準拠の2階調(90+=金属ゴールド / 89以下=白)。
@@ -680,42 +506,15 @@
 
 /* 敗者復活戦から決勝へ進出した組のチップ(.formed-chip.lastyear と同系色) */
 
-.history th.excluded {
-  opacity: 0.35;
-}
 /* 合計列: 本家の総得点(金)を踏襲して太字ゴールド */
 
 /* 最終決戦へ進出した組(1本目上位2〜3組)の行を淡い赤でハイライト。
    ソートで並び替わっても行単位で追える。黒い得点チップ(.score)には掛けず、
    順位・コンビ名・合計セルに色を載せて進出ラインを示す。 */
-.history tr.finalist td:not(.score) {
-  background: rgba(200, 16, 46, 0.09);
-}
 
 /* 横スクロールする表で、行を識別する名前列を左端に固定する(狭幅のみ)。
    下を流れるセルが透けないよう背景は不透明にし、8文字を超える名前は折り返して列を細く保つ。
    進出行の固定セルは上の .finalist と同じ詳細度で上書きするので、このブロックはその後ろに置く */
-@media (max-width: 640px) {
-  .history .sticky-name {
-    position: sticky;
-    left: 0;
-    z-index: 1;
-    min-width: 9.5em; /* 左右の余白込み。中身は約8文字 */
-    white-space: normal;
-    background: #fff;
-    box-shadow: inset -1px 0 var(--line);
-  }
-  .history th.sticky-name {
-    background: var(--paper-2);
-  }
-  /* 決勝の進出行は半透明の赤なので、固定セルだけ白に重ねた不透明色にする */
-  .history tr.finalist td.sticky-name {
-    background: color-mix(in srgb, var(--red) 9%, #fff);
-  }
-  
-  
-  
-}
 
 /* ソート用ヘッダ(順・合計) — ボタンがセル全体を埋める */
 
@@ -752,289 +551,18 @@
 }
 
 /* ============ ランキング ============ */
-.rank-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 8px 28px;
-}
-
-.rank-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: #fff;
-}
-
-.rank-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--paper-2);
-}
-
-.rank-list li:last-child {
-  border-bottom: none;
-}
-
-.rank-pos {
-  font-family: var(--font-num);
-  font-weight: 700;
-  font-size: 17px;
-  color: var(--muted);
-  min-width: 22px;
-  text-align: right;
-}
-
-.rank-pos.champion {
-  color: var(--gold);
-}
-
-.rank-name {
-  flex: 1;
-  min-width: 0;
-  font-weight: 700;
-  text-decoration: none;
-  line-height: 1.3;
-  overflow-wrap: anywhere;
-}
-
-.rank-name:hover {
-  color: var(--red);
-}
-
-.rank-value {
-  font-family: var(--font-num);
-  font-weight: 700;
-  font-size: 19px;
-}
-
-.rank-value small {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--muted);
-  margin-left: 2px;
-}
 
 /* 最終決戦の得票リスト(決勝ページ)のみ: 2段目に投票した審査員名を表示。
    .rank-list は記録・統計と共用のため .vote-list でスコープする */
-.vote-list li {
-  flex-wrap: wrap;
-}
-.rank-main {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-}
-.rank-voters {
-  width: 100%;
-  padding-left: 32px; /* rank-pos(min-width:22px)+gap に揃える */
-  font-size: 12px;
-  color: var(--muted);
-}
+
 /* 連続出場(皆勤)の折りたたみリスト */
 /* 連続出場の最長(全大会皆勤)グループ。折り畳まず常に全組を出す枠 */
-.streak-box {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 10px 14px;
-  margin-bottom: 20px;
-}
-.streak-head {
-  margin: 0;
-  font-size: 13.5px;
-  font-weight: 700;
-}
-.streak-names {
-  margin: 10px 0 2px;
-  font-size: 13px;
-  line-height: 2;
-}
 
 /* 最終決戦リストのネタ披露順(並びは得票順のまま) */
-.vote-list .vote-order {
-  flex: 0 0 auto;
-  font-family: var(--font-num);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--muted);
-  white-space: nowrap;
-}
 
 /* ============ 統計チャート ============ */
-.chart-card {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 4px 16px 12px;
-  margin-bottom: 20px;
-}
-
-.chart-legend {
-  display: flex;
-  gap: 16px;
-  font-size: 12.5px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.chart-legend i {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  margin-right: 5px;
-}
 
 /* ============ 都道府県グリッドマップ ============ */
-.jpmap {
-  --cell: 40px;
-  margin: 6px 0 8px;
-}
-
-.jpmap-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
-}
-
-.jpmap-grid {
-  display: grid;
-  gap: 3px;
-  width: max-content;
-}
-
-.jpmap-cell {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 0;
-  font-family: inherit;
-  color: var(--ink);
-  line-height: 1;
-  cursor: pointer;
-  outline: 2px solid transparent;
-  outline-offset: 1px;
-  transition: outline-color 0.1s;
-}
-
-.jpmap-cell .jpmap-crown {
-  position: absolute;
-  top: -7px;
-  right: -4px;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  text-shadow: 0 0 2px #fff;
-  pointer-events: none;
-}
-
-.jpmap-cell .jpmap-name {
-  font-size: 9.5px;
-  opacity: 0.85;
-}
-
-.jpmap-cell .jpmap-num {
-  font-family: var(--font-num);
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.jpmap-cell.zero {
-  background: var(--paper);
-  color: var(--muted);
-}
-
-.jpmap-cell.zero .jpmap-name {
-  opacity: 0.55;
-}
-
-.jpmap-cell:hover {
-  outline-color: var(--muted);
-}
-
-.jpmap-cell.selected {
-  outline-color: var(--ink);
-}
-
-.jpmap-detail {
-  margin: 10px 0 6px;
-  padding: 8px 12px;
-  background: var(--paper-2);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.jpmap-detail strong {
-  font-size: 14px;
-}
-
-.jpmap-detail .jpmap-detail-count {
-  font-family: var(--font-num);
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--red-dark);
-  margin-left: 5px;
-}
-
-.jpmap-detail .jpmap-detail-names {
-  white-space: normal;
-}
-
-.jpmap-detail .jpmap-detail-group {
-  margin-top: 4px;
-  white-space: normal;
-}
-
-.jpmap-detail .jpmap-detail-group-label {
-  display: inline-block;
-  font-weight: 700;
-  font-size: 12px;
-  color: var(--red-dark);
-  margin-right: 2px;
-}
-
-.jpmap-detail .muted {
-  color: var(--muted);
-}
-
-.jpmap-legend {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11.5px;
-  color: var(--muted);
-  margin: 4px 0;
-}
-
-.jpmap-legend-scale {
-  display: inline-flex;
-  gap: 2px;
-}
-
-.jpmap-legend-scale i {
-  width: 16px;
-  height: 12px;
-  border-radius: 2px;
-  border: 1px solid var(--line);
-}
-
-.jpmap-foreign {
-  font-size: 12px;
-  color: var(--muted);
-  margin: 4px 0 0;
-}
 
 /* ============ サイト間ナビ（逆リンクバー） ============
    画面下端に常駐する控えめな逆リンクバー（→ satory074.com/apps）。

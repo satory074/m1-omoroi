@@ -21,6 +21,10 @@ function describe(el: Element): string {
 function isVisible(el: Element): boolean {
   const r = el.getBoundingClientRect()
   if (r.width === 0 && r.height === 0) return false
+  // 閉じた <details> の中身は Chrome では寸法を持ったまま隠れているので、checkVisibility で除く
+  if ('checkVisibility' in el && !el.checkVisibility({ visibilityProperty: true, contentVisibilityAuto: false })) {
+    return false
+  }
   const s = getComputedStyle(el)
   return s.visibility !== 'hidden' && s.display !== 'none'
 }

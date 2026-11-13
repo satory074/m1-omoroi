@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ROUND_LABEL } from '../lib/rounds'
 import type { AgeRecordRow, PeopleStats, ReachRow } from '../lib/types'
 import { RankTable } from './RankTable'
+import HistoryTable from './HistoryTable'
 
 function ageRows(rows: AgeRecordRow[]) {
   return rows.map((r) => ({
@@ -13,15 +14,14 @@ function ageRows(rows: AgeRecordRow[]) {
   }))
 }
 
-function ReachTable({ rows }: { rows: ReachRow[] }) {
+function ReachTable({ rows, caption }: { rows: ReachRow[]; caption: string }) {
   return (
-    <div className="history-wrap">
-      <table className="history">
+    <HistoryTable caption={caption}>
         <thead>
           <tr>
-            <th>最高到達</th>
-            <th className="sticky-name">コンビ</th>
-            <th>到達年</th>
+            <th scope="col">最高到達</th>
+            <th scope="col" className="sticky-name">コンビ</th>
+            <th scope="col">到達年</th>
           </tr>
         </thead>
         <tbody>
@@ -35,8 +35,7 @@ function ReachTable({ rows }: { rows: ReachRow[] }) {
             </tr>
           ))}
         </tbody>
-      </table>
-    </div>
+      </HistoryTable>
   )
 }
 
@@ -49,7 +48,7 @@ export default function CareerRecords({ ps }: { ps: PeopleStats }) {
   ] as const
   return (
     <>
-      <h2 className="section-title">最年少・最年長の記録</h2>
+      <h3 className="section-title">最年少・最年長の記録</h3>
       <p className="section-note">
         公式コンビ情報の生年月日(自己申告)から算出。出場は「大会年 −
         生年」の近似(年末時点の満年齢)、決勝進出・優勝は決勝開催日時点の満年齢。同一人物は極値1件に集約、上位10+同点。
@@ -59,17 +58,17 @@ export default function CareerRecords({ ps }: { ps: PeopleStats }) {
       <div className="rank-grid">
         {ageGroups.flatMap((g) => [
           <section key={`${g.key}-young`} className="rank-section">
-            <h2 className="section-title">最年少{g.title}</h2>
+            <h4 className="card-title">最年少{g.title}</h4>
             <RankTable items={ageRows(ps.ageRecords[g.key].youngest)} unit="歳" />
           </section>,
           <section key={`${g.key}-old`} className="rank-section">
-            <h2 className="section-title">最年長{g.title}</h2>
+            <h4 className="card-title">最年長{g.title}</h4>
             <RankTable items={ageRows(ps.ageRecords[g.key].oldest)} unit="歳" />
           </section>,
         ])}
       </div>
 
-      <h2 className="section-title">コンビ内の年齢差</h2>
+      <h3 className="section-title">コンビ内の年齢差</h3>
       <p className="section-note">
         メンバー間の歳の差(年下が生まれた時点での年上の満年齢)。自己申告ノイズを避けるため準々決勝以上に到達した組のみ。
       </p>
@@ -83,24 +82,23 @@ export default function CareerRecords({ ps }: { ps: PeopleStats }) {
         unit="歳差"
       />
 
-      <h2 className="section-title">アマチュアの最高到達</h2>
+      <h3 className="section-title">アマチュアの最高到達</h3>
       <p className="section-note">
         所属が「アマチュア」で準々決勝以上に到達した組(所属は現在の登録区分。出場当時と異なる場合あり)。
       </p>
-      <ReachTable rows={ps.amateur} />
+      <ReachTable rows={ps.amateur} caption="アマチュアの最高到達" />
 
-      <h2 className="section-title">職業別の最高到達</h2>
+      <h3 className="section-title">職業別の最高到達</h3>
       <p className="section-note">
         メンバーの職業(公式コンビ情報、2015年以降のみ)ごとの最高到達。コンビは各メンバーの職業すべてに数える。
       </p>
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption="職業別の最高到達">
           <thead>
             <tr>
-              <th>職業</th>
-              <th>最高到達</th>
-              <th>組数</th>
-              <th>コンビ(到達年)</th>
+              <th scope="col">職業</th>
+              <th scope="col">最高到達</th>
+              <th scope="col">組数</th>
+              <th scope="col">コンビ(到達年)</th>
             </tr>
           </thead>
           <tbody>
@@ -121,15 +119,14 @@ export default function CareerRecords({ ps }: { ps: PeopleStats }) {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
 
-      <h2 className="section-title">トリオの記録</h2>
+      <h3 className="section-title">トリオの記録</h3>
       <p className="section-note">
         3人組で3回戦以上に到達した組。人数は公式コンビ情報の現行登録(結成・出場当時と異なる場合あり。例:
         2006年決勝のザ・プラン９は当時5人組)。
       </p>
-      <ReachTable rows={ps.trio} />
+      <ReachTable rows={ps.trio} caption="トリオの記録" />
     </>
   )
 }

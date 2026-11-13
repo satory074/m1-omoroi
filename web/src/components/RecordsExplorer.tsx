@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAdvancers, useChampions } from '../lib/api'
@@ -6,9 +5,13 @@ import { competitionRanks, sliceWithTies } from '../lib/rank'
 import { ROUND_LABEL } from '../lib/rounds'
 import type { Champion, RoundKey } from '../lib/types'
 import JapanGridMap, { type PrefNameGroup, type PrefRow } from './JapanGridMap'
+import HistoryTable from './HistoryTable'
+import Segmented from './Segmented'
+import { useUrlParam } from '../lib/useUrlParam'
 
 const ROW_CAP = 30 // 長い表(結成年別/年齢別/回数)の表示件数上限(境界の同点はすべて表示)
 
+const TIER_KEYS: readonly TierKey[] = ['champion', 'final', 'semifinal', 'quarterfinal']
 type TierKey = 'champion' | RoundKey
 
 /** 1コンビ×1到達イベントの行。優勝タブは各回(連覇は2行)、到達タブは初到達の1行 */
@@ -70,7 +73,7 @@ function toChampionTier(champs: Champion[]): Tier {
   }
 }
 
-/** 選択タブの都道府県別マップ行を組み立てる。決勝タブのみ王者の👑バッジを重ねる */
+/** 選択タブの都道府県別マップ行を組み立てる。決勝タブのみ王者の★バッジを重ねる */
 function buildPrefRows(tier: Tier, champs: Champion[]): PrefRow[] {
   // 優勝タブ用: コンビ名(優勝年・優勝年) 形式のラベル
   const champYears = new Map<string, Map<string, number[]>>() // 県 → コンビ名 → 優勝年[]
@@ -111,11 +114,11 @@ function buildPrefRows(tier: Tier, champs: Champion[]): PrefRow[] {
       if (tier.key === 'champion') {
         names = champLabel(pref)
       } else if (tier.key === 'final') {
-        // 王者は👑行に出すので決勝到達の行からは除いて重複を避ける
+        // 王者は★の行に出すので決勝到達の行からは除いて重複を避ける
         const champSet = new Set([...(champYears.get(pref) ?? new Map()).keys()])
         badge = champCount.get(pref) ?? 0
         groups = [
-          { label: '👑 王者:', names: champLabel(pref) },
+          { label: '★ 王者:', names: champLabel(pref) },
           { label: '決勝到達:', names: names.filter((n) => !champSet.has(n)) },
         ]
       }
@@ -131,7 +134,8 @@ function buildPrefRows(tier: Tier, champs: Champion[]): PrefRow[] {
 export default function RecordsExplorer() {
   const champions = useChampions()
   const { data: advancers } = useAdvancers()
-  const [tierKey, setTierKey] = useState<TierKey>('champion')
+  // 切り替えは URL(?tier=)に持たせる。戻る・共有で選んだ段階が保たれる
+  const [tierKey, setTierKey] = useUrlParam<TierKey>('tier', 'champion', TIER_KEYS)
 
   const champs = champions.data?.champions ?? []
   const tiers: Tier[] = []
@@ -193,29 +197,28 @@ export default function RecordsExplorer() {
 
   return (
     <>
-      <h2 className="page-title stats-group">記録(優勝・準々決勝以上)</h2>
+      <h2 className="stats-group">記録(優勝・準々決勝以上)</h2>
       <p className="page-lede">
-        歴代王者(2001〜2025年の全21回)と、準々決勝以上に到達したコンビを最高到達ラウンド(決勝／準決勝／準々決勝)別に集計。2001〜2010は出身地・生年が揃わない組が多く、集計は判明分のみです。
+        歴代王者と、準々決勝以上に到達したコンビを最高到達ラウンド(決勝／準決勝／準々決勝)別に集計。2001〜2010は出身地・生年が揃わない組が多く、集計は判明分のみです。
       </p>
 
-      <div style={{ margin: '4px 0 20px' }}>
-        <div className="seg" role="group" aria-label="集計対象の切り替え">
-          {tiers.map((t) => (
-            <button key={t.key} className={t.key === tier.key ? 'active' : ''} onClick={() => setTierKey(t.key)}>
-              {t.label}（{t.combiCount}）
-            </button>
-          ))}
-        </div>
+      <div className="stats-switch">
+        <Segmented
+          label="集計対象の切り替え"
+          options={tiers.map((t) => ({ value: t.key, label: t.label, count: t.combiCount }))}
+          value={tier.key}
+          onChange={setTierKey}
+        />
       </div>
       {isChampion && (
         <p className="section-note">王者は決勝タブにも含まれます(決勝タブは最高到達が決勝の全コンビ)。</p>
       )}
 
-      <h2 className="section-title">都道府県別({tier.label})</h2>
+      <h3 className="section-title">都道府県別({tier.label})</h3>
       <p className="section-note">
         {tier.label === '優勝' ? '王者' : `${tier.label}到達コンビ`}
         の出身地。マスの数字は延べ人数。県のマスをタップすると該当コンビを表示します。
-        {tier.key === 'final' && ' 👑は王者の輩出数(延べ)。'}
+        {tier.key === 'final' && ' ★は王者の輩出数(延べ)。'}
       </p>
       <JapanGridMap
         rows={prefRows}
@@ -228,26 +231,25 @@ export default function RecordsExplorer() {
         {isChampion ? '連覇は各回を計上、' : ''}出身地不明は除外)
       </p>
 
-      <h2 className="section-title">
+      <h3 className="section-title">
         結成年別({tier.label}・{tier.spanLabel}が早い順)
-      </h2>
+      </h3>
       <p className="section-note">
         結成から{isChampion ? '優勝' : `${tier.label}初到達`}までの年数が短い順に表示。同点は全組表示
       </p>
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption={`結成年別(${tier.label}・${tier.spanLabel}が早い順)`}>
           <thead>
             <tr>
-              <th className="sticky-name">コンビ</th>
-              <th>結成年</th>
-              <th>{tier.yearLabel}</th>
-              <th>{tier.spanLabel}</th>
+              <th scope="col" className="sticky-name">コンビ</th>
+              <th scope="col">結成年</th>
+              <th scope="col">{tier.yearLabel}</th>
+              <th scope="col">{tier.spanLabel}</th>
             </tr>
           </thead>
           <tbody>
             {formedRows.map((r) => (
               <tr key={`${r.id ?? r.name}-${r.year}`}>
-                <td className="year sticky-name" style={{ fontSize: 14 }}>
+                <td className="sticky-name">
                   {combiCell(r.id, r.name)}
                 </td>
                 <td className="no">{r.formed}</td>
@@ -256,17 +258,16 @@ export default function RecordsExplorer() {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
       <p className="legend">
         「{tier.spanLabel}」は{tier.yearLabel}−結成年。
         {isChampion ? '連覇は各回を掲載。' : ''}結成年の判明する {formedAll.length} 行のうち上位 {formedRows.length}{' '}
         行を表示
       </p>
 
-      <h2 className="section-title">
+      <h3 className="section-title">
         {isChampion ? '優勝時' : `${tier.label}初到達時`}の年齢(若い順)
-      </h2>
+      </h3>
       {minAge != null && maxAge != null && (
         <p className="section-note">
           最年少 {ageAll[0].age}歳({ageAll[0].name}・{ageAll[0].combi}／{ageAll[0].year}年) ／ 最年長{' '}
@@ -274,14 +275,13 @@ export default function RecordsExplorer() {
           {ageAll[ageAll.length - 1].year}年)
         </p>
       )}
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption={`${isChampion ? '優勝時' : `${tier.label}初到達時`}の年齢(若い順)`}>
           <thead>
             <tr>
-              <th className="sticky-name">メンバー</th>
-              <th>コンビ</th>
-              <th>{tier.yearLabel}</th>
-              <th>年齢</th>
+              <th scope="col" className="sticky-name">メンバー</th>
+              <th scope="col">コンビ</th>
+              <th scope="col">{tier.yearLabel}</th>
+              <th scope="col">年齢</th>
             </tr>
           </thead>
           <tbody>
@@ -289,7 +289,7 @@ export default function RecordsExplorer() {
               const hot = r.age === minAge || r.age === maxAge
               return (
                 <tr key={`${r.id ?? r.combi}-${r.name}-${r.year}`}>
-                  <td className="year sticky-name" style={{ fontSize: 14 }}>
+                  <td className="sticky-name">
                     {r.name}
                   </td>
                   <td>{combiCell(r.id, r.combi)}</td>
@@ -299,34 +299,32 @@ export default function RecordsExplorer() {
               )
             })}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
       <p className="legend">
         年齢は{isChampion ? '決勝(12月)時点の満年齢' : '初到達年時点の満年齢の概算'}。生年の判明する延べ{' '}
         {ageAll.length} 人のうち若い順に上位 {ageRows.length} 人を表示(同点は全員表示)
       </p>
 
-      <h2 className="section-title">{tier.countLabel}ランキング</h2>
+      <h3 className="section-title">{tier.countLabel}ランキング</h3>
       <p className="section-note">
         {isChampion
           ? '優勝した回数(2001年からの全期間)。同点は全組表示'
           : `${tier.label}に到達した年数(2001年からの全期間)。最高到達が${tier.label}の組のみ＝さらに上へ進んだ組は上位ラウンドで集計。同点は全組表示`}
       </p>
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption={`${tier.countLabel}ランキング`}>
           <thead>
             <tr>
-              <th>順位</th>
-              <th className="sticky-name">コンビ</th>
-              <th>{tier.countLabel}</th>
-              {isChampion && <th>優勝年</th>}
+              <th scope="col">順位</th>
+              <th scope="col" className="sticky-name">コンビ</th>
+              <th scope="col">{tier.countLabel}</th>
+              {isChampion && <th scope="col">優勝年</th>}
             </tr>
           </thead>
           <tbody>
             {rankingRows.map((r, i) => (
               <tr key={r.id ?? r.name}>
                 <td className="no">{rankingRanks[i]}</td>
-                <td className="year sticky-name" style={{ fontSize: 14 }}>
+                <td className="sticky-name">
                   {combiCell(r.id, r.name)}
                 </td>
                 <td className="no total">{r.count}回</td>
@@ -334,8 +332,7 @@ export default function RecordsExplorer() {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
       <p className="legend">
         {isChampion ? `歴代王者 全${tier.combiCount}組` : `最高到達が${tier.label}のコンビ 全${tier.combiCount}組`}
         のうち上位 {rankingRows.length} 組を表示

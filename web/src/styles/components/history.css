@@ -1,0 +1,200 @@
+/* ============ 記録・統計の表とランキング(HistoryTable.tsx / RankTable.tsx) ============
+   改修前の .history 表を新しい見た目に移したもの。数字のセルは .no(右寄せ・等幅)。
+   狭い画面では名前の列(.sticky-name)を左端に固定して、横にスクロールしても何の行か分かるようにする */
+.history-wrap {
+  position: relative; /* 表内の .sr-only をこの枠に閉じ込める(外すと狭幅でページ全体が横にはみ出す) */
+  overflow-x: auto;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-m);
+}
+
+.history {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.history th {
+  padding: var(--space-2) var(--space-3);
+  background: var(--c-surface-2);
+  border-bottom: 1px solid var(--c-border);
+  color: var(--c-text-muted);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-bold);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.history td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--c-border-subtle);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.history tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.history td.no {
+  text-align: right;
+}
+
+.history td.year {
+  font-weight: var(--fw-bold);
+}
+
+.history td.names-cell,
+.history td.judge-pick {
+  white-space: normal;
+}
+
+/* 名前を並べるセル。項目の途中では折らず、項目の間で折る(「・」は行頭禁則なので inline-block にする) */
+.history .winner-item {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.history td.judge-pick .pick-score {
+  margin-right: var(--space-2);
+  font-weight: var(--fw-bold);
+}
+
+.history .chip {
+  margin-left: var(--space-1);
+}
+
+@media (max-width: 640px) {
+  .history .sticky-name {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 8em;
+    white-space: normal;
+    background: var(--c-bg);
+    box-shadow: inset -1px 0 var(--c-border);
+  }
+  .history th.sticky-name {
+    background: var(--c-surface-2);
+  }
+}
+
+/* 折り畳んだ続き(偏差値の残りなど) */
+.more {
+  margin-top: var(--space-3);
+}
+
+.more summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-comfort);
+  padding: 0 var(--space-5);
+  border: 1.5px solid var(--c-border-strong);
+  border-radius: var(--radius-pill);
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+  list-style: none;
+}
+
+.more summary::-webkit-details-marker {
+  display: none;
+}
+
+.more[open] summary {
+  margin-bottom: var(--space-3);
+}
+
+/* ---------- 同点込みのランキング(RankTable) ---------- */
+.rank-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-2) var(--space-7);
+}
+
+.rank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 2px solid var(--c-text);
+}
+
+.rank-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--c-border-subtle);
+}
+
+.rank-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.rank-pos {
+  min-width: 1.6em;
+  font-size: var(--fs-4);
+  font-weight: var(--fw-black);
+  color: var(--c-text-muted);
+  text-align: right;
+}
+
+.rank-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-min); /* 押せる高さ 24px 以上(WCAG 2.5.8) */
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+  overflow-wrap: anywhere;
+}
+
+.rank-value {
+  font-size: var(--fs-5);
+  font-weight: var(--fw-black);
+  white-space: nowrap;
+}
+
+.rank-value small {
+  margin-left: 2px;
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  color: var(--c-text-muted);
+}
+
+.rank-voters {
+  width: 100%;
+  padding-left: calc(1.6em + var(--space-3));
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+/* 連続出場(皆勤)の全組。折り畳まずに並べる */
+.streak-box {
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-m);
+}
+
+.streak-head {
+  margin: 0;
+  font-weight: var(--fw-bold);
+}
+
+.streak-names {
+  margin: var(--space-2) 0 0;
+  line-height: 2;
+}
+
+/* セルの補足(審査員の担当年など)は折り返す。セル自体は数字の列なので折り返さない */
+.history td .cell-note {
+  white-space: normal;
+  min-width: 10em;
+  max-width: 16em;
+  text-align: left;
+}

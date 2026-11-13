@@ -13,11 +13,14 @@
 @import './legacy.css';
 @import './layout/shell.css' layer(layout);
 @import './components/basics.css' layer(components);
+@import './components/typography.css' layer(components);
 @import './components/controls.css' layer(components);
 @import './components/chips.css' layer(components);
 @import './components/scrollnav.css' layer(components);
 @import './components/table.css' layer(components);
+@import './components/history.css' layer(components);
 @import './pages/home.css' layer(pages);
 @import './pages/year.css' layer(pages);
 @import './pages/finals.css' layer(pages);
 @import './pages/combi.css' layer(pages);
+@import './pages/stats.css' layer(pages);

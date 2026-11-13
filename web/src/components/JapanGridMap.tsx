@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 
 import { GRID_COLS, GRID_ROWS, PREF_NAME_SET, PREF_TILES } from '../lib/prefectures'
+import { hexToRgb, useTokens } from '../lib/tokens'
+import HistoryTable from './HistoryTable'
 
 export interface PrefNameGroup {
-  /** 一覧の見出し(例: "👑 王者" / "決勝到達") */
+  /** 一覧の見出し(例: "★ 王者" / "決勝到達") */
   label: string
   names: string[]
 }
@@ -29,17 +31,33 @@ interface Props {
   badgeLabel?: string
 }
 
-// 薄い紙色(--paper-2) → M-1の朱(--red) へRGB補間する choropleth
-const LOW: [number, number, number] = [242, 238, 230]
-const HIGH: [number, number, number] = [200, 16, 46]
-function mix(ratio: number): string {
-  const r = Math.round(LOW[0] + (HIGH[0] - LOW[0]) * ratio)
-  const g = Math.round(LOW[1] + (HIGH[1] - LOW[1]) * ratio)
-  const b = Math.round(LOW[2] + (HIGH[2] - LOW[2]) * ratio)
-  return `rgb(${r}, ${g}, ${b})`
+const TOKENS = ['--c-surface-2', '--c-accent', '--c-text', '--c-on-accent'] as const
+
+/** 相対輝度(WCAG)。マスの地の色に対して、黒と白のどちらの文字が読みやすいかを決めるのに使う */
+function luminance([r, g, b]: [number, number, number]) {
+  const lin = (c: number) => {
+    const v = c / 255
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
 }
+const contrast = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
 
 export default function JapanGridMap({ rows, unit, nameLabel, badgeLabel = '王者' }: Props) {
+  // 淡い灰色 → M-1の赤 へ補間する塗り分け(色はトークンから)。文字色はマスごとに読みやすい方を選ぶ
+  // (以前は割合 0.55 で白に切り替えていて、中間の赤に白文字が 3.1:1 しかなかった)
+  const t = useTokens(TOKENS)
+  const low = hexToRgb(t['--c-surface-2'])
+  const high = hexToRgb(t['--c-accent'])
+  const darkL = luminance(hexToRgb(t['--c-text']))
+  const lightL = luminance(hexToRgb(t['--c-on-accent']))
+  const mix = (ratio: number): [number, number, number] => [0, 1, 2].map((i) => Math.round(low[i] + (high[i] - low[i]) * ratio)) as [number, number, number]
+  const rgb = (c: [number, number, number]) => `rgb(${c[0]} ${c[1]} ${c[2]})`
+  const textOn = (c: [number, number, number]) => {
+    const l = luminance(c)
+    return contrast(l, darkL) >= contrast(l, lightL) ? t['--c-text'] : t['--c-on-accent']
+  }
+
   const byPref = useMemo(() => {
     const m = new Map<string, PrefRow>()
     for (const r of rows) m.set(r.pref, r)
@@ -95,34 +113,34 @@ export default function JapanGridMap({ rows, unit, nameLabel, badgeLabel = '王�
             gridTemplateRows: `repeat(${GRID_ROWS}, var(--cell))`,
           }}
         >
-          {PREF_TILES.map((t) => {
-            const row = byPref.get(t.name)
+          {PREF_TILES.map((tile) => {
+            const row = byPref.get(tile.name)
             const count = row?.count ?? 0
             const badge = row?.badge ?? 0
             const ratio = max > 0 ? count / max : 0
             const zero = count === 0 && badge === 0
-            const isActive = t.name === active
+            const isActive = tile.name === active
             return (
               <button
-                key={t.name}
+                key={tile.name}
                 type="button"
                 className={`jpmap-cell${zero ? ' zero' : ''}${isActive ? ' selected' : ''}`}
                 style={{
-                  gridColumn: t.col + 1,
-                  gridRow: t.row + 1,
-                  background: zero ? undefined : mix(ratio),
-                  color: !zero && ratio > 0.55 ? '#fff' : undefined,
+                  gridColumn: tile.col + 1,
+                  gridRow: tile.row + 1,
+                  background: zero ? undefined : rgb(mix(ratio)),
+                  color: zero ? undefined : textOn(mix(ratio)),
                 }}
-                title={`${t.name} ${count}${unit}${badge > 0 ? `(うち${badgeLabel}${badge}${unit})` : ''}`}
+                aria-label={`${tile.name} ${count}${unit}${badge > 0 ? `(うち${badgeLabel}${badge}${unit})` : ''}`}
                 aria-pressed={isActive}
-                onClick={() => setSelected(t.name)}
+                onClick={() => setSelected(tile.name)}
               >
                 {badge > 0 && (
-                  <span className="jpmap-crown" aria-label={`${badgeLabel}${badge}${unit}`}>
-                    👑{badge > 1 ? badge : ''}
+                  <span className="jpmap-crown" aria-hidden="true">
+                    ★{badge > 1 ? badge : ''}
                   </span>
                 )}
-                <span className="jpmap-name">{t.short}</span>
+                <span className="jpmap-name">{tile.short}</span>
                 <span className="jpmap-num">{count}</span>
               </button>
             )
@@ -160,17 +178,51 @@ export default function JapanGridMap({ rows, unit, nameLabel, badgeLabel = '王�
 
       <div className="jpmap-legend">
         <span className="jpmap-legend-scale" aria-hidden="true">
-          <i style={{ background: 'var(--paper)' }} />
-          <i style={{ background: mix(0.25) }} />
-          <i style={{ background: mix(0.5) }} />
-          <i style={{ background: mix(0.75) }} />
-          <i style={{ background: mix(1) }} />
+          <i style={{ background: 'var(--c-bg)' }} />
+          <i style={{ background: rgb(mix(0.25)) }} />
+          <i style={{ background: rgb(mix(0.5)) }} />
+          <i style={{ background: rgb(mix(0.75)) }} />
+          <i style={{ background: rgb(mix(1)) }} />
         </span>
         <span>
           少 → 多(数字=のべ{unit}数{max > 0 ? `・最多 ${max}${unit}` : ''})
-          {hasBadges ? ` ／ 👑=${badgeLabel}を輩出` : ''}
+          {hasBadges ? ` ／ ★=${badgeLabel}を輩出` : ''}
         </span>
       </div>
+
+      <details className="note">
+        <summary>
+          <span className="note-label">表で見る(都道府県別の一覧)</span>
+        </summary>
+        <HistoryTable caption={`都道府県別の${unit}数(多い順)`}>
+          <thead>
+            <tr>
+              <th scope="col">都道府県</th>
+              <th scope="col" className="num">
+                {unit}数
+              </th>
+              <th scope="col">{nameLabel}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...rows]
+              .filter((r) => r.count > 0)
+              .sort((a, b) => b.count - a.count)
+              .map((r) => (
+                <tr key={r.pref}>
+                  <td>{r.pref}</td>
+                  <td className="no">
+                    {r.count}
+                    {r.badge ? `(${badgeLabel}${r.badge})` : ''}
+                  </td>
+                  <td className="names-cell">
+                    {(r.groups && r.groups.length > 0 ? r.groups.flatMap((g) => g.names) : r.names).join('、')}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </HistoryTable>
+      </details>
 
       {foreign.length > 0 && (
         <p className="jpmap-foreign">

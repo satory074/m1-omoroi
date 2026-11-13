@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { competitionRanks } from '../lib/rank'
 import type { FinalsStats } from '../lib/types'
 import { WinnersCell } from './RankTable'
+import HistoryTable from './HistoryTable'
 
 /** 決勝の傾向(分布・傾向系): 出番順別/王者の1本目順位/結成年数別/事務所別。記録・統計の「決勝」タブが表示 */
 export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
@@ -33,19 +34,18 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
 
   return (
     <>
-      <h2 className="section-title">出番順別の成績(ファーストラウンド)</h2>
+      <h3 className="section-title">出番順別の成績(ファーストラウンド)</h3>
       <p className="section-note">
         どの出番順が優勝しやすいか。全21大会分。10番手は決勝10組の年(2017年以降ほか)のみ存在。
       </p>
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption="出番順別の成績(ファーストラウンド)">
           <thead>
             <tr>
-              <th>出番順</th>
-              <th>出場</th>
-              <th>最終決戦進出</th>
-              <th>優勝</th>
-              <th>優勝コンビ</th>
+              <th scope="col">出番順</th>
+              <th scope="col">出場</th>
+              <th scope="col">最終決戦進出</th>
+              <th scope="col">優勝</th>
+              <th scope="col">優勝コンビ</th>
             </tr>
           </thead>
           <tbody>
@@ -61,21 +61,19 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
 
-      <h2 className="section-title">最終決戦の出番順別の成績</h2>
+      <h3 className="section-title">最終決戦の出番順別の成績</h3>
       <p className="section-note">
         最終決戦のネタ披露順ごとの優勝回数。3番手は最終決戦3組の年(2002年以降)のみ。
       </p>
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption="最終決戦の出番順別の成績">
           <thead>
             <tr>
-              <th>出番順</th>
-              <th>進出</th>
-              <th>優勝</th>
-              <th>優勝コンビ</th>
+              <th scope="col">出番順</th>
+              <th scope="col">進出</th>
+              <th scope="col">優勝</th>
+              <th scope="col">優勝コンビ</th>
             </tr>
           </thead>
           <tbody>
@@ -90,22 +88,20 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
 
-      <h2 className="section-title">敗者復活の記録</h2>
+      <h3 className="section-title">敗者復活の記録</h3>
       <p className="section-note">
         敗者復活戦は{fs.revivalStats.sinceYear}年開始({fs.revivalStats.sinceYear}年以降が集計対象)。出場は延べ(コンビ×年)。
         敗者復活からの優勝: <WinnersCell winners={fs.revivalStats.winners} />
       </p>
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption="敗者復活の記録">
           <thead>
             <tr>
-              <th>区分</th>
-              <th>決勝出場</th>
-              <th>最終決戦進出</th>
-              <th>優勝</th>
+              <th scope="col">区分</th>
+              <th scope="col">決勝出場</th>
+              <th scope="col">最終決戦進出</th>
+              <th scope="col">優勝</th>
             </tr>
           </thead>
           <tbody>
@@ -129,18 +125,16 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
 
-      <h2 className="section-title">何回目の決勝で優勝したか</h2>
+      <h3 className="section-title">何回目の決勝で優勝したか</h3>
       <p className="section-note">優勝した年が、そのコンビにとって通算何回目の決勝進出だったか。</p>
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption="何回目の決勝で優勝したか">
           <thead>
             <tr>
-              <th>通算</th>
-              <th>回数</th>
-              <th>王者</th>
+              <th scope="col">通算</th>
+              <th scope="col">回数</th>
+              <th scope="col">王者</th>
             </tr>
           </thead>
           <tbody>
@@ -154,18 +148,16 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
 
-      <h2 className="section-title">王者のファーストラウンド順位</h2>
+      <h3 className="section-title">王者のファーストラウンド順位</h3>
       <p className="section-note">優勝コンビが1本目で何位だったか。</p>
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption="王者のファーストラウンド順位">
           <thead>
             <tr>
-              <th>1本目の順位</th>
-              <th>回数</th>
-              <th>王者</th>
+              <th scope="col">1本目の順位</th>
+              <th scope="col">回数</th>
+              <th scope="col">王者</th>
             </tr>
           </thead>
           <tbody>
@@ -179,21 +171,19 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
 
-      <h2 className="section-title">1本目の1位と2位の点差</h2>
+      <h3 className="section-title">1本目の1位と2位の点差</h3>
       <p className="section-note">
         ファーストラウンド1位と2位の合計点差(接戦順)。審査員数・満点が年により違うため点差の単純比較は目安。
       </p>
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption="1本目の1位と2位の点差">
           <thead>
             <tr>
-              <th>点差</th>
-              <th>年</th>
-              <th>1位</th>
-              <th>2位</th>
+              <th scope="col">点差</th>
+              <th scope="col">年</th>
+              <th scope="col">1位</th>
+              <th scope="col">2位</th>
             </tr>
           </thead>
           <tbody>
@@ -222,24 +212,22 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
                 </tr>
               ))}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
 
-      <h2 className="section-title">結成年数別の到達数</h2>
+      <h3 className="section-title">結成年数別の到達数</h3>
       <p className="section-note">
         結成N年 = 大会年 − 結成年(出場資格と同じ数え方)。決勝/準決勝/準々決勝は延べ(コンビ×年)で、上位ラウンド進出年は下位ラウンドにも数える。
         {hasUnknown &&
           ` 結成年不明の延べ${unknown.final + unknown.semifinal + unknown.quarterfinal}件(決勝${unknown.final}・準決勝${unknown.semifinal}・準々決勝${unknown.quarterfinal})は除外。`}
       </p>
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption="結成年数別の到達数">
           <thead>
             <tr>
-              <th>結成年数</th>
-              <th>優勝</th>
-              <th>決勝</th>
-              <th>準決勝</th>
-              <th>準々決勝</th>
+              <th scope="col">結成年数</th>
+              <th scope="col">優勝</th>
+              <th scope="col">決勝</th>
+              <th scope="col">準決勝</th>
+              <th scope="col">準々決勝</th>
             </tr>
           </thead>
           <tbody>
@@ -254,23 +242,21 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
 
-      <h2 className="section-title">コンビ名の文字数と成績</h2>
+      <h3 className="section-title">コンビ名の文字数と成績</h3>
       <p className="section-note">
         「短い名前ほど優勝しやすい」説の検証。文字数は空白を除き全半角をそろえて数えた値。
         エントリーは記録に残る全コンビ、決勝・優勝はコンビ単位(複数回進出も1組)。
       </p>
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption="コンビ名の文字数と成績">
           <thead>
             <tr>
-              <th>文字数</th>
-              <th>エントリー</th>
-              <th>決勝進出</th>
-              <th>優勝</th>
-              <th>決勝率</th>
+              <th scope="col">文字数</th>
+              <th scope="col">エントリー</th>
+              <th scope="col">決勝進出</th>
+              <th scope="col">優勝</th>
+              <th scope="col">決勝率</th>
             </tr>
           </thead>
           <tbody>
@@ -303,22 +289,20 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
               ))
             })()}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
 
-      <h2 className="section-title">事務所別 決勝進出</h2>
+      <h3 className="section-title">事務所別 決勝進出</h3>
       <p className="section-note">
         延べ = 決勝(ファーストラウンド)出場のコンビ×年。所属は公式コンビDBの現行表記のため、移籍・改名は現在の所属で集計。
         {fs.agencyFinalsExcluded > 0 && ` 所属不明の延べ${fs.agencyFinalsExcluded}件は除外。`}
       </p>
-      <div className="history-wrap">
-        <table className="history">
+      <HistoryTable caption="事務所別 決勝進出">
           <thead>
             <tr>
-              <th>順位</th>
-              <th>事務所</th>
-              <th>延べ回数</th>
-              <th>組数</th>
+              <th scope="col">順位</th>
+              <th scope="col">事務所</th>
+              <th scope="col">延べ回数</th>
+              <th scope="col">組数</th>
             </tr>
           </thead>
           <tbody>
@@ -334,8 +318,7 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
               ))
             })()}
           </tbody>
-        </table>
-      </div>
+        </HistoryTable>
     </>
   )
 }

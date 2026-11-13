@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import { competitionRanks } from '../lib/rank'
+import CombiLink from './CombiLink'
 import type { FinalsStatsWinner } from '../lib/types'
 
 export interface RankRow {
@@ -26,16 +27,10 @@ export function RankTable({ items, unit }: { items: RankRow[]; unit: string }) {
           // 年齢記録では同じコンビの2人が同一リストに並ぶため、id 単独ではキーが重複する
           <li key={`${item.id ?? ''}:${item.name}`}>
             <div className="rank-main">
-              <span className={`rank-pos${rank[i] === 1 ? ' champion' : ''}`}>{rank[i]}</span>
-              {item.id != null ? (
-                <Link className="rank-name" to={`/combi/${item.id}`} title={item.name}>
-                  {item.name}
-                </Link>
-              ) : (
-                <span className="rank-name" title={item.name}>
-                  {item.name}
-                </span>
-              )}
+              <span className="rank-pos">{rank[i]}</span>
+              <CombiLink id={item.id} className="rank-name">
+                {item.name}
+              </CombiLink>
               <span className="rank-value">
                 {item.value}
                 <small>{unit}</small>
@@ -57,7 +52,7 @@ export function WinnersCell({ winners }: { winners: FinalsStatsWinner[] }) {
       {winners.map((w, i) => (
         <span key={`${w.year}-${w.name}`} className="winner-item">
           {i > 0 && '・'}
-          {w.combiId != null ? <Link to={`/combi/${w.combiId}`}>{w.name}</Link> : w.name}({w.year})
+          <CombiLink id={w.combiId}>{w.name}</CombiLink>(<Link to={`/finals/${w.year}`}>{w.year}</Link>)
         </span>
       ))}
     </>

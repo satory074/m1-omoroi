@@ -10,8 +10,8 @@ import { dirname, join, relative } from 'node:path'
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const src = join(root, 'src')
 
-// 第6段階で useTokens() に移すまでは警告扱い
-const LEGACY_TSX = new Set(['src/components/TournamentStats.tsx', 'src/components/JapanGridMap.tsx'])
+// 移行待ちのファイル(ここにあるものは警告だけ。2026-11 の第6段階で空になった)
+const LEGACY_TSX = new Set([])
 
 function walk(dir) {
   return readdirSync(dir).flatMap((name) => {

@@ -1,0 +1,276 @@
+/* ============ 記録・統計(StatsPage.tsx) ============
+   広い画面は左に目次を固定し、右に中身。狭い画面は目次を上の折り畳みに */
+.stats-title {
+  margin-bottom: var(--space-3);
+}
+
+.stats-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: var(--space-8);
+  align-items: start;
+  margin-top: var(--space-5);
+}
+
+/* 目次が出ないページ(見出しが少ない)は1列に */
+.stats-layout:not(:has(.toc)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.stats-body {
+  min-width: 0;
+}
+
+.stats-body > .page-lede:first-child {
+  margin-top: 0;
+}
+
+/* ---------- 目次(PageToc.tsx) ----------
+   貼り付けるのは grid の項目(nav.toc)そのもの。中の要素に sticky を付けても、親の nav が目次の高さしか
+   無いので動ける範囲が無く、一緒に流れてしまう */
+.toc {
+  position: sticky;
+  top: calc(var(--header-h, 64px) + var(--space-4));
+  transition: top 0.2s ease;
+}
+
+.site-header[data-hidden='true'] ~ .app-main .toc {
+  top: var(--space-4);
+}
+
+.toc-wide {
+  max-height: calc(100dvh - var(--header-h, 64px) - var(--space-8));
+  overflow-y: auto;
+  padding-right: var(--space-2);
+}
+
+.toc-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-bold);
+  color: var(--c-text-muted);
+}
+
+.toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 2px solid var(--c-border);
+}
+
+.toc-list a {
+  display: block;
+  margin-left: -2px;
+  padding: var(--space-1) var(--space-3);
+  border-left: 2px solid transparent;
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--c-text-muted);
+  text-decoration: none;
+}
+
+.toc-list a:hover {
+  color: var(--c-text);
+}
+
+/* いま見ている節は色だけでなく太字と左の線でも示す */
+.toc-list a[aria-current='true'] {
+  border-left-color: var(--c-accent);
+  color: var(--c-text);
+  font-weight: var(--fw-bold);
+}
+
+.toc-sub a {
+  padding-left: var(--space-5);
+}
+
+.toc-narrow {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .toc {
+    position: static;
+  }
+  .stats-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+  .toc-wide {
+    display: none;
+  }
+  .toc-narrow {
+    display: block;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-m);
+    padding: 0 var(--space-4);
+  }
+  .toc-narrow summary {
+    display: flex;
+    align-items: center;
+    min-height: var(--tap-comfort);
+    font-weight: var(--fw-bold);
+    cursor: pointer;
+  }
+  .toc-narrow .toc-list {
+    margin-bottom: var(--space-3);
+  }
+  .toc-narrow .toc-list a {
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-2);
+  }
+}
+
+.stats-switch {
+  margin: var(--space-2) 0 var(--space-4);
+}
+
+/* ---------- グラフ ---------- */
+.chart-card {
+  margin-bottom: var(--space-5);
+}
+
+.chart-legend {
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-bold);
+}
+
+.chart-legend i {
+  display: inline-block;
+  width: 16px;
+  height: 3px;
+  margin-right: var(--space-2);
+  vertical-align: middle;
+  border-radius: 2px;
+}
+
+/* ---------- 都道府県のマス目の地図(JapanGridMap.tsx) ---------- */
+.jpmap {
+  --cell: 40px;
+  margin: var(--space-2) 0;
+}
+
+.jpmap-scroll {
+  overflow-x: auto;
+  padding: var(--space-1);
+}
+
+.jpmap-grid {
+  display: grid;
+  gap: 3px;
+  width: max-content;
+}
+
+.jpmap-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-s);
+  background: var(--c-bg);
+  color: var(--c-text);
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* 以前は outline: transparent がフォーカス表示を消していた。キーボードで選んでいるマスを必ず見せる */
+.jpmap-cell:focus-visible {
+  outline: 3px solid var(--c-focus);
+  outline-offset: 1px;
+  z-index: 2;
+}
+
+.jpmap-cell[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--c-bg), 0 0 0 4px var(--c-text);
+  z-index: 1;
+}
+
+.jpmap-cell .jpmap-name {
+  font-size: var(--fs-1);
+}
+
+.jpmap-cell .jpmap-num {
+  font-size: var(--fs-3);
+  font-weight: var(--fw-bold);
+}
+
+.jpmap-cell.zero {
+  color: var(--c-text-muted);
+}
+
+.jpmap-crown {
+  position: absolute;
+  top: -8px;
+  right: -5px;
+  padding: 0 3px;
+  border-radius: var(--radius-pill);
+  background: var(--c-stage);
+  color: var(--c-stage-gold);
+  font-size: var(--fs-1);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.jpmap-detail {
+  margin: var(--space-3) 0 var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-m);
+  background: var(--c-surface-2);
+  font-size: var(--fs-2);
+}
+
+.jpmap-detail-count {
+  margin-left: var(--space-2);
+  font-size: var(--fs-4);
+  font-weight: var(--fw-bold);
+}
+
+.jpmap-detail-group {
+  margin-top: var(--space-1);
+}
+
+.jpmap-detail-group-label {
+  font-weight: var(--fw-bold);
+}
+
+.jpmap-detail .muted {
+  color: var(--c-text-muted);
+}
+
+.jpmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+.jpmap-legend-scale {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.jpmap-legend-scale i {
+  width: 18px;
+  height: 12px;
+  border: 1px solid var(--c-border);
+  border-radius: 2px;
+}
+
+.jpmap-foreign {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}

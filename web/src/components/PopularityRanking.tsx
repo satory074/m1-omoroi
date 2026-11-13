@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useAdvancers, useCombiIndex, usePopularity } from '../lib/api'
 import { ROUND_LABEL, formatHits } from '../lib/rounds'
 import type { RoundKey } from '../lib/types'
+import HistoryTable from './HistoryTable'
+import { competitionRanks } from '../lib/rank'
 
 const TOP = 30
 const HIDDEN_TOP = 15
@@ -35,36 +37,38 @@ export default function PopularityRanking() {
   )
   const hidden = rows.filter((r) => !finalIds.has(r.id)).slice(0, HIDDEN_TOP)
 
-  const table = (list: typeof rows, showReach: boolean) => (
-    <div className="history-wrap">
-      <table className="history">
+  const table = (list: typeof rows, showReach: boolean, caption: string) => {
+    // 同じ再生数は同じ順位(以前は並び順の番号 i+1 だった)
+    const ranks = competitionRanks(list, (r) => r.n)
+    return (
+    <HistoryTable caption={caption}>
         <thead>
           <tr>
-            <th>順位</th>
-            <th className="sticky-name">コンビ</th>
-            <th>再生数</th>
-            <th>うちメンバー名義</th>
-            <th>動画数</th>
-            {showReach && <th>最高到達</th>}
+            <th scope="col">順位</th>
+            <th scope="col" className="sticky-name">コンビ</th>
+            <th scope="col">再生数</th>
+            <th scope="col">うちメンバー名義</th>
+            <th scope="col">動画数</th>
+            {showReach && <th scope="col">最高到達</th>}
           </tr>
         </thead>
         <tbody>
           {list.map((r, i) => (
             <tr key={r.id}>
-              <td className="no">{i + 1}</td>
+              <td className="no">{ranks[i]}</td>
               <td className="sticky-name">
                 <Link to={`/combi/${r.id}`}>{names.get(r.id)}</Link>
               </td>
               <td className="no">{formatHits(r.n)}</td>
-              <td className="no">{r.m > 0 ? formatHits(r.m) : '-'}</td>
-              <td className="no">{r.v ?? '-'}</td>
+              <td className="no">{r.m > 0 ? formatHits(r.m) : '—'}</td>
+              <td className="no">{r.v ?? '—'}</td>
               {showReach && <td>{ROUND_LABEL[reach.get(r.id) ?? 'third']}</td>}
             </tr>
           ))}
         </tbody>
-      </table>
-    </div>
-  )
+      </HistoryTable>
+    )
+  }
 
   return (
     <>
@@ -79,11 +83,11 @@ export default function PopularityRanking() {
         字面で判別できない同名の楽曲・番組・同姓同名は手動で除外。動画数は合計に含めた本数(メンバー名義分を含む)。
         対象は3回戦以上の出場経験があるコンビで、取得日はコンビごとに異なる(約4週間周期の自動更新)。
       </p>
-      {table(rows.slice(0, TOP), false)}
+      {table(rows.slice(0, TOP), false, `注目度ランキング 上位${TOP}組`)}
 
       <h2 className="section-title">決勝未経験の注目株</h2>
-      <p className="section-note">決勝(2001〜2025)に進んだことがないのに再生数が多いコンビ。</p>
-      {table(hidden, true)}
+      <p className="section-note">決勝に進んだことがないのに再生数が多いコンビ。</p>
+      {table(hidden, true, '決勝未経験の注目株')}
     </>
   )
 }

@@ -25,7 +25,9 @@ export function useTokens<const T extends readonly `--${string}`[]>(names: T): R
 
 /** '#rrggbb' を [r, g, b] に。色の補間(地図の濃淡など)用 */
 export function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace('#', '')
+  // CSS がまだ読めていない(値が空)などで読めないときは黒として扱う(描画は崩さない)
+  if (!/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex.trim())) return [0, 0, 0]
+  const h = hex.trim().replace('#', '')
   const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h
   return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16)) as [number, number, number]
 }
