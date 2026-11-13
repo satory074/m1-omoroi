@@ -1,0 +1,145 @@
+/* ============ 1段のナビ(年・回戦・記録統計のテーマ。ScrollNav.tsx) ============
+   折り返さず横にスクロールする。続きがある側の端だけぼかす(JS が data-start / data-end を付ける) */
+.scroll-nav {
+  margin: 0 calc(-1 * var(--gutter));
+}
+
+.scroll-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1) var(--gutter);
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* フォーカスした項目がぼかしの下に隠れないように */
+  scroll-padding-inline: 48px;
+  --fade-l: 0px;
+  --fade-r: 0px;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black var(--fade-l),
+    black calc(100% - var(--fade-r)),
+    transparent 100%
+  );
+}
+
+.scroll-nav ul::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-nav ul[data-start='true'] {
+  --fade-l: 40px;
+}
+
+.scroll-nav ul[data-end='true'] {
+  --fade-r: 40px;
+}
+
+.scroll-nav li {
+  flex: none;
+  display: flex;
+}
+
+.scroll-nav a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--c-text);
+  white-space: nowrap;
+}
+
+.scroll-nav-sep {
+  align-self: center;
+  color: var(--c-text-muted);
+  font-size: var(--fs-1);
+  padding: 0 var(--space-1);
+}
+
+/* 年: 丸い札。選択中は黒地 */
+.scroll-nav-pills a {
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--c-surface-2);
+  font-weight: var(--fw-bold);
+}
+
+.scroll-nav-pills a:hover {
+  background: var(--c-border);
+  color: var(--c-text);
+}
+
+.scroll-nav-pills a[aria-current='page'] {
+  background: var(--c-text);
+  color: var(--c-bg);
+}
+
+/* 回戦: 名前と組数の2段。選択中は赤い枠(色だけでなく枠の太さでも示す) */
+.scroll-nav-steps a {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 56px;
+  min-width: 88px;
+  padding: var(--space-2) var(--space-4);
+  border: 2px solid var(--c-border-subtle);
+  border-radius: var(--radius-m);
+  line-height: var(--lh-tight);
+}
+
+.scroll-nav-steps a:hover {
+  border-color: var(--c-border-strong);
+  color: var(--c-text);
+}
+
+.scroll-nav-steps a[aria-current='page'] {
+  border-color: var(--c-accent);
+  box-shadow: inset 0 0 0 1px var(--c-accent);
+}
+
+.scroll-nav-steps .step-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-bold);
+}
+
+.scroll-nav-steps .step-count {
+  font-size: var(--fs-4);
+  font-weight: var(--fw-black);
+}
+
+.scroll-nav-steps .scroll-nav-sep {
+  width: 1px;
+  background: var(--c-border);
+  padding: 0;
+  margin: var(--space-2) var(--space-1);
+  align-self: stretch;
+}
+
+/* 記録・統計のテーマ: 下線のタブ(ページを移るリンク) */
+.scroll-nav-tabs ul {
+  gap: 0;
+  border-bottom: 1px solid var(--c-border);
+  padding-bottom: 0;
+}
+
+.scroll-nav-tabs a {
+  min-height: var(--tap-comfort);
+  padding: 0 var(--space-4);
+  font-weight: var(--fw-bold);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+}
+
+.scroll-nav-tabs a:hover {
+  color: var(--c-accent);
+}
+
+.scroll-nav-tabs a[aria-current='page'] {
+  border-bottom-color: var(--c-accent);
+}

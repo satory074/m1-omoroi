@@ -1,59 +1,59 @@
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useWindowVirtualizer } from '@tanstack/react-virtual'
 
 import AbsentAdvancers from '../components/AbsentAdvancers'
 import BestChip from '../components/BestChip'
+import CombiLink from '../components/CombiLink'
 import CombiPhoto from '../components/CombiPhoto'
+import FormedChip from '../components/FormedChip'
 import { VideoLinks } from '../components/OfficialVideo'
-import { useMeta, useOfficialVideos, usePopularity, useYear } from '../lib/api'
 import { ErrorState, Loading, NotFound } from '../components/PageState'
+import ScrollNav, { type ScrollNavItem } from '../components/ScrollNav'
+import Segmented from '../components/Segmented'
+import { useAbsentRows } from '../lib/absentRows'
+import { useMeta, useOfficialVideos, usePopularity, useYear } from '../lib/api'
 import { NARROW_QUERY } from '../lib/breakpoints'
-import { formationInfo } from '../lib/eligibility'
+import { m1LimitYears } from '../lib/eligibility'
 import { OFFICIAL_CHANNEL_URL, combiVideos, playlistUrl } from '../lib/officialVideos'
-import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits, isPassing } from '../lib/rounds'
 import { parseYear } from '../lib/params'
-import { loadRow, saveRow } from '../lib/scrollMemory'
-import type { OfficialPlaylist, ResultKey, RoundKey, YearEntry } from '../lib/types'
+import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits, isPassing } from '../lib/rounds'
+import { clearRow, loadRow, saveRow } from '../lib/scrollMemory'
+import type { OfficialPlaylist, OfficialVideos, Popularity, ResultKey, RoundKey, YearEntry } from '../lib/types'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
+import { useUrlParam } from '../lib/useUrlParam'
 
-type ResultFilter = 'all' | 'pass' | 'fail'
-type SortKey = 'no' | 'kana' | 'hits'
+const RESULT_FILTERS = ['all', 'pass', 'fail'] as const
+const SORTS = ['hits', 'no', 'kana'] as const
+type ResultFilter = (typeof RESULT_FILTERS)[number]
+type SortKey = (typeof SORTS)[number]
+/** 回戦の代わりに「資格がありながら未エントリー」の表を出す表示(?round=absent) */
+const ABSENT = 'absent'
 
-
-/** 行高の見積もり。狭幅は1行に収まる名前の実測値(長い名前は measureElement で実寸に直る) */
-const estimateRow = () => (window.matchMedia(NARROW_QUERY).matches ? 63 : 48)
-
-function YearStrip({ years, current }: { years: number[]; current: number }) {
-  const { search } = useLocation()
-  const items: (number | 'gap')[] = []
-  const sorted = [...years].sort((a, b) => b - a)
-  sorted.forEach((y, i) => {
-    if (i > 0 && sorted[i - 1] - y > 1) items.push('gap')
-    items.push(y)
-  })
-  return (
-    <div className="year-strip">
-      {items.map((item, i) =>
-        item === 'gap' ? (
-          <span key={`gap-${i}`} className="gap">
-            休止
-          </span>
-        ) : (
-          <Link
-            key={item}
-            to={{ pathname: `/years/${item}`, search }}
-            className={item === current ? 'active' : ''}
-          >
-            {item}
-          </Link>
-        ),
-      )}
-    </div>
-  )
+const SORT_LABEL: Record<SortKey, string> = {
+  hits: '注目度順',
+  no: 'エントリーNo.順',
+  kana: '五十音順',
 }
 
-/** 選択中の回戦の M-1公式YouTube(プレイリスト)。無い回戦は公式チャンネルへ */
+/** 行の高さ。広い画面は CSS で 56px に固定、狭い画面は名前の折り返しで変わるので実測する(見積もりは1行の名前) */
+const estimateRow = () => (window.matchMedia(NARROW_QUERY).matches ? 64 : 56)
+/** 一覧の上に貼り付く帯(回戦・件数)の高さの目安。行で位置を戻すとき、行がこの下に来るようにする */
+const STATUS_BAR = 48
+
+/** その年の一覧で使う URL のクエリを作る。検索パネル(q/tab/qsort)と focus は持ち越さない */
+function searchFor(params: URLSearchParams, changes: Record<string, string | null>) {
+  const p = new URLSearchParams(params)
+  for (const k of ['q', 'tab', 'qsort', 'focus']) p.delete(k)
+  for (const [k, v] of Object.entries(changes)) {
+    if (v === null) p.delete(k)
+    else p.set(k, v)
+  }
+  const s = p.toString()
+  return s ? `?${s}` : ''
+}
+
+/** 選択中の回戦の M-1公式YouTube(プレイリスト)。無い回戦は公式チャンネルへ。1行に収めて横にスクロール */
 function RoundVideos({
   playlists,
   channel,
@@ -68,41 +68,253 @@ function RoundVideos({
   isPast: boolean
 }) {
   const ext = { target: '_blank', rel: 'noopener noreferrer' } as const
+  const has = playlists !== null && playlists.length > 0
+  let note = ''
+  if (has && videoCount > 0) note = `一覧の ▶ から各コンビの動画へ(${videoCount.toLocaleString('ja-JP')}組)`
+  // データ自体が無い(null)ときは「公開されていない」と断定しない
+  if (!has && playlists) {
+    note = `${ROUND_LABEL[round]}の動画は公開されていません${isPast ? '(ネタ動画はシーズン後に非公開になります)' : ''}`
+  }
   return (
     <div className="round-videos">
       <span className="round-videos-head">
         <span className="yt-icon" aria-hidden />
-        M-1公式YouTube
+        公式YouTube
       </span>
-      {playlists && playlists.length > 0 ? (
-        <>
-          {playlists.map((p) => (
-            <a key={p.id} className="round-videos-pl" href={playlistUrl(p.id)} {...ext}>
-              {p.title}
-              <small>{p.count}本</small>
+      <ul className="round-videos-list">
+        {has ? (
+          playlists.map((p) => (
+            <li key={p.id}>
+              <a className="round-videos-pl" href={playlistUrl(p.id)} {...ext}>
+                {p.title}
+                <small>{p.count}本</small>
+              </a>
+            </li>
+          ))
+        ) : (
+          <li>
+            <a className="round-videos-pl" href={channel} {...ext}>
+              公式チャンネル
             </a>
-          ))}
-          {videoCount > 0 && (
-            <span className="round-videos-note">
-              一覧の <span className="yt-icon" aria-hidden /> から各コンビの動画へ({videoCount.toLocaleString('ja-JP')}組)
-            </span>
-          )}
-        </>
-      ) : (
-        <>
-          <a className="round-videos-pl" href={channel} {...ext}>
-            公式チャンネル
-          </a>
-          {/* データ自体が無い(null)ときは「公開されていない」と断定しない */}
-          {playlists && (
-            <span className="round-videos-note">
-              {ROUND_LABEL[round]}の動画は公開されていません
-              {isPast && '(ネタ動画はシーズン終了後に非公開になります)'}
-            </span>
-          )}
-        </>
-      )}
+          </li>
+        )}
+        {note && <li className="round-videos-note">{note}</li>}
+      </ul>
     </div>
+  )
+}
+
+/** 一覧の1行の中身。広い画面は 番号・写真・名前・結果・注目度 の1段、狭い画面は 名前 / 番号・注目度 の2段 */
+function Row({
+  e,
+  year,
+  round,
+  hits,
+  official,
+  focused,
+}: {
+  e: YearEntry
+  year: number
+  round: RoundKey
+  hits: number | undefined
+  official: OfficialVideos | null | undefined
+  focused: boolean
+}) {
+  const res = e.results[round] as ResultKey
+  const disp = RESULT_DISPLAY[res]
+  return (
+    <>
+      <span className="yr-photo" aria-hidden="true">
+        <CombiPhoto photo={e.photo} alt="" className="yr-photo-img" />
+      </span>
+      <span className="yr-name">
+        <CombiLink id={e.id} className="yr-link">
+          {e.name}
+        </CombiLink>
+        <FormedChip year={year} formed={e.formed} />
+        <BestChip level={e.best} until={year} />
+        {focused && <span className="chip chip-focus">コンビ詳細から</span>}
+      </span>
+      <span className="yr-meta">
+        <span className="yr-no">{e.no != null ? `No.${e.no}` : ''}</span>
+        <span className="yr-hits">{hits != null ? formatHits(hits) : ''}</span>
+      </span>
+      <span className={`yr-result result-${res}`}>
+        <span aria-hidden="true">{disp.sym}</span> {disp.label || e.raw?.[round] || '不明'}
+        <VideoLinks links={combiVideos(official, year, e.id, round)} name={e.name} />
+      </span>
+    </>
+  )
+}
+
+/**
+ * 年度一覧の本体。ページ全体のスクロールに合わせて、見えている行だけを描く(1万件超でも軽い)。
+ * 以前は高さ 62dvh の箱の中でスクロールさせていたが、スマホで指が箱に閉じ込められるのでやめた(Baymard)。
+ *
+ * 戻ったときの位置: ウィンドウのピクセル位置は ScrollRestoration が先に戻す。見えていない行は見積もりの高さで
+ * 並ぶのでピクセルだとずれるため、ここで「離れたときに先頭に見えていた行」へ合わせ直す(lib/scrollMemory.ts)。
+ * App.tsx で ScrollRestoration を <main> より前に置いているので、この副作用の方が後に走って勝つ。
+ */
+function YearBoard({
+  rows,
+  year,
+  round,
+  popularity,
+  official,
+  focusId,
+  ready,
+  signature,
+  headRef,
+  status,
+}: {
+  rows: YearEntry[]
+  year: number
+  round: RoundKey
+  popularity: Popularity | null | undefined
+  official: OfficialVideos | null | undefined
+  focusId: number | null
+  /** 並び順が確定したか(注目度順は注目度データが届くまで並びが変わる) */
+  ready: boolean
+  /** 回戦・絞り込み・並び順。変わったら一覧の先頭を見せる */
+  signature: string
+  /** 一覧より上の部分。高さが変わったら一覧の開始位置(scrollMargin)を測り直す */
+  headRef: RefObject<HTMLDivElement | null>
+  status: ReactNode
+}) {
+  const location = useLocation()
+  const listRef = useRef<HTMLDivElement>(null)
+  const statusRef = useRef<HTMLDivElement>(null)
+  // 一覧の上端の、文書の先頭からの位置。仮想リストはこれを基準に行を並べる
+  const [margin, setMargin] = useState(0)
+  // 0件 → 1件以上になると一覧の要素ができるので、その時に測り直す
+  const empty = rows.length === 0
+
+  useLayoutEffect(() => {
+    const el = listRef.current
+    if (!el) return
+    const measure = () => setMargin(Math.round(el.getBoundingClientRect().top + window.scrollY))
+    measure()
+    const ro = new ResizeObserver(measure)
+    if (headRef.current) ro.observe(headRef.current)
+    window.addEventListener('resize', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [headRef, empty])
+
+  const virtualizer = useWindowVirtualizer({
+    count: rows.length,
+    estimateSize: estimateRow,
+    overscan: 12,
+    scrollMargin: margin,
+    scrollPaddingStart: STATUS_BAR,
+    getItemKey: (i) => rows[i].id ?? `${rows[i].name}-${rows[i].no}`,
+  })
+
+  // 先頭に見えている行を覚える(帯の下に来ている行)。一覧より上に居るときは覚えない
+  const key = location.key
+  useLayoutEffect(() => {
+    if (margin === 0) return
+    let frame = 0
+    const onScroll = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        // 別のページへ移った後のスクロール(先頭へ戻す等)を、このページの位置として覚えないため
+        if (window.history.state?.key !== key) return
+        const below = statusRef.current?.getBoundingClientRect().bottom ?? STATUS_BAR
+        const offset = window.scrollY + Math.max(below, 0)
+        if (offset <= margin) {
+          clearRow(key)
+          return
+        }
+        const item = virtualizer.getVirtualItemForOffset(offset)
+        if (item) saveRow(key, item.index)
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+    }
+  }, [key, margin, virtualizer])
+
+  // 戻ってきたとき(または ?focus= でコンビ詳細から来たとき)に、行で位置を合わせる。履歴エントリーごとに1回だけ
+  const restored = useRef<string | null>(null)
+  useLayoutEffect(() => {
+    if (!ready || margin === 0 || rows.length === 0 || restored.current === key) return
+    restored.current = key
+    const row = loadRow(key)
+    if (row != null && row < rows.length) {
+      virtualizer.scrollToIndex(row, { align: 'start' })
+      return
+    }
+    if (focusId != null) {
+      const i = rows.findIndex((r) => r.id === focusId)
+      if (i >= 0) virtualizer.scrollToIndex(i, { align: 'center' })
+    }
+  }, [ready, margin, rows, key, focusId, virtualizer])
+
+  // 回戦・絞り込み・並び順を変えたら、一覧の途中に居る場合だけ一覧の先頭へ戻す(上の方に居るなら動かさない)
+  const lastSignature = useRef(signature)
+  useLayoutEffect(() => {
+    if (lastSignature.current === signature) return
+    lastSignature.current = signature
+    if (margin > 0 && window.scrollY + STATUS_BAR > margin) {
+      window.scrollTo({ top: margin - STATUS_BAR })
+    }
+  }, [signature, margin])
+
+  return (
+    <>
+      <div className="year-status" ref={statusRef}>
+        {status}
+        <div className="year-cols" aria-hidden="true">
+          <span>No.</span>
+          <span>コンビ</span>
+          <span>結果</span>
+          <span>注目度</span>
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <p className="page-state">該当するコンビがいません</p>
+      ) : (
+        <div
+          ref={listRef}
+          className="year-list"
+          role="list"
+          aria-label={`${year}年 ${ROUND_LABEL[round]}の一覧`}
+          style={{ height: virtualizer.getTotalSize() }}
+        >
+          {virtualizer.getVirtualItems().map((v) => {
+            const e = rows[v.index]
+            const focused = focusId != null && e.id === focusId
+            return (
+              <div
+                key={v.key}
+                role="listitem"
+                aria-setsize={rows.length}
+                aria-posinset={v.index + 1}
+                aria-current={focused ? 'true' : undefined}
+                data-index={v.index}
+                ref={virtualizer.measureElement}
+                className={`year-row${focused ? ' is-focus' : ''}`}
+                style={{ transform: `translateY(${v.start - virtualizer.options.scrollMargin}px)` }}
+              >
+                <Row
+                  e={e}
+                  year={year}
+                  round={round}
+                  hits={e.id != null ? popularity?.hits[String(e.id)]?.n : undefined}
+                  official={official}
+                  focused={focused}
+                />
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </>
   )
 }
 
@@ -110,12 +322,7 @@ export default function YearPage() {
   const { year: yearParam } = useParams()
   const parsedYear = parseYear(yearParam)
   const year = parsedYear ?? 0
-  const [params, setParams] = useSearchParams()
-  const location = useLocation()
-
-  const roundParam = (params.get('round') as RoundKey) || 'first'
-  const resultFilter = (params.get('result') as ResultFilter) || 'all'
-  const sort = (params.get('sort') as SortKey) || 'hits'
+  const [params] = useSearchParams()
 
   const { data: meta } = useMeta()
   // 大会の無い年(2011〜2014 や未来の年)は取りに行かない
@@ -124,13 +331,11 @@ export default function YearPage() {
   const { data: popularity } = usePopularity()
   const { data: official } = useOfficialVideos()
 
-  const setParam = (key: string, value: string) => {
-    const next = new URLSearchParams(params)
-    if (value) next.set(key, value)
-    else next.delete(key)
-    // 同じページ内の絞り込みなので、ScrollRestoration に先頭へ戻させない
-    setParams(next, { replace: true, preventScrollReset: true })
-  }
+  const [resultFilter, setResultFilter] = useUrlParam<ResultFilter>('result', 'all', RESULT_FILTERS)
+  const [sort, setSort] = useUrlParam<SortKey>('sort', 'hits', SORTS)
+  const roundParam = params.get('round') ?? 'first'
+  const focusId = Number(params.get('focus')) || null
+  const headRef = useRef<HTMLDivElement>(null)
 
   const roundCounts = useMemo(() => {
     const counts = new Map<RoundKey, number>()
@@ -143,9 +348,19 @@ export default function YearPage() {
     return counts
   }, [yearFile])
 
-  // 年切替で引き継いだ回戦がその年に存在しない場合は1回戦へフォールバック
-  const round = !yearFile || (roundCounts.get(roundParam) ?? 0) > 0 ? roundParam : 'first'
-  useDocumentTitle(yearFile ? `M-1グランプリ${year} ${ROUND_LABEL[round]}の結果` : null)
+  const showAbsent = roundParam === ABSENT
+  // 年を移って、引き継いだ回戦がその年に無ければ1回戦を出す(URL はそのまま)
+  const round: RoundKey =
+    !showAbsent &&
+    (ROUND_ORDER as string[]).includes(roundParam) &&
+    (roundCounts.get(roundParam as RoundKey) ?? 0) > 0
+      ? (roundParam as RoundKey)
+      : 'first'
+  useDocumentTitle(
+    yearFile
+      ? `M-1グランプリ${year} ${showAbsent ? '資格がありながら未エントリーの組' : `${ROUND_LABEL[round]}の結果`}`
+      : null,
+  )
 
   const rows = useMemo(() => {
     if (!yearFile) return []
@@ -153,8 +368,7 @@ export default function YearPage() {
     if (resultFilter === 'pass') list = list.filter((e) => isPassing(e.results[round]))
     if (resultFilter === 'fail')
       list = list.filter((e) => e.results[round] === 'fail' || e.results[round] === 'fail_inferred')
-    const kanaCmp = (a: YearEntry, b: YearEntry) =>
-      (a.kana || a.name).localeCompare(b.kana || b.name, 'ja')
+    const kanaCmp = (a: YearEntry, b: YearEntry) => (a.kana || a.name).localeCompare(b.kana || b.name, 'ja')
     const sorted = [...list]
     if (sort === 'kana') {
       sorted.sort(kanaCmp)
@@ -169,9 +383,7 @@ export default function YearPage() {
         return kanaCmp(a, b)
       })
     } else {
-      sorted.sort(
-        (a, b) => (a.no ?? Number.MAX_SAFE_INTEGER) - (b.no ?? Number.MAX_SAFE_INTEGER),
-      )
+      sorted.sort((a, b) => (a.no ?? Number.MAX_SAFE_INTEGER) - (b.no ?? Number.MAX_SAFE_INTEGER))
     }
     return sorted
   }, [yearFile, round, resultFilter, sort, popularity])
@@ -182,6 +394,7 @@ export default function YearPage() {
     for (const e of yearFile?.entries ?? []) if (e.id != null) ids.add(e.id)
     return ids
   }, [yearFile])
+  const absentRows = useAbsentRows(year, enteredIds)
 
   // この回戦で公式動画のある組数(回戦の案内に出す)
   const videoCount = useMemo(() => {
@@ -189,37 +402,25 @@ export default function YearPage() {
     return yearFile.entries.filter((e) => combiVideos(official, year, e.id, round).length > 0).length
   }, [yearFile, official, year, round])
 
-  const parentRef = useRef<HTMLDivElement>(null)
-  // 狭幅(index.css の max-width: 640px)は2段組みで、長い名前は折り返して行が伸びるため
-  // 実寸を measureElement で測る。見積もりは1行に収まる名前の行高
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: estimateRow,
-    overscan: 12,
-    // 戻る/進むで来たときは、離れたときに先頭に見えていた行から始める(scrollMemory.ts)。
-    // 作り直した直後は上の行がどれも未実測で見積もり高さで並ぶので、行番号×見積もりがちょうどその行の位置になる
-    initialOffset: () => (loadRow(location.key) ?? 0) * estimateRow(),
-  })
+  // 戻るボタンの位置を正しくするため、注目度順は注目度データが届いてから並びを確定とみなす
+  const ready = sort !== 'hits' || popularity !== undefined
 
-  // ページを開いたまま別の年へ移って戻った場合(2026→2025→戻る)は作り直されないので、
-  // 履歴エントリーが変わったときに覚えている行へ移す。最初の表示は initialOffset が済ませている。
-  // 覚えが無いまま別の年へ移ったときは先頭から(ウィンドウも先頭へ戻るので揃える)。
-  // 同じ年の絞り込み・並び替え(パスが同じ)は従来どおり位置に触らない
-  const restored = useRef({ key: location.key, path: location.pathname })
-  useLayoutEffect(() => {
-    if (restored.current.key === location.key || rows.length === 0) return
-    const pathChanged = restored.current.path !== location.pathname
-    restored.current = { key: location.key, path: location.pathname }
-    const row = loadRow(location.key)
-    if (row != null && row < rows.length) virtualizer.scrollToIndex(row, { align: 'start' })
-    else if (pathChanged) virtualizer.scrollToOffset(0)
-  }, [location.key, location.pathname, rows.length, virtualizer])
-
-  const rememberRow = (top: number) => {
-    const item = virtualizer.getVirtualItemForOffset(top)
-    if (item) saveRow(location.key, item.index)
-  }
+  // 年の並び。年を移っても回戦・絞り込み・並び順は引き継ぐ(その年に無い回戦なら1回戦を出す)
+  const yearItems = useMemo<ScrollNavItem[]>(() => {
+    if (!meta) return []
+    const sorted = [...meta.years].sort((a, b) => b - a)
+    const items: ScrollNavItem[] = []
+    sorted.forEach((y, i) => {
+      if (i > 0 && sorted[i - 1] - y > 1) items.push({ key: `gap-${y}`, separator: '休止' })
+      items.push({
+        key: String(y),
+        to: { pathname: `/years/${y}`, search: searchFor(params, {}) },
+        label: y,
+        current: y === year,
+      })
+    })
+    return items
+  }, [meta, params, year])
 
   if (parsedYear === null || (meta && !known)) {
     const hiatus = parsedYear !== null && parsedYear >= 2011 && parsedYear <= 2014
@@ -240,177 +441,145 @@ export default function YearPage() {
   const activeRounds = ROUND_ORDER.filter((rk) => (roundCounts.get(rk) ?? 0) > 0)
   const passCount = rows.filter((e) => isPassing(e.results[round])).length
   const yearVideos = official?.years[String(year)]
+  const total = roundCounts.get(round) ?? 0
+
+  const roundItems: ScrollNavItem[] = activeRounds.map((rk) => {
+    const count = roundCounts.get(rk) ?? 0
+    const hasVideo = (yearVideos?.playlists[rk]?.length ?? 0) > 0
+    return {
+      key: rk,
+      to: { search: searchFor(params, { round: rk === 'first' ? null : rk }) },
+      inPage: true,
+      current: !showAbsent && rk === round,
+      ariaLabel: `${ROUND_LABEL[rk]} ${count.toLocaleString('ja-JP')}組${hasVideo ? '(公式動画あり)' : ''}`,
+      label: (
+        <>
+          <span className="step-label">
+            {ROUND_LABEL[rk]}
+            {hasVideo && <span className="yt-icon" aria-hidden />}
+          </span>
+          <span className="step-count">{count.toLocaleString('ja-JP')}</span>
+        </>
+      ),
+    }
+  })
+  if (absentRows.length > 0) {
+    roundItems.push({ key: 'sep', separator: '' })
+    roundItems.push({
+      key: ABSENT,
+      to: { search: searchFor(params, { round: ABSENT, result: null }) },
+      inPage: true,
+      current: showAbsent,
+      ariaLabel: `資格がありながら未エントリー ${absentRows.length}組`,
+      label: (
+        <>
+          <span className="step-label">未エントリー</span>
+          <span className="step-count">{absentRows.length}</span>
+        </>
+      ),
+    })
+  }
 
   return (
-    <>
-      {meta && <YearStrip years={meta.years} current={year} />}
-      <h1 className="page-title">M-1グランプリ {year}</h1>
-      <p className="page-lede">
-        エントリー {yearFile.entries.length.toLocaleString('ja-JP')}組
-        {isArchive && ' — 公式アーカイブ由来のため、1回戦で敗退したコンビは掲載がありません'}
-      </p>
-      {meta?.finalsYears.includes(year) && (
-        <p className="page-crosslink">
-          <Link to={`/finals/${year}`}>{year}年 決勝の得点表を見る</Link>
-        </p>
-      )}
-
-      <div className="funnel" role="tablist" aria-label="回戦">
-        {activeRounds.map((rk) => {
-          const count = roundCounts.get(rk) ?? 0
-          return (
-            <button
-              key={rk}
-              role="tab"
-              aria-selected={round === rk}
-              className={`funnel-step ${round === rk ? 'active' : ''}`}
-              style={{ flex: `${Math.log10(Math.max(count, 1)) + 1} 1 0` }}
-              onClick={() => setParam('round', rk)}
-            >
-              <span className="label">
-                {ROUND_LABEL[rk]}
-                {(yearVideos?.playlists[rk]?.length ?? 0) > 0 && (
-                  <>
-                    <span className="yt-icon" title="M-1公式YouTubeに動画あり" aria-hidden />
-                    <span className="sr-only">(公式動画あり)</span>
-                  </>
-                )}
-              </span>
-              <span className="count">
-                {count.toLocaleString('ja-JP')}
-                <small>組</small>
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      {official !== undefined && (
-        <RoundVideos
-          playlists={official ? (yearVideos?.playlists[round] ?? []) : null}
-          channel={official?.channel ?? OFFICIAL_CHANNEL_URL}
-          round={round}
-          videoCount={videoCount}
-          isPast={meta ? year < meta.latestYear : false}
-        />
-      )}
-
-      <div className="toolbar">
-        <div className="seg" role="group" aria-label="通過・敗退の絞り込み">
-          {(
-            [
-              ['all', 'すべて'],
-              ['pass', '通過'],
-              ['fail', '敗退'],
-            ] as [ResultFilter, string][]
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              className={resultFilter === key ? 'active' : ''}
-              onClick={() => setParam('result', key === 'all' ? '' : key)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <select value={sort} onChange={(e) => setParam('sort', e.target.value)} aria-label="並び順">
-          <option value="no">エントリーNo順</option>
-          <option value="kana">五十音順</option>
-          <option value="hits">注目度順 (YouTube再生数)</option>
-        </select>
-        {sort === 'hits' && (
-          <p className="hit-note">
-            注目度はコンビ名とメンバー名でYouTube検索した上位動画のうちコンビ名またはメンバー名を単語として含むものの再生数合計です(3回戦以上の出場経験があるコンビが対象)。データがないコンビは五十音順で後ろに並びます。
+    <div className="year-page">
+      <div ref={headRef} className="year-head">
+        <div className="year-title">
+          <h1 className="page-title">M-1グランプリ {year}</h1>
+          <p className="year-entries">
+            エントリー {yearFile.entries.length.toLocaleString('ja-JP')}組
+            {isArchive && '(公式アーカイブ由来のため、1回戦で敗退した組は載っていません)'}
           </p>
-        )}
-      </div>
-
-      <div className="board">
-        <div className="board-head">
-          <span>NO.</span>
-          <span>コンビ名</span>
-          <span>
-            {ROUND_LABEL[round]}
-            {resultFilter === 'all' && ` (通過 ${passCount.toLocaleString('ja-JP')})`}
-          </span>
-          <span className="hits">注目度</span>
+          {meta?.finalsYears.includes(year) && (
+            <Link className="year-finals-link" to={`/finals/${year}`}>
+              決勝の得点表
+            </Link>
+          )}
         </div>
-        {rows.length === 0 ? (
-          <div className="board-empty">該当するコンビがいません</div>
-        ) : (
-          <div
-            className="board-scroll"
-            ref={parentRef}
-            onScroll={(ev) => rememberRow(ev.currentTarget.scrollTop)}
-          >
-            <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-              {virtualizer.getVirtualItems().map((v) => {
-                const e = rows[v.index]
-                const res = e.results[round] as ResultKey
-                const disp = RESULT_DISPLAY[res]
-                const hits = e.id != null ? popularity?.hits[String(e.id)]?.n : undefined
-                const fi = formationInfo(year, e.formed)
-                const chip = fi && (
-                  <span
-                    className={`formed-chip${fi.isLastYear ? ' lastyear' : ''}`}
-                    title={fi.isLastYear ? 'ラストイヤー(出場資格の最終年)' : undefined}
-                  >
-                    {fi.isLastYear && '⚡'}
-                    {fi.years}年目
-                  </span>
-                )
-                return (
-                  <div
-                    key={v.key}
-                    data-index={v.index}
-                    ref={virtualizer.measureElement}
-                    className="board-row"
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      transform: `translateY(${v.start}px)`,
-                    }}
-                  >
-                    <span className={e.no != null ? 'no' : 'no none'}>{e.no != null ? e.no : '—'}</span>
-                    {e.id != null ? (
-                      <Link className="name" to={`/combi/${e.id}`}>
-                        <span className="board-avatar">
-                          <CombiPhoto photo={e.photo} alt="" className="board-avatar-img" />
-                        </span>
-                        <span className="name-text">{e.name}</span>
-                        {chip}
-                        <BestChip level={e.best} until={year} />
-                      </Link>
-                    ) : (
-                      <span className="name">
-                        <span className="board-avatar" />
-                        <span className="name-text">{e.name}</span>
-                        {chip}
-                        <BestChip level={e.best} until={year} />
-                      </span>
-                    )}
-                    <span className={`result ${res}`}>
-                      <span className="sym" aria-hidden>
-                        {disp.sym}
-                      </span>
-                      {disp.label || e.raw?.[round] || '不明'}
-                      <VideoLinks links={combiVideos(official, year, e.id, round)} name={e.name} />
-                    </span>
-                    <span className="hits">{hits != null ? formatHits(hits) : ''}</span>
-                  </div>
-                )
-              })}
+        <ScrollNav label="年" variant="pills" items={yearItems} />
+        <ScrollNav label="回戦" variant="steps" items={roundItems} />
+
+        {!showAbsent && (
+          <>
+            <div className="year-toolbar">
+              <Segmented
+                label="結果で絞り込む"
+                options={[
+                  { value: 'all', label: 'すべて' },
+                  { value: 'pass', label: '通過' },
+                  { value: 'fail', label: '敗退' },
+                ]}
+                value={resultFilter}
+                onChange={setResultFilter}
+              />
+              <label className="select">
+                <span className="sr-only">並び順</span>
+                <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+                  {SORTS.map((s) => (
+                    <option key={s} value={s}>
+                      {SORT_LABEL[s]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <details className="note">
+                <summary>
+                  <span className="note-label">注目度とは</span>
+                </summary>
+                <p>
+                  コンビ名とメンバー名で YouTube
+                  を検索した上位動画のうち、コンビ名またはメンバー名を単語として含むものの再生数の合計です。3回戦以上に出たことのあるコンビが対象で、データが無いコンビは五十音順で後ろに並びます。
+                </p>
+              </details>
             </div>
-          </div>
+            {/* 動画データの到着前から高さを確保して、一覧の位置がずれないようにする */}
+            <div className="round-videos-slot">
+              {official !== undefined && (
+                <RoundVideos
+                  playlists={official ? (yearVideos?.playlists[round] ?? []) : null}
+                  channel={official?.channel ?? OFFICIAL_CHANNEL_URL}
+                  round={round}
+                  videoCount={videoCount}
+                  isPast={meta ? year < meta.latestYear : false}
+                />
+              )}
+            </div>
+          </>
         )}
       </div>
-      <p className="legend">
-        コンビ名の横の「最高」は、{year}年まで({year}年を含む)の最高戦績。後の年の成績は含みません。
-      </p>
 
-      <AbsentAdvancers year={year} enteredIds={enteredIds} isArchive={isArchive} />
-    </>
+      {showAbsent ? (
+        <AbsentAdvancers year={year} rows={absentRows} isArchive={isArchive} />
+      ) : (
+        <>
+          <YearBoard
+            key={year}
+            rows={rows}
+            year={year}
+            round={round}
+            popularity={popularity}
+            official={official}
+            focusId={focusId}
+            ready={ready}
+            signature={`${round}|${resultFilter}|${sort}`}
+            headRef={headRef}
+            status={
+              <p className="year-status-text">
+                <strong>{ROUND_LABEL[round]}</strong>
+                <span>
+                  {resultFilter === 'all'
+                    ? `${total.toLocaleString('ja-JP')}組(通過 ${passCount.toLocaleString('ja-JP')})`
+                    : `${resultFilter === 'pass' ? '通過' : '敗退'} ${rows.length.toLocaleString('ja-JP')}組`}
+                </span>
+                <span className="year-status-sort">{SORT_LABEL[sort]}</span>
+              </p>
+            }
+          />
+          <p className="legend">
+            「最高」は{year}年まで({year}年を含む)の最高戦績で、後の年の成績は含みません。「ラストイヤー」は出場資格(結成
+            {m1LimitYears(year)}年以内)の最後の年です。
+          </p>
+        </>
+      )}
+    </div>
   )
 }

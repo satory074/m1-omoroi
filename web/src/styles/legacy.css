@@ -87,71 +87,6 @@
 }
 
 /* ============ ファネル(シグネチャー) ============ */
-.funnel {
-  display: flex;
-  gap: 3px;
-  margin: 14px 0 18px;
-}
-
-.funnel-step {
-  border: none;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
-  padding: 8px 10px 6px;
-  min-width: 0;
-  background: var(--paper-2);
-  color: var(--ink);
-  border-radius: 3px;
-  border-bottom: 3px solid transparent;
-  transition: background 0.15s;
-}
-
-.funnel-step:hover {
-  background: var(--line);
-}
-
-.funnel-step.active {
-  background: var(--stage);
-  color: #fff;
-  border-bottom-color: var(--red);
-}
-
-.funnel-step .label {
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-
-.funnel-step .count {
-  font-family: var(--font-num);
-  font-weight: 700;
-  font-size: 26px;
-  line-height: 1.1;
-  letter-spacing: 0.02em;
-}
-
-.funnel-step .count small {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--muted);
-}
-
-.funnel-step.active .count small {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-@media (max-width: 720px) {
-  .funnel {
-    flex-wrap: wrap;
-  }
-  .funnel-step {
-    flex: 1 1 28% !important;
-  }
-}
 
 /* ============ ツールバー ============ */
 .toolbar {
@@ -235,12 +170,6 @@
   font-weight: 700;
   background: #fff;
   color: var(--ink);
-}
-
-.toolbar .hit-note {
-  width: 100%;
-  font-size: 12px;
-  color: var(--muted);
 }
 
 .combi-search-menu {
@@ -343,7 +272,6 @@
 .combi-search-more.active {
   background: var(--paper-2);
 }
-
 
 /* ============ 検索結果の展開パネル ============ */
 .search-panel-backdrop {
@@ -513,88 +441,6 @@
   overflow: hidden;
 }
 
-.board-head,
-.board-row {
-  display: grid;
-  grid-template-columns: 76px 1fr 130px 110px;
-  align-items: center;
-  gap: 8px;
-  padding: 0 14px;
-}
-
-.board-head {
-  height: 38px;
-  background: var(--paper-2);
-  border-bottom: 1px solid var(--line);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-}
-
-.board-scroll {
-  height: min(62dvh, 640px);
-  overflow-y: auto;
-}
-
-.board-row {
-  height: 48px;
-  border-bottom: 1px solid var(--paper-2);
-  font-size: 14.5px;
-}
-
-.board-row .no {
-  font-family: var(--font-num);
-  font-weight: 400;
-  font-size: 17px;
-  color: var(--muted);
-  letter-spacing: 0.02em;
-}
-
-.board-row .name {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 0;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.board-row .name .name-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.board-avatar {
-  flex: 0 0 auto;
-  width: 44px;
-  height: 31px; /* 宣材写真(706x496)と同比率 */
-  border-radius: 3px;
-  background: var(--paper-2);
-  overflow: hidden;
-}
-
-.board-avatar-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.board-row .name:hover {
-  color: var(--red);
-  text-decoration: underline;
-}
-
-.board-row .hits {
-  font-family: var(--font-num);
-  font-size: 16px;
-  color: var(--muted);
-  text-align: right;
-}
-
 .board-empty {
   padding: 48px 16px;
   text-align: center;
@@ -602,157 +448,19 @@
 }
 
 /* ============ 結成年数チップ(N年目 / ⚡ラストイヤー) ============ */
-.formed-chip {
-  flex: 0 0 auto;
-  display: inline-block;
-  font-family: var(--font-num);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--muted);
-  background: var(--paper-2);
-  border-radius: 999px;
-  padding: 3px 6px;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-.formed-chip.lastyear {
-  color: var(--red-dark);
-  background: var(--gold-bg);
-}
 
 /* ============ 最高戦績チップ(最高 準決勝 等。BestChip.tsx) ============
    形は .formed-chip と揃え、段階で色を変える: 優勝=金地、決勝=赤地、準決勝・準々決勝=墨の縁取り、
    3回戦以下=控えめなグレー。lv-N は rounds.ts の段階(1..6=回戦、7=優勝) */
-.best-chip {
-  flex: 0 0 auto;
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--muted);
-  background: var(--paper-2);
-  border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 2px 6px;
-  white-space: nowrap;
-  vertical-align: 2px;
-}
-.best-chip-prefix {
-  font-size: 9.5px;
-  font-weight: 700;
-  margin-right: 2px;
-  opacity: 0.8;
-}
-.best-chip.lv-4,
-.best-chip.lv-5 {
-  color: var(--ink);
-  background: #fff;
-  border-color: var(--ink);
-}
-.best-chip.lv-6 {
-  color: #fff;
-  background: var(--red);
-}
-.best-chip.lv-7 {
-  color: var(--red-dark);
-  background: var(--gold-bg);
-  border-color: var(--gold);
-}
+
 /* 詳細ページの見出し(大きい文字)の横。間隔は .combi-name の flex gap が持つ */
-.combi-name .best-chip {
-  align-self: center;
-  font-size: 13px;
-  padding: 3px 8px;
-}
-.combi-name .best-chip-prefix {
-  font-size: 11px;
-}
 
 /* 詳細ページの履歴テーブルでは年の下に置く */
-.history td.year .formed-chip {
-  display: block;
-  margin-top: 4px;
-  font-weight: 700;
-}
 
 /* 狭幅は2段組み: 1段目=コンビ名(全幅・折り返し可)+N年目 / 2段目=No.・注目度・結果。
    列を横に並べたままだと名前に約50pxしか残らず2〜3文字で切れていた。
    写真は2段にまたがるよう行の左に絶対配置する(行は virtualizer が position:absolute にして
    いるので包含ブロックになる)。行高は名前の長さで変わるので YearPage が実寸を測っている */
-@media (max-width: 640px) {
-  .board-head {
-    grid-template-columns: 1fr auto;
-  }
-  .board-head > :first-child,
-  .board-head .hits {
-    display: none;
-  }
-  .board-row {
-    grid-template-columns: auto auto 1fr auto;
-    grid-template-areas:
-      'name name name name'
-      'no hits . result';
-    gap: 1px 10px;
-    height: auto;
-    padding: 9px 14px 8px 68px; /* 左 = 写真44px + 余白 */
-  }
-  .board-row .board-avatar {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-  .board-row .name {
-    grid-area: name;
-    align-items: baseline;
-    gap: 6px;
-  }
-  /* 写真・2段目も含めて行全体をタップ領域にする(リンクは1つのまま) */
-  .board-row a.name::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-  }
-  .board-row .name .name-text {
-    white-space: normal;
-    overflow-wrap: anywhere;
-    line-height: 1.35;
-  }
-  .board-row .no,
-  .board-row .hits {
-    font-size: 13px;
-    line-height: 1.3;
-  }
-  .board-row .no {
-    grid-area: no;
-  }
-  .board-row .no::before {
-    content: 'No.';
-    font-size: 11px;
-    margin-right: 1px;
-  }
-  .board-row .no.none {
-    display: none;
-  }
-  .board-row .hits {
-    grid-area: hits;
-    text-align: left;
-  }
-  /* \FE0E は iOS で ▶ が絵文字化するのを防ぐ */
-  .board-row .hits:not(:empty)::before {
-    content: '\25B6\FE0E';
-    font-size: 9px;
-    margin-right: 3px;
-    vertical-align: 1px;
-  }
-  .board-row .result {
-    grid-area: result;
-    justify-self: end;
-    font-size: 12.5px;
-  }
-}
 
 /* ============ M-1公式YouTube ============ */
 /* 赤い角丸に白い三角(YouTube のロゴ画像そのものは使わない)。▶ の文字は iOS で絵文字化するので CSS で描く */
@@ -803,64 +511,8 @@
 }
 
 /* 回戦タブの「動画あり」印 */
-.funnel-step .label .yt-icon {
-  width: 14px;
-  height: 10px;
-  border-radius: 3px;
-  margin-left: 5px;
-  vertical-align: -1px;
-}
-
-.funnel-step .label .yt-icon::after {
-  border-width: 3px 0 3px 5px;
-}
 
 /* 選択中の回戦のプレイリスト */
-.round-videos {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
-  margin: -6px 0 14px;
-  font-size: 13px;
-}
-
-.round-videos-head {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 700;
-}
-
-.round-videos-pl {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  padding: 5px 11px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--ink);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.round-videos-pl:hover {
-  border-color: var(--red);
-  color: var(--red);
-}
-
-.round-videos-pl small {
-  font-family: var(--font-num);
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--muted);
-}
-
-.round-videos-note {
-  font-size: 12px;
-  color: var(--muted);
-}
 
 .round-videos-note .yt-icon,
 .legend .yt-icon {
@@ -875,36 +527,6 @@
 }
 
 /* ============ 結果バッジ ============ */
-.result {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.result .sym {
-  font-size: 15px;
-}
-
-.result.pass,
-.result.seed_pass {
-  color: var(--red);
-}
-
-.result.fail,
-.result.fail_inferred {
-  color: var(--muted);
-}
-
-.result.champion {
-  color: var(--gold);
-}
-
-.result.unknown {
-  color: var(--muted);
-}
 
 /* ============ 汎用 ============ */
 .page-title {
@@ -1227,10 +849,7 @@
   .history tr.finalist td.sticky-name {
     background: color-mix(in srgb, var(--red) 9%, #fff);
   }
-  .history .sticky-name .absent-name {
-    flex-wrap: wrap;
-    row-gap: 2px;
-  }
+  
   .finals-table .sticky-name .appearance-note {
     display: block;
     margin-left: 0;
@@ -1422,7 +1041,6 @@
 .official-link:hover {
   text-decoration: underline;
 }
-
 
 /* ============ ランキング ============ */
 .rank-grid {
@@ -1757,39 +1375,7 @@ html {
 }
 
 /* ============ 年度ページ「資格がありながら未エントリー」 ============ */
-.absent-section {
-  margin-top: 36px;
-}
-
-.absent-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
 
 /* 未エントリーの区分。「見送り(前後の年に出場)」だけ確度が高いので強調する */
-.kind-chip {
-  display: inline-block;
-  font-family: var(--font-jp);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--muted);
-  background: var(--paper-2);
-  border-radius: 999px;
-  padding: 4px 8px;
-  white-space: nowrap;
-}
-
-.kind-chip.skip {
-  color: var(--red-dark);
-  background: var(--gold-bg);
-}
-
-.absent-detail {
-  margin-left: 6px;
-  font-size: 12px;
-  color: var(--muted);
-}
 
 }

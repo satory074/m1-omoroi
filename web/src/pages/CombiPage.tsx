@@ -2,10 +2,10 @@ import { Link, useParams } from 'react-router-dom'
 
 import BestChip from '../components/BestChip'
 import CombiPhoto from '../components/CombiPhoto'
+import FormedChip from '../components/FormedChip'
 import { VideoLinks } from '../components/OfficialVideo'
 import { ErrorState, Loading, NotFound } from '../components/PageState'
 import { useCombiDetail, useMeta, useOfficialVideos, usePopularity } from '../lib/api'
-import { formationInfo } from '../lib/eligibility'
 import { combiVideos } from '../lib/officialVideos'
 import { parseId } from '../lib/params'
 import {
@@ -114,7 +114,6 @@ export default function CombiPage() {
           <tbody>
             {years.map((y) => {
               const h = combi.history[String(y)]
-              const fi = formationInfo(y, combi.formed)
               return (
                 <tr key={y}>
                   <td className="year">
@@ -125,15 +124,7 @@ export default function CombiPage() {
                     >
                       {y}
                     </Link>
-                    {fi && (
-                      <span
-                        className={`formed-chip${fi.isLastYear ? ' lastyear' : ''}`}
-                        title={fi.isLastYear ? 'ラストイヤー(出場資格の最終年)' : undefined}
-                      >
-                        {fi.isLastYear && '⚡'}
-                        {fi.years}年目
-                      </span>
-                    )}
+                    <FormedChip year={y} formed={combi.formed} />
                   </td>
                   <td className="no">{h.no ?? '—'}</td>
                   {ROUND_ORDER.map((rk) => {

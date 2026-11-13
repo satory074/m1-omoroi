@@ -1,0 +1,69 @@
+/* ============ チップ(短いラベル) ============
+   意味ごとに1つの見た目にそろえる。同じ見た目を別の意味に使わない(以前は赤×金が4つの意味を兼ねていた)。
+     結成年数 … 灰色。ラストイヤーは赤の淡い面
+     最高戦績 … 3回戦以下=灰色 / 準々決勝・準決勝=黒の縁 / 決勝=赤地 / 優勝=舞台色に金
+     優勝経験 … 舞台色に金(最高戦績の「優勝」と同じ意味なので同じ見た目) */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px var(--space-2);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--c-surface-2);
+  color: var(--c-text-muted);
+  font-size: var(--fs-1);
+  font-weight: var(--fw-bold);
+  line-height: 1.5;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+
+.chip-formed.is-last {
+  background: var(--c-accent-tint);
+  color: var(--c-accent-strong);
+}
+
+.chip-best-prefix {
+  font-weight: var(--fw-regular);
+  margin-right: 2px;
+}
+
+.chip-best.lv-4,
+.chip-best.lv-5 {
+  background: var(--c-bg);
+  border-color: var(--c-text);
+  color: var(--c-text);
+}
+
+.chip-best.lv-6 {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+}
+
+.chip-best.lv-7,
+.chip-champion {
+  background: var(--c-stage);
+  color: var(--c-stage-gold);
+}
+
+/* 未エントリーの区分。「見送り」だけ確度が高いので枠で強める */
+.chip-kind.skip {
+  background: var(--c-bg);
+  border-color: var(--c-text);
+  color: var(--c-text);
+}
+
+/* コンビ詳細から来た行の目印 */
+.chip-focus {
+  background: var(--c-focus);
+  color: var(--c-bg);
+}
+
+/* 名前とチップを並べる(折り返すときはチップごと次の行へ) */
+.name-with-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}

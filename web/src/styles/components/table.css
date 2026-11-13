@@ -1,0 +1,76 @@
+/* ============ 表(TableRegion.tsx の .data-table) ============
+   行見出し(th scope=row)は狭い画面で左端に固定し、横にスクロールしても何の行か分かるようにする。
+   数字の列は .num で右寄せ(桁は base.css の tabular-nums でそろう) */
+.table-region {
+  position: relative; /* 表の中の .sr-only をこの枠に閉じ込める(外すと狭幅で横にはみ出す) */
+  overflow-x: auto;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-m);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.data-table caption {
+  text-align: left;
+  padding: var(--space-3) var(--space-4) 0;
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+.data-table thead th {
+  padding: var(--space-2) var(--space-3);
+  background: var(--c-surface-2);
+  border-bottom: 1px solid var(--c-border);
+  color: var(--c-text-muted);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-bold);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.data-table tbody th,
+.data-table tbody td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--c-border-subtle);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.data-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.data-table tbody th {
+  font-weight: var(--fw-bold);
+}
+
+.data-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cell-note {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+@media (max-width: 640px) {
+  .data-table tbody th[scope='row'],
+  .data-table thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 9em;
+    background: var(--c-bg);
+    box-shadow: inset -1px 0 var(--c-border);
+  }
+  .data-table thead th:first-child {
+    background: var(--c-surface-2);
+  }
+}

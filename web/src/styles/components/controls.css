@@ -1,0 +1,130 @@
+/* ============ 操作部品: 切り替えボタン・選択欄・補足の折り畳み ============ */
+
+/* 1つを選ぶ切り替え(Segmented.tsx)。押されている状態は aria-pressed で、見た目は黒地 */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--c-surface-2);
+  gap: 2px;
+}
+
+.segmented button {
+  min-height: 38px;
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--c-text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.segmented button:hover {
+  background: var(--c-border);
+}
+
+.segmented button[aria-pressed='true'] {
+  background: var(--c-text);
+  color: var(--c-bg);
+  font-weight: var(--fw-bold);
+}
+
+.segmented-count {
+  margin-left: var(--space-1);
+  font-size: var(--fs-2);
+  opacity: 0.85;
+}
+
+/* 選択欄。16px 未満だと iOS が拡大するので本文サイズ。
+   ブラウザ既定の矢印は幅を食って狭い画面で文字が切れるので、矢印は CSS で描く */
+.select {
+  position: relative;
+  display: inline-flex;
+}
+
+.select::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--c-text);
+  border-bottom: 2px solid var(--c-text);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+.select select {
+  appearance: none;
+  min-height: var(--tap-comfort);
+  padding: 0 var(--space-8) 0 var(--space-4);
+  border: 1.5px solid var(--c-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-size: var(--fs-3);
+  cursor: pointer;
+}
+
+/* 補足の説明(「注目度とは」など)。読みたい人だけ開く。見出しの下にずっと出しておかない */
+.note {
+  font-size: var(--fs-2);
+}
+
+.note summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-comfort);
+  color: var(--c-text-muted);
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+  list-style: none;
+}
+
+.note summary::-webkit-details-marker {
+  display: none;
+}
+
+.note summary::before {
+  content: '?';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: var(--space-2);
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-size: var(--fs-1);
+}
+
+.note[open] summary {
+  color: var(--c-text);
+}
+
+.note p {
+  margin: 0 0 var(--space-3);
+  max-width: 42em;
+  color: var(--c-text-muted);
+}
+
+/* 凡例・注記(表やリストの下) */
+.legend {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+.section-heading {
+  margin: var(--space-8) 0 var(--space-2);
+  font-size: var(--fs-6);
+}
+
+.section-lede {
+  margin: 0 0 var(--space-4);
+  max-width: 48em;
+  color: var(--c-text-muted);
+  font-size: var(--fs-2);
+}

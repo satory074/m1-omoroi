@@ -1,0 +1,386 @@
+/* ============ 年度一覧(YearPage.tsx) ============
+   スマホでも最初の画面から一覧が見えるよう、一覧より上を詰める(目標: 390×844 で最初の行が y 480px 未満) */
+.year-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+}
+
+.year-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-4);
+}
+
+.year-title .page-title {
+  margin: 0;
+  font-size: var(--fs-7);
+}
+
+.year-entries {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: var(--fs-2);
+}
+
+.year-finals-link {
+  margin-left: auto;
+  font-weight: var(--fw-bold);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-comfort);
+}
+
+.year-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.year-toolbar .note {
+  flex-basis: auto;
+}
+
+.year-toolbar .note[open] {
+  flex-basis: 100%;
+}
+
+/* 動画の行。データの到着前から高さを確保して、一覧の位置をずらさない */
+.round-videos-slot {
+  min-height: 40px;
+}
+
+.round-videos {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--fs-2);
+  min-width: 0;
+}
+
+.round-videos-head {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: var(--fw-bold);
+}
+
+.round-videos-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+}
+
+.round-videos-list li {
+  flex: none;
+}
+
+.round-videos-pl {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  min-height: 36px;
+  align-items: center;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-pill);
+  color: var(--c-text);
+  font-weight: var(--fw-bold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.round-videos-pl:hover {
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+}
+
+.round-videos-pl small {
+  color: var(--c-text-muted);
+  font-weight: var(--fw-regular);
+}
+
+.round-videos-note {
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+/* ---------- 一覧の上に貼り付く帯 ----------
+   ヘッダーが出ている間はその下、隠れている間は画面の上端に貼り付く(--header-h は App.tsx が入れる) */
+.year-status {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  margin: var(--space-2) calc(-1 * var(--gutter)) 0;
+  padding: 0 var(--gutter);
+  background: var(--c-bg);
+  border-bottom: 1px solid var(--c-border);
+  transition: top 0.2s ease;
+}
+
+.site-header:not([data-hidden='true']) ~ .app-main .year-status {
+  top: var(--header-h, 64px);
+}
+
+.year-status-text {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: 0;
+  min-height: 44px;
+  padding-top: var(--space-2);
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+.year-status-text strong {
+  color: var(--c-text);
+  font-size: var(--fs-3);
+}
+
+.year-status-sort {
+  margin-left: auto;
+}
+
+/* 列の見出し(広い画面だけ) */
+.year-cols {
+  display: grid;
+  grid-template-columns: 76px 52px minmax(0, 1fr) 148px 88px;
+  gap: var(--space-3);
+  padding: 0 var(--space-3) var(--space-1);
+  font-size: var(--fs-1);
+  font-weight: var(--fw-bold);
+  color: var(--c-text-muted);
+}
+
+.year-cols span:nth-child(2) {
+  grid-column: 3;
+}
+
+.year-cols span:last-child {
+  text-align: right;
+}
+
+/* ---------- 行 ---------- */
+.year-list {
+  position: relative;
+}
+
+.year-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: grid;
+  grid-template-columns: 76px 52px minmax(0, 1fr) 148px 88px;
+  grid-template-areas: 'no photo name result hits';
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--c-border-subtle);
+}
+
+.year-row:hover {
+  background: var(--c-surface-2);
+}
+
+/* コンビ詳細の年から来たときの「この組」。色だけでなく左の太線と「コンビ詳細から」の文字でも示す */
+.year-row.is-focus {
+  background: var(--c-accent-tint);
+  box-shadow: inset 4px 0 0 var(--c-focus);
+}
+
+.yr-photo {
+  grid-area: photo;
+  width: 52px;
+  height: 36px; /* 宣材写真(706x496)と同じ比率 */
+  border-radius: var(--radius-s);
+  background: var(--c-surface-2);
+  overflow: hidden;
+}
+
+.yr-photo-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.yr-name {
+  grid-area: name;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.yr-link {
+  min-width: 0;
+  padding-block: 3px;
+  min-height: var(--tap-min); /* 押せる高さを 24px 以上に(WCAG 2.5.8) */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--fw-bold);
+  text-decoration: none;
+  color: var(--c-text);
+}
+
+a.yr-link:hover {
+  color: var(--c-accent);
+  text-decoration: underline;
+}
+
+/* 広い画面では番号と注目度を別々の列に置く(包みの span を消して、中身を行のグリッドに並べる) */
+.yr-meta {
+  display: contents;
+}
+
+.yr-no {
+  grid-area: no;
+  color: var(--c-text-muted);
+  font-size: var(--fs-2);
+}
+
+.yr-hits {
+  grid-area: hits;
+  text-align: right;
+  color: var(--c-text-muted);
+}
+
+.yr-result {
+  grid-area: result;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+}
+
+.yr-result.result-pass,
+.yr-result.result-seed_pass {
+  color: var(--c-pass);
+}
+
+.yr-result.result-champion {
+  color: var(--c-champion);
+}
+
+.yr-result.result-fail,
+.yr-result.result-fail_inferred,
+.yr-result.result-unknown {
+  color: var(--c-fail);
+  font-weight: var(--fw-regular);
+}
+
+/* ---------- 狭い画面: 2段組み。行全体が押せる(名前のリンクを行いっぱいに広げる) ---------- */
+@media (max-width: 640px) {
+  /* 絞り込み・並び順・「?」を1行に収める(開いた説明だけ次の行へ) */
+  .year-toolbar {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+  }
+  .year-toolbar:has(.note[open]) {
+    flex-wrap: wrap;
+  }
+  .year-toolbar .segmented button {
+    padding: 0 10px;
+  }
+  .year-toolbar .select {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .year-toolbar .select select {
+    width: 100%;
+    padding: 0 var(--space-7) 0 var(--space-3);
+  }
+  .year-toolbar .select::after {
+    right: 14px;
+  }
+  .year-toolbar .note summary {
+    min-width: var(--tap-comfort);
+    justify-content: center;
+  }
+  .year-toolbar .note summary::before {
+    margin-right: 0;
+  }
+  .year-toolbar .note:not([open]) .note-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .year-title .page-title {
+    font-size: var(--fs-6);
+  }
+  .year-finals-link {
+    margin-left: 0;
+  }
+  .year-cols {
+    display: none;
+  }
+  .year-row {
+    height: auto;
+    min-height: 64px;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'photo name result'
+      'photo meta result';
+    gap: 2px var(--space-3);
+    padding: var(--space-2) 0;
+    align-content: center;
+  }
+  .year-row:hover {
+    background: transparent;
+  }
+  .yr-name {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+  .yr-link {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: var(--lh-snug);
+  }
+  .yr-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  .yr-meta {
+    grid-area: meta;
+    display: flex;
+    gap: var(--space-3);
+    font-size: var(--fs-2);
+    color: var(--c-text-muted);
+  }
+  .yr-hits:not(:empty)::before {
+    content: '再生 ';
+  }
+  .yr-result {
+    font-size: var(--fs-2);
+  }
+  /* 動画リンクは行全体のリンクより前に出す */
+  .yr-result .yt-link {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* 未エントリーの表示 */
+.absent .segmented {
+  margin-bottom: var(--space-4);
+}

@@ -23,7 +23,15 @@ function useHideOnScroll(ref: React.RefObject<HTMLElement | null>) {
       lastY = y
     }
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    // ヘッダーの高さを CSS に渡す(一覧の上に貼り付く帯を、ヘッダーが出ている間はその下に置くため)
+    const ro = new ResizeObserver(() => {
+      document.documentElement.style.setProperty('--header-h', `${el.offsetHeight}px`)
+    })
+    ro.observe(el)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      ro.disconnect()
+    }
   }, [ref])
 }
 
