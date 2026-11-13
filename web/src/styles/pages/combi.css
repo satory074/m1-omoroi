@@ -1,0 +1,241 @@
+/* ============ コンビ詳細(CombiPage.tsx) ============ */
+.combi-head {
+  display: flex;
+  gap: var(--space-6);
+  align-items: flex-start;
+  padding-top: var(--space-6);
+}
+
+.combi-photo-wrap {
+  flex: none;
+  margin: 0;
+}
+
+.combi-photo {
+  display: block;
+  width: 220px;
+  aspect-ratio: 706 / 496; /* 公式宣材写真の実寸比 */
+  object-fit: cover;
+  border-radius: var(--radius-m);
+  background: var(--c-surface-2);
+}
+
+.combi-photo-wrap figcaption {
+  margin-top: var(--space-1);
+  font-size: var(--fs-1);
+  color: var(--c-text-muted);
+}
+
+.combi-head-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.combi-kana {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: var(--fs-2);
+  letter-spacing: 0.08em;
+}
+
+.combi-name {
+  margin: 0;
+  font-size: var(--fs-8);
+  line-height: var(--lh-tight);
+  overflow-wrap: anywhere;
+}
+
+.combi-chips {
+  margin: 0;
+}
+
+.combi-chips .chip {
+  font-size: var(--fs-2);
+  padding: 2px var(--space-3);
+}
+
+.combi-facts {
+  margin: var(--space-2) 0 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-1) var(--space-4);
+}
+
+.combi-facts > div {
+  display: contents;
+}
+
+.combi-facts dt {
+  color: var(--c-text-muted);
+}
+
+.combi-facts dd {
+  margin: 0;
+}
+
+.combi-facts-note {
+  margin-left: var(--space-2);
+  color: var(--c-text-muted);
+  font-size: var(--fs-2);
+}
+
+.member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+}
+
+.member-list li {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-m);
+}
+
+.member-name {
+  font-weight: var(--fw-black);
+  font-size: var(--fs-4);
+}
+
+.member-kana,
+.member-info {
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+/* ---------- 戦績表 ---------- */
+.history-table .cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.history-table tbody td.cell {
+  font-size: var(--fs-4);
+  font-weight: var(--fw-bold);
+}
+
+.history-table tbody th[scope='row'] {
+  white-space: nowrap;
+}
+
+.history-year {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  margin-right: var(--space-2);
+  font-size: var(--fs-4);
+  font-weight: var(--fw-black);
+}
+
+.history-no {
+  color: var(--c-text-muted);
+}
+
+.result-pass,
+.result-seed_pass {
+  color: var(--c-pass);
+}
+
+.result-fail,
+.result-fail_inferred,
+.result-unknown,
+.result-absent,
+.result-scheduled {
+  color: var(--c-fail);
+}
+
+.history-table td.result-champion {
+  background: var(--c-stage);
+  color: var(--c-stage-gold);
+}
+
+.history-table td.result-champion .cell-link {
+  color: var(--c-stage-gold);
+}
+
+.cell-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+}
+
+.round-short {
+  display: none;
+}
+
+.history-legend {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+.history-legend span {
+  margin-right: var(--space-1);
+  font-weight: var(--fw-bold);
+}
+
+.combi-external {
+  margin: var(--space-7) 0 0;
+  font-weight: var(--fw-bold);
+}
+
+@media (max-width: 640px) {
+  .combi-head {
+    flex-direction: column;
+    gap: var(--space-4);
+    padding-top: var(--space-4);
+  }
+  .combi-photo {
+    width: 100%;
+    max-width: 320px;
+  }
+  .combi-name {
+    font-size: var(--fs-7);
+  }
+  /* 狭い画面は回戦名を略して8列を1画面に収める */
+  .round-full {
+    display: none;
+  }
+  .round-short {
+    display: inline;
+  }
+  .history-table thead th {
+    padding: var(--space-2) var(--space-1);
+  }
+  .history-table tbody td {
+    padding: var(--space-2) 2px;
+  }
+  .history-table .history-no,
+  .history-table thead th.num {
+    display: none;
+  }
+  /* 年の列は細く(汎用の固定列の幅 9em より狭くして、8列を横スクロールなしで収める) */
+  .history-table tbody th[scope='row'],
+  .history-table thead th:first-child {
+    min-width: 0;
+    width: 5.5em;
+    padding: var(--space-2);
+    white-space: normal;
+  }
+  .history-table tbody th .chip {
+    display: inline-block;
+    white-space: normal;
+    line-height: var(--lh-snug);
+  }
+  .history-year {
+    margin-right: 0;
+  }
+}

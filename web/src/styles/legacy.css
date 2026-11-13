@@ -554,76 +554,6 @@
 }
 
 /* ============ コンビ詳細 ============ */
-.combi-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-}
-
-.combi-photo-wrap {
-  flex: 0 0 auto;
-  margin: 20px 0 0;
-}
-
-.combi-photo {
-  display: block;
-  width: 156px;
-  aspect-ratio: 706 / 496; /* 公式宣材写真の実寸比 */
-  object-fit: cover;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--paper-2);
-}
-
-.photo-credit {
-  margin-top: 3px;
-  font-size: 10.5px;
-  color: var(--muted);
-}
-
-@media (max-width: 640px) {
-  .combi-photo {
-    width: 112px;
-  }
-}
-
-.combi-name {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.combi-kana {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-}
-
-.member-cards {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: 12px 0 4px;
-}
-
-.member-card {
-  flex: 1 1 240px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 10px 14px;
-}
-
-.member-name {
-  font-weight: 700;
-}
-
-.member-info {
-  font-size: 12.5px;
-  color: var(--muted);
-}
 
 .section-title {
   font-size: 17px;
@@ -742,85 +672,18 @@
 /* ============ 決勝得点表(FinalsScoreTable) — 本家テロップ風 ============ */
 /* 得点セルを黒背景+メタリック銀縁のチップに。本家準拠の2階調(90+=金属ゴールド / 89以下=白)。
    チップ間の隙間を作るため finals-table のみ border を分離する。 */
-.finals-table {
-  border-collapse: separate;
-  border-spacing: 3px 4px;
-}
-.finals-table td,
-.finals-table th {
-  border-bottom: none;
-}
-.finals-table td.no.score {
-  text-align: center;
-  padding: 5px 8px;
-  background: linear-gradient(180deg, #35353c 0%, #17171b 55%, #0a0a0d 100%);
-  border-radius: 3px;
-  box-shadow: inset 0 0 0 1px #000, inset 0 0 0 2px rgba(196, 204, 214, 0.5);
-}
-.finals-table td.no.score .num {
-  font-family: var(--font-num);
-  font-weight: 700;
-  font-size: 18px;
-  line-height: 1;
-  letter-spacing: 0.02em;
-  /* 89以下: 白(わずかに金属的なグラデ) */
-  background: linear-gradient(180deg, #ffffff 0%, #eef1f4 50%, #cbd2da 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
-.finals-table td.no.score.gold .num {
-  /* 90+: 金属ゴールド */
-  background: linear-gradient(180deg, #fff4c2 0%, #ffe27a 22%, #f4c033 48%, #d7981d 72%, #b1740f 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
+
 /* 点数チップ内の審査員内順位。.num は background-clip:text で文字を透明化するため
    兄弟要素に置き、黒チップ上で読める淡グレーを明示する */
-.finals-table td.no.score .score-rank {
-  font-family: var(--font-num);
-  font-size: 10px;
-  font-weight: 700;
-  color: #9aa1ab;
-  margin-left: 3px;
-}
-.finals-table td.no.score.excluded {
-  opacity: 0.3;
-}
+
 /* コンビ名横の「(N回目)」= 通算N回目の決勝進出 */
-.finals-table .appearance-note {
-  font-size: 11px;
-  color: var(--muted);
-  margin-left: 4px;
-  white-space: nowrap;
-}
+
 /* 敗者復活戦から決勝へ進出した組のチップ(.formed-chip.lastyear と同系色) */
-.revival-chip {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--red-dark);
-  background: var(--gold-bg);
-  border-radius: 999px;
-  padding: 3px 6px;
-  margin-left: 6px;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
+
 .history th.excluded {
   opacity: 0.35;
 }
 /* 合計列: 本家の総得点(金)を踏襲して太字ゴールド */
-.finals-table td.no.total {
-  font-family: var(--font-num);
-  font-weight: 900;
-  font-size: 17px;
-  color: var(--gold);
-}
 
 /* 最終決戦へ進出した組(1本目上位2〜3組)の行を淡い赤でハイライト。
    ソートで並び替わっても行単位で追える。黒い得点チップ(.score)には掛けず、
@@ -850,196 +713,42 @@
     background: color-mix(in srgb, var(--red) 9%, #fff);
   }
   
-  .finals-table .sticky-name .appearance-note {
-    display: block;
-    margin-left: 0;
-  }
-  .finals-table .sticky-name .revival-chip {
-    margin: 2px 0 0;
-  }
+  
+  
 }
 
 /* ソート用ヘッダ(順・合計) — ボタンがセル全体を埋める */
-.history th.sortable {
-  padding: 0;
-}
-.history th .th-sort {
-  border: none;
-  background: transparent;
-  font: inherit;
-  color: inherit;
-  letter-spacing: inherit;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.history th.sortable .th-sort {
-  width: 100%;
-  padding: 8px 10px;
-}
-.history th .th-sort:hover {
-  color: var(--ink);
-}
-.history th .sort-arrow {
-  font-size: 9px;
-  color: var(--red);
-}
 
 /* 審査員列: チェックボックス + ソートボタンを縦積み */
-.history th.judge-th {
-  text-align: center;
-  vertical-align: top;
-  padding: 6px 8px;
-}
-.history th.judge-th .th-sort {
-  justify-content: center;
-  padding: 2px 0 0;
-}
-.judge-check {
-  display: block;
-  margin-bottom: 2px;
-  cursor: pointer;
-}
-.judge-check input {
-  margin: 0;
-  cursor: pointer;
-  accent-color: var(--red);
-}
 
 /* ---- 「もしあなたが審査員だったら」= あなた列 ---- */
 /* ヘッダを朱にして、実在の審査員列と一目で区別できるようにする */
-.history th.judge-th.my-th {
-  border-bottom: 2px solid var(--red);
-}
-.history th.judge-th.my-th .th-sort {
-  color: var(--red);
-  font-weight: 700;
-}
 
 /* 得点チップの中に埋める入力欄。.num の background-clip:text グラデは <input> には
    効かないので、凡例 .score-legend と同じくベタ色で塗る。
    height/padding/border を .num の行ボックス(font-size 18px / line-height 1)に
    合わせて、あなた列だけ行が高くなるのを防ぐ。
    font-size を 18px にしてあるので iOS のフォーカス時ズーム(16px未満で発生)も起きない。 */
-.finals-table td.no.score.my .my-score-input {
-  display: inline-block;
-  width: 2.6em;
-  height: 18px;
-  padding: 0;
-  border: none;
-  border-radius: 2px;
-  background: transparent;
-  font-family: var(--font-num);
-  font-weight: 700;
-  font-size: 18px;
-  line-height: 1;
-  letter-spacing: 0.02em;
-  text-align: center;
-  color: #fff;
-  -webkit-text-fill-color: #fff;
-  appearance: none;
-}
-.finals-table td.no.score.my.gold .my-score-input {
-  color: #f4c033;
-  -webkit-text-fill-color: #f4c033;
-}
-.finals-table td.no.score.my .my-score-input::placeholder {
-  color: #6b7280;
-  font-weight: 400;
-  opacity: 1; /* Firefox の既定 opacity を打ち消す */
-}
+
 /* フォーカスはチップの縁で示す。border-spacing が 3px しかなく、グローバルの
    :focus-visible(outline-offset: 2px)だと隣のチップに被るため内側に出す */
-.finals-table td.no.score.my .my-score-input:focus {
-  outline: none;
-}
-.finals-table td.no.score.my:focus-within {
-  box-shadow: inset 0 0 0 1px #000, inset 0 0 0 2px var(--red);
-}
+
 /* 集計から外していても入力自体はできるので、審査員列の .3 ほど薄くしない */
-.finals-table td.no.score.my.excluded {
-  opacity: 0.55;
-}
+
 /* 未入力のチップは縁を落として「ここに入れる」と示す */
-.finals-table td.no.score.my.empty {
-  box-shadow: inset 0 0 0 1px #000, inset 0 0 0 2px rgba(196, 204, 214, 0.22);
-}
 
 /* コントロール(全選択/全解除 + 選択中人数) */
-.finals-controls {
-  align-items: center;
-}
-.finals-controls-label,
-.finals-count {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted);
-}
-.finals-count.finals-my-count {
-  color: var(--red);
-}
+
 /* あなたの点数のクリアボタン。.seg とは独立した単独ボタンなので専用に持つ */
-.finals-clear {
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  background: #fff;
-  padding: 7px 13px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--muted);
-  cursor: pointer;
-}
-.finals-clear:hover:not(:disabled) {
-  color: var(--red);
-  border-color: var(--red);
-}
-.finals-clear:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
 
 /* 凡例内の得点色サンプル(得点チップと同じ黒地・本家テロップ風) */
-.score-legend {
-  display: inline-block;
-  padding: 2px 9px;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #35353c, #0a0a0d);
-  box-shadow: inset 0 0 0 1px #000, inset 0 0 0 2px rgba(196, 204, 214, 0.5);
-  font-weight: 700;
-  color: #fff;
-  margin: 0 2px;
-}
-.score-legend.gold {
-  color: #f4c033;
-}
 
 /* 凡例内の「進出行」色見本(得点表の .finalist 行背景と同色) */
-.finalist-swatch {
-  display: inline-block;
-  width: 22px;
-  height: 12px;
-  vertical-align: -1px;
-  margin-right: 6px;
-  border: 1px solid var(--line);
-  background: rgba(200, 16, 46, 0.09);
-}
 
 .legend {
   font-size: 12px;
   color: var(--muted);
   margin-top: 8px;
-}
-
-.official-link {
-  font-weight: 700;
-  color: var(--red);
-  text-decoration: none;
-}
-
-.official-link:hover {
-  text-decoration: underline;
 }
 
 /* ============ ランキング ============ */

@@ -1,10 +1,12 @@
 import { useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { Link } from 'react-router-dom'
 
 import { MY_SCORE_DEFAULT, clampMyScore, loadMyScores, saveMyScores } from '../lib/myScores'
+import { competitionRanksOf } from '../lib/rank'
 import type { MyScores } from '../lib/myScores'
 import type { FinalsFile, FinalsScore } from '../lib/types'
+import CombiLink from './CombiLink'
+import TableRegion from './TableRegion'
 
 interface Props {
   finals: FinalsFile
@@ -21,25 +23,6 @@ interface SortState {
 function scoreClass(score: number | null | undefined): string {
   if (typeof score !== 'number') return ''
   return score >= 90 ? 'gold' : ''
-}
-
-/** 値配列の標準競技順位(同値は同順位、非数値は null)。合計・審査員列・あなた列で共用 */
-function competitionRankOf(vals: readonly (number | null | undefined)[]): (number | null)[] {
-  const sortedIdx = vals
-    .map((_, i) => i)
-    .filter((i) => typeof vals[i] === 'number')
-    .sort((a, b) => (vals[b] as number) - (vals[a] as number))
-  const ranks = new Array<number | null>(vals.length).fill(null)
-  let lastVal: number | null = null
-  let lastRank = 0
-  sortedIdx.forEach((idx, pos) => {
-    if (lastVal === null || vals[idx] !== lastVal) {
-      lastRank = pos + 1
-      lastVal = vals[idx] as number
-    }
-    ranks[idx] = lastRank
-  })
-  return ranks
 }
 
 /** localStorage 上での組の同定キー。combiId は全21年の firstRound 全行で non-null だが、
@@ -99,16 +82,16 @@ export default function FinalsScoreTable({ finals }: Props) {
       return sum
     })
     // 合計は常に数値なので順位に null は入らない
-    return { totals, rankByIndex: competitionRankOf(totals) as number[] }
+    return { totals, rankByIndex: competitionRanksOf(totals) as number[] }
   }, [rows, judges.length, enabled, myList, youEnabled])
 
   // 審査員ごと(列ごと)の順位(同点は同順位)。合計のON/OFFとは独立な情報なので enabled に依存しない
   const rankInJudge = useMemo(
-    () => judges.map((_, j) => competitionRankOf(rows.map((r) => (r.scores ?? [])[j]))),
+    () => judges.map((_, j) => competitionRanksOf(rows.map((r) => (r.scores ?? [])[j]))),
     [rows, judges],
   )
   // あなた列の列内順位。審査員列と同じく youEnabled には依存しない
-  const rankInMy = useMemo(() => competitionRankOf(myList), [myList])
+  const rankInMy = useMemo(() => competitionRanksOf(myList), [myList])
 
   // 表示順(元配列は破壊せずindex配列を並べ替え)。タイブレークは公式順位→登場順
   const displayOrder = useMemo(() => {
@@ -223,6 +206,8 @@ export default function FinalsScoreTable({ finals }: Props) {
   // 3状態: 別列→desc / 同列desc→asc / 同列asc→クリア(既定へ)。出番順のみasc起点
   function clickSort(key: SortKey) {
     setSort((prev) => {
+      // 既定の並び(sort=null)は合計の高い順なので、合計を押したら次は低い順
+      if (!prev && key === 'total') return { key, dir: 'asc' }
       const first: SortState['dir'] = key === 'order' ? 'asc' : 'desc'
       const second: SortState['dir'] = key === 'order' ? 'desc' : 'asc'
       if (!prev || prev.key !== key) return { key, dir: first }
@@ -231,168 +216,146 @@ export default function FinalsScoreTable({ finals }: Props) {
     })
   }
 
-  const ariaSort = (key: SortKey): 'ascending' | 'descending' | 'none' => {
-    if (!sort || sort.key !== key) return 'none'
-    return sort.dir === 'asc' ? 'ascending' : 'descending'
-  }
-  const arrow = (key: SortKey): string => {
-    if (!sort || sort.key !== key) return ''
-    return sort.dir === 'asc' ? '▲' : '▼'
-  }
+  // aria-sort は並べ替えている列にだけ付ける(none は付けない。Chrome Modern Web Guidance: sortable-table)。
+  // 既定の並びは合計の高い順なので、そのときは合計列が descending
+  const current: SortState = sort ?? { key: 'total', dir: 'desc' }
+  const ariaSort = (key: SortKey): 'ascending' | 'descending' | undefined =>
+    current.key === key ? (current.dir === 'asc' ? 'ascending' : 'descending') : undefined
+  const arrow = (key: SortKey): string => (current.key === key ? (current.dir === 'asc' ? '▲' : '▼') : '')
 
   return (
     <>
-      <div className="toolbar finals-controls">
-        <span className="finals-controls-label">審査員</span>
-        <div className="seg">
-          <button type="button" className={selectedCount === judges.length ? 'active' : ''} onClick={() => setAll(true)}>
-            全選択
+      <div className="finals-controls">
+        <div className="finals-controls-group" role="group" aria-label="審査員">
+          <button type="button" className="button button-small" onClick={() => setAll(true)} disabled={selectedCount === judges.length}>
+            全員を合計に入れる
           </button>
-          <button type="button" className={selectedCount === 0 ? 'active' : ''} onClick={() => setAll(false)}>
-            全解除
+          <button type="button" className="button button-small" onClick={() => setAll(false)} disabled={selectedCount === 0}>
+            全員を外す
+          </button>
+          <span className="finals-count">
+            合計に入れる審査員 {selectedCount}/{judges.length}人
+          </span>
+        </div>
+        <div className="finals-controls-group">
+          <span className="finals-count finals-my-count">
+            あなたの採点 {myFilledCount}/{rows.length}組
+          </span>
+          <button type="button" className="button button-small" onClick={clearMyScores} disabled={myFilledCount === 0}>
+            あなたの採点を消す
           </button>
         </div>
-        <span className="finals-count">
-          選択中 {selectedCount}/{judges.length}人
-        </span>
-        <span className="finals-count finals-my-count">
-          あなたの採点 {myFilledCount}/{rows.length}組
-        </span>
-        <button
-          type="button"
-          className="finals-clear"
-          onClick={clearMyScores}
-          disabled={myFilledCount === 0}
-        >
-          クリア
-        </button>
       </div>
-      <div className="history-wrap">
-        <table className="history finals-table">
-          <thead>
-            <tr>
-              <th className="sortable">
-                <button type="button" className="th-sort" onClick={() => setSort(null)} title="既定の順位に戻す">
-                  順
+      <TableRegion caption={`${finals.year}年 決勝 1本目(ファーストラウンド)の得点`} captionHidden className="finals-table">
+        <thead>
+          <tr>
+            <th scope="col" className="ft-name-col">
+              順位・コンビ
+            </th>
+            {hasOrder && (
+              <th scope="col" aria-sort={ariaSort('order')} className="ft-sort-col ft-order-col">
+                <button type="button" className="th-sort" onClick={() => clickSort('order')}>
+                  出番
+                  <span aria-hidden="true">{arrow('order')}</span>
                 </button>
               </th>
-              {hasOrder && (
-                <th className="sortable" aria-sort={ariaSort('order')}>
-                  <button type="button" className="th-sort" onClick={() => clickSort('order')} aria-label="出番順でソート">
-                    出番
-                    <span className="sort-arrow">{arrow('order')}</span>
-                  </button>
-                </th>
-              )}
-              <th className="sticky-name">コンビ</th>
-              {judges.map((j, i) => (
-                <th key={i} className={`judge-th ${enabled[i] ? '' : 'excluded'}`} aria-sort={ariaSort(i)}>
-                  <label className="judge-check">
-                    <input
-                      type="checkbox"
-                      checked={enabled[i]}
-                      onChange={() => toggleJudge(i)}
-                      aria-label={`${j} を集計に含める`}
-                    />
-                  </label>
-                  <button type="button" className="th-sort" onClick={() => clickSort(i)} aria-label={`${j} の点数でソート`}>
-                    {j}
-                    <span className="sort-arrow">{arrow(i)}</span>
-                  </button>
-                </th>
-              ))}
-              <th className={`judge-th my-th ${youEnabled ? '' : 'excluded'}`} aria-sort={ariaSort('you')}>
-                <label className="judge-check">
-                  <input
-                    type="checkbox"
-                    checked={youEnabled}
-                    onChange={() => setYouEnabled((v) => !v)}
-                    aria-label="あなたの点数を集計に含める"
-                  />
+            )}
+            {judges.map((j, i) => (
+              <th key={i} scope="col" aria-sort={ariaSort(i)} className={`ft-judge${enabled[i] ? '' : ' is-off'}`}>
+                <label className="ft-check">
+                  <input type="checkbox" checked={enabled[i]} onChange={() => toggleJudge(i)} />
+                  <span className="sr-only">{j}を合計に入れる</span>
                 </label>
-                <button
-                  type="button"
-                  className="th-sort"
-                  onClick={() => clickSort('you')}
-                  aria-label="あなたの点数でソート"
-                >
-                  あなた
-                  <span className="sort-arrow">{arrow('you')}</span>
+                <button type="button" className="th-sort" onClick={() => clickSort(i)}>
+                  <span className="ft-judge-name">{j}</span>
+                  <span aria-hidden="true">{arrow(i)}</span>
                 </button>
               </th>
-              <th className="sortable" aria-sort={ariaSort('total')}>
-                <button type="button" className="th-sort" onClick={() => clickSort('total')}>
-                  {isSubset ? '合計*' : '合計'}
-                  <span className="sort-arrow">{arrow('total')}</span>
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayOrder.map((i) => {
-              const row = rows[i]
-              const scores = row.scores ?? []
-              const key = rowKeyOf(row)
-              const my = myList[i]
-              return (
-                <tr key={row.name} className={isFinalist(row) ? 'finalist' : undefined}>
-                  <td className="no">{rankByIndex[i]}</td>
-                  {hasOrder && <td className="no order">{row.order ?? ''}</td>}
-                  <td className="sticky-name">
-                    {row.combiId != null ? <Link to={`/combi/${row.combiId}`}>{row.name}</Link> : row.name}
-                    {row.finalAppearance != null && (
-                      <span className="appearance-note">({row.finalAppearance}回目)</span>
-                    )}
-                    {row.revival && <span className="revival-chip">敗者復活</span>}
-                  </td>
-                  {judges.map((_, j) => {
-                    const s = scores[j]
-                    const cls = enabled[j] ? scoreClass(s) : 'excluded'
-                    return (
-                      <td key={j} className={`no score ${cls}`}>
-                        {typeof s === 'number' ? (
-                          <>
-                            <span className="num">{s}</span>
-                            {/* .num はbackground-clip:textで透明化するため順位は兄弟要素に置く */}
-                            <span className="score-rank">({rankInJudge[j][i]})</span>
-                          </>
-                        ) : (
-                          ''
-                        )}
-                      </td>
-                    )
-                  })}
-                  <td
-                    className={`no score my ${typeof my === 'number' ? '' : 'empty'} ${
-                      youEnabled ? scoreClass(my) : 'excluded'
-                    }`}
-                  >
-                    <input
-                      ref={(el) => {
-                        inputsRef.current[i] = el
-                      }}
-                      className="my-score-input"
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={3}
-                      autoComplete="off"
-                      placeholder="–"
-                      value={typeof my === 'number' ? String(my) : ''}
-                      onChange={(e) => changeMyScore(key, e.target.value)}
-                      onKeyDown={(e) => onMyScoreKeyDown(e, key, i)}
-                      onFocus={(e) => e.currentTarget.select()}
-                      aria-label={`${row.name} にあなたがつける点数(0〜100)`}
-                    />
-                    {typeof my === 'number' && <span className="score-rank">({rankInMy[i]})</span>}
-                  </td>
-                  <td className="no total">{totals[i]}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+            ))}
+            <th scope="col" aria-sort={ariaSort('you')} className={`ft-judge ft-you${youEnabled ? '' : ' is-off'}`}>
+              <label className="ft-check">
+                <input type="checkbox" checked={youEnabled} onChange={() => setYouEnabled((v) => !v)} />
+                <span className="sr-only">あなたの点数を合計に入れる</span>
+              </label>
+              <button type="button" className="th-sort" onClick={() => clickSort('you')}>
+                <span className="ft-judge-name">あなた</span>
+                <span aria-hidden="true">{arrow('you')}</span>
+              </button>
+            </th>
+            <th scope="col" aria-sort={ariaSort('total')} className="ft-sort-col ft-total-col">
+              <button type="button" className="th-sort" onClick={() => clickSort('total')}>
+                {isSubset ? '合計*' : '合計'}
+                <span aria-hidden="true">{arrow('total')}</span>
+              </button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {displayOrder.map((i) => {
+            const row = rows[i]
+            const scores = row.scores ?? []
+            const key = rowKeyOf(row)
+            const my = myList[i]
+            const finalist = isFinalist(row)
+            return (
+              <tr key={row.name} className={finalist ? 'is-finalist' : undefined}>
+                <th scope="row">
+                  <div className="ft-rowhead">
+                  <span className="ft-rank">{rankByIndex[i]}</span>
+                  <span className="ft-name">
+                    <CombiLink id={row.combiId}>{row.name}</CombiLink>
+                    <span className="ft-tags">
+                      {row.finalAppearance != null && <span className="ft-nth">{row.finalAppearance}回目</span>}
+                      {/* 狭い画面では出番の列を畳み、ここに出す */}
+                      {row.order != null && <span className="ft-nth ft-order-tag">出番{row.order}</span>}
+                      {finalist && <span className="chip chip-finalist">最終決戦</span>}
+                      {row.revival && <span className="chip chip-revival">敗者復活</span>}
+                    </span>
+                  </span>
+                  </div>
+                </th>
+                {hasOrder && <td className="ft-order">{row.order ?? ''}</td>}
+                {judges.map((_, j) => {
+                  const s = scores[j]
+                  return (
+                    <td key={j} className={`ft-score ${enabled[j] ? scoreClass(s) : 'is-off'}`}>
+                      {typeof s === 'number' ? (
+                        <>
+                          <span className="ft-num">{s}</span>
+                          <span className="ft-rank-in">({rankInJudge[j][i]})</span>
+                        </>
+                      ) : (
+                        ''
+                      )}
+                    </td>
+                  )
+                })}
+                <td className={`ft-score ft-my ${typeof my === 'number' ? '' : 'is-empty'} ${youEnabled ? scoreClass(my) : 'is-off'}`}>
+                  <input
+                    ref={(el) => {
+                      inputsRef.current[i] = el
+                    }}
+                    className="ft-my-input"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={3}
+                    autoComplete="off"
+                    placeholder="–"
+                    value={typeof my === 'number' ? String(my) : ''}
+                    onChange={(e) => changeMyScore(key, e.target.value)}
+                    onKeyDown={(e) => onMyScoreKeyDown(e, key, i)}
+                    onFocus={(e) => e.currentTarget.select()}
+                    aria-label={`${row.name} にあなたがつける点数(0〜100)`}
+                  />
+                  {typeof my === 'number' && <span className="ft-rank-in">({rankInMy[i]})</span>}
+                </td>
+                <td className="ft-total">{totals[i]}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </TableRegion>
     </>
   )
 }

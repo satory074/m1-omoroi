@@ -19,3 +19,5 @@
 @import './components/table.css' layer(components);
 @import './pages/home.css' layer(pages);
 @import './pages/year.css' layer(pages);
+@import './pages/finals.css' layer(pages);
+@import './pages/combi.css' layer(pages);

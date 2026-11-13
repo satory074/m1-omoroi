@@ -1,0 +1,475 @@
+/* ============ 決勝ページ(FinalsPage.tsx / FinalsScoreTable.tsx) ============
+   舞台色の帯(案C で大胆にする2か所のうちの1つ)。中の部品は .on-stage の変数の読み替えで明暗が反転する。
+   得点は本家のテロップ風のチップ(黒地に白、90点以上は金)。 */
+.finals-stage {
+  margin-top: var(--space-5);
+  padding: var(--space-6) 0 var(--space-8);
+  /* 背景だけ画面の左右端まで。width:100vw はスクロールバーの幅だけはみ出すので使わない */
+  box-shadow: 0 0 0 100vmax var(--c-stage);
+  clip-path: inset(0 -100vmax);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.finals-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-5);
+}
+
+.finals-head .page-title {
+  margin: 0;
+  font-size: var(--fs-7);
+}
+
+.finals-year-link {
+  margin-left: auto;
+  font-weight: var(--fw-bold);
+  color: var(--c-stage-gold);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-comfort);
+}
+
+/* 年の札(舞台の上では選択中を金地に) */
+.on-stage-nav.scroll-nav-pills a[aria-current='page'] {
+  background: var(--c-stage-gold);
+  color: var(--c-stage);
+}
+
+/* ---------- 王者と最終決戦 ---------- */
+.finals-champion {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: var(--space-8);
+  align-items: start;
+  padding: var(--space-5) 0;
+  border-top: 1px solid var(--c-stage-line);
+}
+
+.finals-champion-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.finals-champion-label {
+  color: var(--c-stage-gold);
+  font-weight: var(--fw-bold);
+}
+
+.finals-champion-name {
+  font-size: var(--fs-8);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  text-decoration: none;
+  font-feature-settings: 'palt';
+}
+
+.finals-champion-sub {
+  color: var(--c-on-stage-muted);
+}
+
+.finals-sub-heading {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-4);
+}
+
+.finals-votes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.finals-votes li {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 72px;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--c-stage-line);
+}
+
+.finals-votes-order {
+  color: var(--c-on-stage-muted);
+  font-size: var(--fs-2);
+}
+
+.finals-votes-name a,
+.finals-votes-name > span:first-child {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-4);
+}
+
+.finals-votes-voters {
+  display: block;
+  color: var(--c-on-stage-muted);
+  font-size: var(--fs-2);
+}
+
+.finals-votes-count {
+  text-align: right;
+  font-size: var(--fs-6);
+  font-weight: var(--fw-black);
+}
+
+.finals-votes-count small {
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+}
+
+.finals-votes .is-champion .finals-votes-count {
+  color: var(--c-stage-gold);
+}
+
+.finals-help ul {
+  margin: 0 0 var(--space-3);
+  padding-left: 1.2em;
+  max-width: 48em;
+  color: var(--c-text-muted);
+}
+
+.finals-help li + li {
+  margin-top: var(--space-1);
+}
+
+/* ---------- 操作(審査員の出し入れ・あなたの採点) ---------- */
+.finals-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  align-items: center;
+}
+
+.finals-controls-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.button-small {
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  font-size: var(--fs-2);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.finals-count {
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
+.finals-my-count {
+  color: var(--c-stage-gold);
+}
+
+/* ---------- 得点表 ---------- */
+.finals-stage .table-region {
+  border: 0;
+  border-radius: 0;
+}
+
+.finals-table.data-table {
+  border-spacing: 4px;
+  width: auto;
+  min-width: 100%;
+}
+
+.finals-table.data-table thead th {
+  background: transparent;
+  border: 0;
+  padding: var(--space-1) 2px;
+  vertical-align: bottom;
+  text-align: center;
+}
+
+.finals-table.data-table thead th.ft-name-col {
+  text-align: left;
+  padding-left: var(--space-3);
+}
+
+.th-sort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--tap-min);
+  min-width: var(--tap-min);
+  padding: var(--space-1);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+}
+
+.th-sort:hover {
+  color: var(--c-stage-gold);
+}
+
+/* 審査員の見出し: 合計に入れるかのチェック + 並べ替えボタンを縦に */
+.ft-judge {
+  min-width: 52px;
+}
+
+.ft-check {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: var(--tap-min);
+  cursor: pointer;
+}
+
+.ft-check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--c-stage-gold);
+  cursor: pointer;
+}
+
+.ft-judge.is-off .th-sort {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.ft-you .ft-judge-name {
+  color: var(--c-stage-gold);
+}
+
+/* 行見出し: 順位 + コンビ名 + 印 */
+.finals-table.data-table tbody th {
+  padding: var(--space-2) var(--space-3);
+  background: var(--c-stage-2);
+  border: 0;
+  border-radius: var(--radius-s);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+}
+
+.ft-rowhead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 40px;
+}
+
+.finals-table tr.is-finalist th {
+  box-shadow: inset 4px 0 0 var(--c-stage-gold);
+}
+
+.ft-rank {
+  min-width: 1.5em;
+  color: var(--c-on-stage-muted);
+  font-weight: var(--fw-black);
+  text-align: right;
+}
+
+.ft-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ft-name a {
+  font-size: var(--fs-3);
+}
+
+.ft-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.ft-nth {
+  font-size: var(--fs-1);
+  font-weight: var(--fw-regular);
+  color: var(--c-on-stage-muted);
+}
+
+.chip-finalist {
+  background: var(--c-stage-gold);
+  color: var(--c-stage);
+}
+
+.chip-revival {
+  background: transparent;
+  border-color: var(--c-stage-gold);
+  color: var(--c-stage-gold);
+}
+
+.finals-table.data-table tbody td {
+  border: 0;
+  padding: 0;
+}
+
+.ft-order {
+  text-align: center;
+  color: var(--c-on-stage-muted);
+}
+
+.ft-order-tag {
+  display: none;
+}
+
+/* 得点のチップ(本家テロップ風) */
+.ft-score {
+  min-width: 52px;
+  height: 56px;
+  text-align: center;
+  border-radius: var(--radius-s);
+  background: linear-gradient(var(--c-stage-3), var(--c-stage-2));
+  line-height: 1.1;
+}
+
+.ft-num {
+  display: block;
+  font-size: var(--fs-5);
+  font-weight: var(--fw-black);
+  color: var(--c-on-stage);
+}
+
+.ft-score.gold .ft-num,
+.ft-score.gold .ft-my-input {
+  color: var(--c-stage-gold);
+}
+
+.ft-rank-in {
+  display: block;
+  font-size: var(--fs-1);
+  color: var(--c-on-stage-muted);
+}
+
+.ft-score.is-off {
+  opacity: 0.35;
+}
+
+/* あなたの列: チップの中の入力欄 */
+.ft-my-input {
+  width: 2.6em;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--c-on-stage);
+  font-size: var(--fs-5);
+  font-weight: var(--fw-black);
+  text-align: center;
+}
+
+.ft-my-input::placeholder {
+  color: var(--c-on-stage-muted);
+  opacity: 1;
+}
+
+.ft-my-input:focus {
+  outline: none;
+}
+
+.ft-my:focus-within {
+  box-shadow: inset 0 0 0 2px var(--c-stage-gold);
+}
+
+.ft-my.is-empty {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--c-stage-line);
+}
+
+.finals-table.data-table tbody td.ft-total {
+  padding: 0 var(--space-3);
+  text-align: right;
+  font-size: var(--fs-5);
+  font-weight: var(--fw-black);
+  white-space: nowrap;
+}
+
+/* ---------- 狭い画面: チップを細く、審査員名は縦書き、順位は2行目に小さく ---------- */
+@media (max-width: 900px) {
+  .finals-champion {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-5);
+  }
+}
+
+@media (max-width: 640px) {
+  .finals-head .page-title {
+    font-size: var(--fs-6);
+  }
+  .finals-year-link {
+    margin-left: 0;
+  }
+  .finals-champion-name {
+    font-size: var(--fs-7);
+  }
+  .finals-votes li {
+    grid-template-columns: 52px minmax(0, 1fr) 56px;
+  }
+  .finals-table.data-table {
+    border-spacing: 2px;
+  }
+  .ft-judge {
+    min-width: 34px;
+  }
+  .ft-judge-name {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    letter-spacing: 0.05em;
+  }
+  .ft-rowhead {
+    gap: var(--space-2);
+  }
+  .finals-table.data-table tbody th {
+    padding: var(--space-1) var(--space-2);
+    max-width: 8.5em;
+    white-space: normal;
+  }
+  .finals-table.data-table tbody th[scope='row'] {
+    min-width: 0;
+    width: 6.5em;
+    max-width: 6.5em;
+    background: var(--c-stage-2);
+  }
+  .finals-table.data-table thead th.ft-name-col {
+    min-width: 0;
+    padding-left: var(--space-2);
+  }
+  /* 出番の列は畳んで、行見出しの中に「出番N」と出す */
+  .ft-order-col,
+  .ft-order {
+    display: none;
+  }
+  .ft-order-tag {
+    display: inline;
+  }
+  .ft-name a {
+    font-size: var(--fs-2);
+    overflow-wrap: anywhere;
+    line-height: var(--lh-snug);
+  }
+  .ft-tags .chip {
+    padding: 0 var(--space-1);
+  }
+  .ft-rank {
+    min-width: 1em;
+    font-size: var(--fs-2);
+  }
+  .ft-score {
+    min-width: 34px;
+    height: 48px;
+  }
+  .ft-num,
+  .ft-my-input {
+    font-size: var(--fs-3);
+  }
+  .finals-table.data-table tbody td.ft-total {
+    font-size: var(--fs-3);
+    padding: 0 var(--space-2);
+  }
+}

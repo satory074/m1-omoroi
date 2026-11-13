@@ -52,8 +52,17 @@
   --font-body: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
 }
 
-/* 舞台色の帯の中では、フォーカス枠とリンク色を舞台用に替える */
+/* 舞台色の帯の中では、意味の変数を舞台用に読み替える。これで中に置いた部品(切り替えボタン・チップ・
+   表・ナビ)は個別の上書きなしで明暗が反転する。組み合わせのコントラストは check-tokens の「舞台」で確認済み。
+   赤(--c-accent)は舞台の上では文字に使えない(3:1 未満)ので、強調は金(--c-stage-gold)にする */
 .on-stage {
+  --c-bg: var(--c-stage);
+  --c-surface: var(--c-stage-2);
+  --c-surface-2: var(--c-stage-2);
+  --c-text: var(--c-on-stage);
+  --c-text-muted: var(--c-on-stage-muted);
+  --c-border: var(--c-stage-line);
+  --c-border-subtle: var(--c-stage-line);
   --c-focus: var(--c-stage-gold);
   --c-link: var(--c-on-stage);
   --c-link-hover: var(--c-stage-gold);

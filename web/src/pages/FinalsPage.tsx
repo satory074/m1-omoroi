@@ -1,19 +1,93 @@
+import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
+import CombiLink from '../components/CombiLink'
 import FinalsScoreTable from '../components/FinalsScoreTable'
 import { ErrorState, Loading, NotFound } from '../components/PageState'
+import ScrollNav, { type ScrollNavItem } from '../components/ScrollNav'
 import { useFinals, useMeta } from '../lib/api'
 import { parseYear } from '../lib/params'
+import { competitionRanksOf } from '../lib/rank'
+import type { FinalsFile } from '../lib/types'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
+
+/** 王者と最終決戦の票。いちばん知りたい「誰が勝ったか」を表より先に出す */
+function Champion({ finals }: { finals: FinalsFile }) {
+  const final = useMemo(
+    () => [...(finals.finalRound ?? [])].sort((a, b) => (b.votes ?? -1) - (a.votes ?? -1)),
+    [finals.finalRound],
+  )
+  const champion = final.find((r) => r.champion)
+  // 1本目の公式順位(合計の高い順)
+  const firstRound = finals.firstRound
+  const ranks = competitionRanksOf(firstRound.map((r) => r.total))
+  const champIndex = champion ? firstRound.findIndex((r) => r.name === champion.name) : -1
+  const totalVotes = final.reduce((sum, r) => sum + (r.votes ?? 0), 0)
+
+  if (!champion) return null
+  return (
+    <div className="finals-champion">
+      <div className="finals-champion-main">
+        <span className="finals-champion-label">優勝</span>
+        <CombiLink id={champion.combiId} className="finals-champion-name">
+          {champion.name}
+        </CombiLink>
+        <span className="finals-champion-sub">
+          {champion.votes != null && totalVotes > 0 && `最終決戦 ${totalVotes}票中${champion.votes}票`}
+          {champIndex >= 0 && firstRound[champIndex].total != null && (
+            <>
+              {' '}
+              ／ 1本目 {ranks[champIndex]}位 {firstRound[champIndex].total}点
+            </>
+          )}
+        </span>
+      </div>
+      <div>
+        <h2 className="finals-sub-heading">最終決戦</h2>
+        <ol className="finals-votes">
+          {final.map((r) => (
+            <li key={r.name} className={r.champion ? 'is-champion' : undefined}>
+              <span className="finals-votes-order">{r.order != null ? `${r.order}番手` : ''}</span>
+              <span className="finals-votes-name">
+                <CombiLink id={r.combiId}>{r.name}</CombiLink>
+                {r.champion && <span className="sr-only">(優勝)</span>}
+                {r.voters && (
+                  <span className="finals-votes-voters">
+                    {r.voters.length > 0 ? r.voters.join('・') : '投票なし'}
+                  </span>
+                )}
+              </span>
+              <span className="finals-votes-count">
+                {r.votes ?? '—'}
+                <small>票</small>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  )
+}
 
 export default function FinalsPage() {
   const { year: yearParam } = useParams()
   const { data: meta, isError: metaError } = useMeta()
-  const finalsYears = meta?.finalsYears ?? []
+  const finalsYears = useMemo(() => meta?.finalsYears ?? [], [meta])
   const year = parseYear(yearParam)
   const hasFinals = year !== null && finalsYears.includes(year)
   const { data: finals, isError } = useFinals(hasFinals ? year : null)
   useDocumentTitle(finals ? `M-1グランプリ${finals.year} 決勝の得点` : null)
+
+  const yearItems = useMemo<ScrollNavItem[]>(
+    () =>
+      [...finalsYears]
+        .sort((a, b) => b - a)
+        .flatMap((y, i, arr): ScrollNavItem[] => [
+          ...(i > 0 && arr[i - 1] - y > 1 ? [{ key: `gap-${y}`, separator: '休止' }] : []),
+          { key: String(y), to: `/finals/${y}`, label: y, current: y === year },
+        ]),
+    [finalsYears, year],
+  )
 
   if (metaError || isError) return <ErrorState message="決勝のデータを読み込めませんでした。" />
   if (!meta) return <Loading />
@@ -35,98 +109,53 @@ export default function FinalsPage() {
   }
   if (!finals) return <Loading />
 
+  const hasOrder = finals.firstRound.some((r) => r.order != null)
+  const hasRevival = finals.firstRound.some((r) => r.revival)
+
   return (
-    <>
-      <div className="year-strip">
-        {[...finalsYears]
-          .sort((a, b) => b - a)
-          .map((y) => (
-            <Link key={y} to={`/finals/${y}`} className={y === year ? 'active' : ''}>
-              {y}
-            </Link>
-          ))}
-      </div>
-      <h1 className="page-title">M-1グランプリ {year} 決勝</h1>
-      <p className="page-crosslink">
-        <Link to={`/years/${year}?round=final`}>{year}年の全回戦の結果を見る</Link>
-      </p>
-      <FinalsScoreTable key={finals.year} finals={finals} />
-      <p className="legend">
-        順位はファーストラウンドの得点順。優勝は最終決戦の得票で決定します。審査員のヘッダをクリックで並べ替え、チェックを外すとその審査員を除いた合計・順位に再集計されます。
-      </p>
-      <p className="legend">
-        コンビ名横の(N回目) = その年時点で通算N回目の決勝進出。点数横の(N) = その審査員がつけた点数の中での順位。
-      </p>
-      <p className="legend">
-        <strong>あなた</strong>列 = もしあなたが審査員だったら。0〜100の点数を入力すると、あなたを加えた合計・順位が即座に再計算されます(↑↓
-        で1点ずつ増減、Enter で出番順の次の組へ、Esc でその組を取り消し)。入力した点数は<strong>この端末のブラウザに年ごとに保存</strong>
-        され、次に開いたときも残ります。審査員を「全解除」すれば、あなたの採点だけの順位も見られます。
-      </p>
-      <p className="legend">
-        見出しが<strong>合計*</strong>のときは、公式の合計(全審査員のみ)とは違う集計であることを示します。
-      </p>
-      {finals.firstRound.some((r) => r.order != null) && (
-        <p className="legend">出番 = ファーストラウンドのネタ披露順。</p>
-      )}
-      {finals.firstRound.some((r) => r.revival) && (
-        <p className="legend">
-          <span className="revival-chip">敗者復活</span> = 敗者復活戦を勝ち上がって決勝へ進出した組。
-        </p>
-      )}
-      <p className="legend">
-        点数の色(本家テロップ準拠): <span className="score-legend gold">90点以上=金</span>{' '}
-        <span className="score-legend">89点以下=白</span>
-      </p>
-      <p className="legend">
-        <span className="finalist-swatch" />背景が淡い赤の行 = 最終決戦へ進出した組(1本目の上位2〜3組)。
-      </p>
+    <div className="finals-page">
+      {/* 舞台色の帯(案C で大胆にする2か所のうちの1つ)。王者 → 最終決戦 → 1本目の得点表 の順 */}
+      <section className="finals-stage on-stage" aria-labelledby="finals-title">
+        <div className="finals-head">
+          <h1 id="finals-title" className="page-title">
+            M-1グランプリ {finals.year} 決勝
+          </h1>
+          <Link className="finals-year-link" to={`/years/${finals.year}?round=final`}>
+            {finals.year}年の全回戦の結果
+          </Link>
+        </div>
+        <ScrollNav label="年" variant="pills" items={yearItems} className="on-stage-nav" />
+
+        <Champion finals={finals} />
+
+        <h2 className="finals-sub-heading">1本目(ファーストラウンド)の得点</h2>
+        <details className="note finals-help">
+          <summary>
+            <span className="note-label">表の見方・使い方</span>
+          </summary>
+          <ul>
+            <li>順位は1本目の合計点の順。優勝は最終決戦の票で決まります。</li>
+            <li>点数の横の (N) は、その審査員がつけた点の中での順位です。点数の色は本家のテロップと同じく、90点以上が金、89点以下が白。</li>
+            <li>コンビ名の下の「N回目」は、その年の時点で何回目の決勝か。「最終決戦」の印は最終決戦に進んだ組です。</li>
+            {hasRevival && <li>「敗者復活」は敗者復活戦を勝ち上がって決勝に進んだ組です。</li>}
+            {hasOrder && <li>出番は1本目のネタの順番です。</li>}
+            <li>列の見出し(審査員名・出番・合計)を押すと並べ替えます。審査員の □ を外すと、その人を除いた合計と順位になります(見出しが「合計*」になります)。</li>
+            <li>
+              「あなた」の列に 0〜100 の点を入れると、あなたを審査員に加えた合計と順位になります。↑↓で1点ずつ、Enter で出番順の次の組へ、Esc でその組を消します。点数はこの端末のブラウザに年ごとに残ります。審査員を「全員を外す」と、あなたの採点だけの順位になります。
+            </li>
+          </ul>
+        </details>
+        <FinalsScoreTable key={finals.year} finals={finals} />
+      </section>
+
       {finals.year === 2001 && (
         <p className="legend">
-          第1回のみ「大阪・札幌・福岡」3会場の一般客各100人(1人1点・計300点)＋審査員7名×各100点＝満点1000点。会場別内訳の出典:{' '}
+          第1回のみ「大阪・札幌・福岡」3会場の一般客各100人(1人1点・計300点)＋審査員7名×各100点＝満点1000点。会場別の内訳の出典:{' '}
           <a href="http://www.hanjoan.com/project/m1.htm" target="_blank" rel="noreferrer">
             半帖庵
           </a>
-          (3会場合計は公式の会場票と一致)。
+          (3会場の合計は公式の会場票と一致)。
         </p>
-      )}
-      {finals.finalRound && finals.finalRound.length > 0 && (
-        <>
-          <h2 className="section-title">最終決戦</h2>
-          <ol className="rank-list vote-list">
-            {[...finals.finalRound]
-              .sort((a, b) => (b.votes ?? -1) - (a.votes ?? -1))
-              .map((row) => (
-              <li key={row.name}>
-                <div className="rank-main">
-                  <span className={`rank-pos ${row.champion ? 'champion' : ''}`}>
-                    {row.champion ? '★' : ''}
-                  </span>
-                  {row.combiId != null ? (
-                    <Link className="rank-name" to={`/combi/${row.combiId}`}>
-                      {row.name}
-                    </Link>
-                  ) : (
-                    <span className="rank-name">{row.name}</span>
-                  )}
-                  {row.order != null && <span className="vote-order">{row.order}番手</span>}
-                  <span className="rank-value">
-                    {row.votes != null ? row.votes : ''}
-                    <small>{row.votes != null ? '票' : ''}</small>
-                  </span>
-                </div>
-                {row.voters && row.voters.length > 0 && (
-                  <div className="rank-voters">{row.voters.join('・')}</div>
-                )}
-              </li>
-            ))}
-          </ol>
-          {finals.finalRound.some((r) => r.order != null) && (
-            <p className="legend">N番手 = 最終決戦のネタ披露順(並びは得票順)。</p>
-          )}
-          {finals.finalRound.some((r) => r.voters && r.voters.length > 0) && (
-            <p className="legend">コンビ名の下の審査員名 = 最終決戦でその組に投票した審査員。</p>
-          )}
-        </>
       )}
       <p className="legend">
         出典:{' '}
@@ -134,6 +163,6 @@ export default function FinalsPage() {
           Wikipedia
         </a>
       </p>
-    </>
+    </div>
   )
 }

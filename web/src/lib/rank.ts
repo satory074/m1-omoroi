@@ -17,3 +17,25 @@ export function competitionRanks<T>(items: T[], value: (item: T) => number): num
   })
   return ranks
 }
+
+/**
+ * 並べていない値の配列の標準競技順位(大きいほど上位。同値は同順位、数値でないものは null)。
+ * 決勝得点表の合計・審査員ごと・あなたの列で使う(以前は FinalsScoreTable に同じ処理の写しがあった)。
+ */
+export function competitionRanksOf(vals: readonly (number | null | undefined)[]): (number | null)[] {
+  const order = vals
+    .map((_, i) => i)
+    .filter((i) => typeof vals[i] === 'number')
+    .sort((a, b) => (vals[b] as number) - (vals[a] as number))
+  const ranks = new Array<number | null>(vals.length).fill(null)
+  let lastVal: number | null = null
+  let lastRank = 0
+  order.forEach((idx, pos) => {
+    if (lastVal === null || vals[idx] !== lastVal) {
+      lastRank = pos + 1
+      lastVal = vals[idx] as number
+    }
+    ranks[idx] = lastRank
+  })
+  return ranks
+}
