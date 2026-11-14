@@ -1,4 +1,4 @@
-from m1scraper.build_json import _top_with_ties, build_finals_stats, build_rankings
+from m1scraper.build_json import _top_with_ties, build_finals_stats, build_rankings, build_stats
 
 
 def test_top_with_ties_extends_boundary():
@@ -386,3 +386,117 @@ def test_formation_years_spans_and_unknown():
     assert f["champion"] == [
         {"years": 5, "count": 1, "combis": [{"year": 2018, "name": "霜降り明星"}]}
     ]
+
+
+# --- 2026-11 追加: 連続進出・ラストイヤー・1人あたり平均点・顔ぶれの推移・シード比較 ---
+
+
+def _row(name, cid, total, scores=None, rank=None):
+    return {"name": name, "combiId": cid, "total": total, "scores": scores or [], "rank": rank}
+
+
+def test_final_streak_counts_held_tournaments_across_hiatus():
+    # 2011〜2014は大会が無いので 2009・2010・2015 は「3大会連続」。2017 は 2016 を挟むので途切れる
+    years = [2009, 2010, 2015, 2016, 2017]
+    present = {2009: True, 2010: True, 2015: True, 2016: False, 2017: True}
+    finals = [
+        _finals(y, [_row("A", 1, 600)] * present[y] + [_row(f"x{y}", 100 + y, 500)], [])
+        for y in years
+    ]
+    s = _stats(finals)
+    a = next(r for r in s["finalStreaks"] if r["id"] == 1)
+    assert (a["value"], a["start"], a["end"], a["ongoing"]) == (3, 2009, 2015, False)
+    # 連続の長さは出場回数を超えない
+    assert a["value"] <= sum(present.values())
+    rep = s["repeatFinalists"]
+    assert rep["back"] <= rep["pairs"]
+
+
+def test_last_year_finalists_match_eligibility_limit():
+    records = [
+        {"id": 1, "name": "A", "formed": 1994, "history": {}},  # 2004 = 結成10年(第1期の上限)
+        {"id": 2, "name": "B", "formed": 2002, "history": {}},  # 2017 = 結成15年(第2期の上限)
+        {"id": 3, "name": "C", "formed": 2003, "history": {}},  # 2017 = 14年(ラストイヤーではない)
+    ]
+    finals = [
+        _finals(2004, [_row("A", 1, 673)], [{"name": "A", "combiId": 1, "champion": True}]),
+        _finals(2017, [_row("B", 2, 645), _row("C", 3, 656)], [{"name": "C", "combiId": 3}]),
+    ]
+    ly = _stats(finals, records)["lastYearFinalists"]
+    limit = {2004: 10, 2017: 15}
+    assert {r["name"] for r in ly["rows"]} == {"A", "B"}
+    assert all(r["year"] - r["formed"] == limit[r["year"]] for r in ly["rows"])
+    b = next(r for r in ly["rows"] if r["name"] == "B")
+    # 1本目の順位は合計点から数える(rank 欄は使わない)
+    assert b["rank"] == 2 and b["finalRound"] is False
+    assert ly["finalists"] == 3 and ly["champions"] == 1
+
+
+def test_per_judge_average_excludes_venue_columns():
+    first = [_row("A", 1, 380, [100, 100, 90, 90])]
+    finals = [_finals(2001, first, [], judges=["大阪", "札幌", "松本", "紳助"])]
+    s = build_finals_stats(
+        finals, [], {"champions": []}, venues={"2001": ["大阪", "札幌"]}
+    )
+    top = s["perJudgeTop"][0]
+    assert top["judges"] == 2 and top["perJudge"] == 90.0
+    assert all(0 <= r["perJudge"] <= 100 for r in s["perJudgeTop"])
+
+
+def test_finalists_by_year_buckets_cover_every_finalist():
+    records = [
+        {"id": 1, "name": "A", "formed": 2010, "belong": "プロ（吉本興業）",
+         "members": [{"from": "大阪府", "birth": "1990年01月01日"}, {"from": "兵庫県", "birth": "1990年12月31日"}]},
+        {"id": 2, "name": "B", "formed": 2012, "belong": "プロ（吉本興業/フリー）",
+         "members": [{"from": "大阪府"}, {"from": "東京都"}]},
+        {"id": 3, "name": "C", "formed": 2008, "belong": "プロ（マセキ芸能社）",
+         "members": [{"from": "茨城県"}, {"from": None}]},
+    ]
+    first = [_row("A", 1, 600), _row("B", 2, 590), _row("C", 3, 580), _row("D", None, 570)]
+    s = build_finals_stats(
+        [_finals(2020, first, [])], records, {"champions": []}, finals_dates={2020: (2020, 12, 20)}
+    )
+    y = s["finalistsByYear"][0]
+    assert sum(y["kansai"].values()) == y["n"] == 4
+    assert sum(y["yoshimoto"].values()) == y["n"]
+    assert y["kansai"] == {"all": 1, "some": 1, "none": 0, "unknown": 2}
+    assert y["yoshimoto"] == {"yes": 2, "no": 1, "unknown": 1}
+    # 誕生日が決勝日(12/20)より後の人は1つ若い: 30歳 と 29歳
+    assert y["meanAge"] == 29.5 and y["ageN"] == 2
+
+
+def test_last_year_entrants_are_formed_limit_years_ago():
+    records = [
+        {"id": 1, "name": "A", "formed": 2011,
+         "history": {"2025": {"results": {"semifinal": "fail"}},
+                     "2026": {"results": {"first": "seed_pass", "quarterfinal": "scheduled"}}}},
+        {"id": 2, "name": "B", "formed": 2011, "history": {"2026": {"results": {"first": "fail"}}}},
+        {"id": 3, "name": "C", "formed": 2012, "history": {"2026": {"results": {"first": "pass"}}}},
+        {"id": 4, "name": "D", "formed": 2011, "history": {"2025": {"results": {"first": "fail"}}}},
+    ]
+    ly = build_rankings(records)["lastYearEntrants"]
+    assert ly["year"] == 2026
+    assert all(c["formed"] == ly["year"] - ly["limit"] for c in ly["combis"])
+    # 今年エントリーした組だけ・到達の深い順
+    assert [c["name"] for c in ly["combis"]] == ["A", "B"]
+    assert ly["combis"][0]["round"] == "quarterfinal" and ly["combis"][0]["result"] == "scheduled"
+
+
+def test_seed_split_skips_rounds_still_scheduled():
+    def entry(first, qf):
+        return {"results": {"first": first, "quarterfinal": qf}}
+
+    year_files = {
+        2024: {"source": "db", "entries": [
+            entry("seed_pass", "pass"), entry("seed_pass", "fail"),
+            entry("pass", "pass"), entry("pass", "fail"), entry("pass", "absent"),
+        ]},
+        # 結果が出そろっていない年は丸ごと数えない
+        2026: {"source": "db", "entries": [entry("seed_pass", "pass"), entry("pass", "scheduled")]},
+    }
+    split = build_stats(year_files)["seedSplit"]
+    qf = next(r for r in split["rounds"] if r["round"] == "quarterfinal")
+    assert qf["seed"] == {"appeared": 2, "passed": 1}
+    assert qf["climbed"] == {"appeared": 2, "passed": 1}  # 欠場は数えない
+    assert all(b["passed"] <= b["appeared"] for r in split["rounds"] for b in (r["seed"], r["climbed"]))
+    assert [y["year"] for y in split["byYear"]] == [2024]

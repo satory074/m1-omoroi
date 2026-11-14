@@ -155,3 +155,40 @@ def test_year_judges_report_own_max_min_combis():
     # 巨人: [90, 88, 93] → 最高はC(combiId なしはそのまま None)・最低はB
     assert kyojin["maxCombis"] == [{"name": "C", "combiId": None}]
     assert kyojin["minCombis"] == [{"name": "B", "combiId": 2}]
+
+
+
+def test_standardized_top_matches_final_round_size_and_ignores_rank_column():
+    # 2008年の公式アーカイブのように rank 欄が最終順位(王者=1)でも、並びは1本目の合計点で決める
+    y = _finals(
+        2008,
+        ["松本", "巨人"],
+        [
+            {"name": "A", "combiId": 1, "scores": [95, 90], "total": 185, "rank": 2},
+            {"name": "B", "combiId": 2, "scores": [90, 94], "total": 184, "rank": 1},
+            {"name": "C", "combiId": 3, "scores": [91, 92], "total": 183, "rank": 3},
+            {"name": "D", "combiId": 4, "scores": [80, 80], "total": 160, "rank": 4},
+        ],
+        [{"name": "B", "combiId": 2, "champion": True}, {"name": "A", "combiId": 1}],
+    )
+    s = build_judges_stats([y], OV)
+    std = s["standardized"][0]
+    assert len(std["actual"]) == len(std["standardized"]) == std["n"] == 2
+    assert [c["name"] for c in std["actual"]] == ["A", "B"]
+
+
+def test_judge_sd_and_score_extremes():
+    y = _finals(
+        2016,
+        ["松本", "巨人"],
+        # 12個の点(80〜97の異なる値)。上位5件と下位5件が重ならない大きさにする
+        [
+            {"name": f"c{i}", "combiId": i, "scores": [97 - i, 86 - i], "total": 183 - 2 * i}
+            for i in range(6)
+        ],
+    )
+    s = build_judges_stats([y], OV)
+    assert all(j["sd"] >= 0 for yr in s["byYear"] for j in yr["judges"])
+    ex = s["scoreExtremes"]
+    assert ex["highest"][0]["score"] == 97 and ex["lowest"][0]["score"] == 81
+    assert min(e["score"] for e in ex["highest"]) >= max(e["score"] for e in ex["lowest"])

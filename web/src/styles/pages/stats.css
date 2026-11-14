@@ -150,6 +150,24 @@
   border-radius: 2px;
 }
 
+/* 単位の違う2つの推移(年齢と結成年数など)は1つの軸に重ねず、小さなグラフを並べる。狭い画面では縦に積む */
+.chart-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: var(--space-4);
+}
+
+.chart-small {
+  margin: 0;
+  min-width: 0;
+}
+
+.chart-small-title {
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-bold);
+}
+
 /* ---------- 都道府県のマス目の地図(JapanGridMap.tsx) ---------- */
 .jpmap {
   --cell: 40px;

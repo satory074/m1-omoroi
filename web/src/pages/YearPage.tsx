@@ -163,7 +163,7 @@ function Row({
             {venue.area && ` ${venue.area}`}
           </span>
         )}
-        {focused && <span className="chip chip-focus">コンビ詳細から</span>}
+        {focused && <span className="chip chip-focus">この組</span>}
       </span>
       <span className="yr-meta">
         <span className="yr-no">{e.no != null ? `No.${e.no}` : ''}</span>

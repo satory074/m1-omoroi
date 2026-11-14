@@ -5,7 +5,12 @@ import CareerRecords from '../components/CareerRecords'
 import CombiRecords from '../components/CombiRecords'
 import FinalsRecords from '../components/FinalsRecords'
 import FinalsTrends from '../components/FinalsTrends'
-import { JudgeCareerSection, JudgesYearlySection } from '../components/JudgesRecords'
+import {
+  JudgeCareerSection,
+  JudgeScoreExtremesSection,
+  JudgeStandardizedSection,
+  JudgesYearlySection,
+} from '../components/JudgesRecords'
 import PageToc from '../components/PageToc'
 import { ErrorState, Loading } from '../components/PageState'
 import PopularityRanking from '../components/PopularityRanking'
@@ -78,7 +83,7 @@ function CombiTab() {
   return (
     <>
       <p className="page-lede">
-        公式コンビ情報(2015年以降)から集計したコンビの通算記録です。各ランキングは上位15組で、同点の組はすべて出します。
+        公式コンビ情報(2015年以降)から集計したコンビの通算記録と、今年がラストイヤーの組の現在地です。各ランキングは上位15組で、同点の組はすべて出します。
       </p>
       <Loaded q={q}>{(data) => <CombiRecords data={data} />}</Loaded>
     </>
@@ -116,6 +121,8 @@ function JudgesTab() {
           <>
             <JudgeCareerSection js={js} />
             <JudgesYearlySection js={js} />
+            <JudgeStandardizedSection js={js} />
+            <JudgeScoreExtremesSection js={js} />
           </>
         )}
       </Loaded>

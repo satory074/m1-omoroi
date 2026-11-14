@@ -2,10 +2,11 @@ import { Link } from 'react-router-dom'
 
 import { competitionRanks } from '../lib/rank'
 import type { FinalsStats } from '../lib/types'
+import { FinalistAgeSection, FinalistMakeupSection } from './FinalistTrends'
 import { WinnersCell } from './RankTable'
 import HistoryTable from './HistoryTable'
 
-/** 決勝の傾向(分布・傾向系): 出番順別/王者の1本目順位/結成年数別/事務所別。記録・統計の「決勝」タブが表示 */
+/** 決勝の傾向(分布・傾向系): 出番順別/王者の1本目順位/結成年数別/年齢と結成年数の推移/事務所別/顔ぶれの推移。記録・統計の「決勝」タブが表示 */
 export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
   const unknown = fs.formationYears.unknownFormed
   const hasUnknown = unknown.final + unknown.semifinal + unknown.quarterfinal > 0
@@ -244,6 +245,8 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
           </tbody>
         </HistoryTable>
 
+      <FinalistAgeSection rows={fs.finalistsByYear} />
+
       <h3 className="section-title">コンビ名の文字数と成績</h3>
       <p className="section-note">
         「短い名前ほど優勝しやすい」説の検証。文字数は空白を除き全半角をそろえて数えた値。
@@ -319,6 +322,8 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
             })()}
           </tbody>
         </HistoryTable>
+
+      <FinalistMakeupSection rows={fs.finalistsByYear} />
     </>
   )
 }

@@ -4,7 +4,6 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ReferenceArea,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -15,7 +14,8 @@ import { Link } from 'react-router-dom'
 
 import { ROUND_LABEL, ROUND_ORDER } from '../lib/rounds'
 import { useTokens } from '../lib/tokens'
-import type { Stats, YearStats } from '../lib/types'
+import type { PassCount, SeedSplit, Stats, YearStats } from '../lib/types'
+import { hiatusArea, yearsWithHiatus } from './chartHiatus'
 import HistoryTable from './HistoryTable'
 
 // 回戦の色。dataviz スキルの検証スクリプトで確認済み(色覚の違いでの区別 ΔE 19.3 以上・白地で 3:1 以上)。
@@ -26,9 +26,6 @@ const SERIES = [
   { key: 'third', label: '3回戦', token: '--c-chart-3' },
 ] as const
 const TOKENS = ['--c-chart-1', '--c-chart-2', '--c-chart-3', '--c-chart-grid', '--c-chart-axis', '--c-bg', '--c-border', '--c-surface-2'] as const
-
-/** 大会が開かれなかった年(グラフでは空白として描き、年を詰めない) */
-const HIATUS = [2011, 2012, 2013, 2014]
 
 function passRate(y: YearStats, rk: (typeof SERIES)[number]['key']): number | null {
   const r = y.byRound[rk]
@@ -50,8 +47,8 @@ export default function TournamentStats({ data }: { data: Stats }) {
   }
 
   const byYear = [...data.byYear].sort((a, b) => a.year - b.year)
-  // 休止の年も軸に並べる(値は空)。年を詰めると、2010→2015 が隣り合って時間の幅が歪んで見える
-  const years = [...byYear.map((y) => y.year), ...HIATUS].sort((a, b) => a - b)
+  // 休止の年も軸に並べる(値は空)
+  const years = yearsWithHiatus(byYear.map((y) => y.year))
   const yearOf = new Map(byYear.map((y) => [y.year, y]))
   const entriesData = years.map((yr) => ({ year: String(yr), entries: yearOf.get(yr)?.entries ?? null }))
   const rateData = years.map((yr) => {
@@ -80,15 +77,7 @@ export default function TournamentStats({ data }: { data: Stats }) {
         </text>
       )
     }
-  const hiatus = (
-    <ReferenceArea
-      x1="2011"
-      x2="2014"
-      fill={t['--c-surface-2']}
-      fillOpacity={1}
-      label={{ value: '休止', position: 'insideTop', fill: t['--c-chart-axis'], fontSize: 12 }}
-    />
-  )
+  const hiatus = hiatusArea(t['--c-surface-2'], t['--c-chart-axis'])
 
   return (
     <>
@@ -224,6 +213,94 @@ export default function TournamentStats({ data }: { data: Stats }) {
         </HistoryTable>
       <p className="legend">各セルは「通過数/出場数」</p>
 
+      <SeedSplitSection split={data.seedSplit} />
+    </>
+  )
+}
+
+function rate(c: PassCount): string {
+  return c.appeared ? `${((c.passed / c.appeared) * 100).toFixed(1)}%` : '—'
+}
+
+function countCell(c: PassCount, key?: string) {
+  return (
+    <td key={key} className="no">
+      {rate(c)} <small>({c.passed}/{c.appeared})</small>
+    </td>
+  )
+}
+
+/**
+ * 準々決勝・準決勝の通過率を、シード組(その年の1回戦が免除=シード通過)と1回戦からの勝ち上がり組に分けて比べる。
+ * シードは前年の実績で与えられるので、差は「実績のある組とそうでない組の差」で、シードという制度の有利さではない。
+ */
+function SeedSplitSection({ split }: { split: SeedSplit }) {
+  if (!split.fromYear) return null
+  const span = `${split.fromYear}〜${split.toYear}年`
+  return (
+    <>
+      <h2 className="section-title">シード組と勝ち上がり組の通過率</h2>
+      <p className="section-note">
+        準々決勝・準決勝を、1回戦を免除された組(シード)と1回戦から勝ち上がった組に分けて、通過した割合を比べたものです({span}の合計)。
+        シードは前の年の成績に応じて与えられるので、この差は「実績のある組とそうでない組の差」です。シードだから有利、という意味ではありません。
+        結果が出そろっていない年は含めません。
+      </p>
+      <HistoryTable caption={`シード組と勝ち上がり組の通過率(${span})`}>
+        <thead>
+          <tr>
+            <th scope="col">回戦</th>
+            <th scope="col">シード組</th>
+            <th scope="col">1回戦から</th>
+          </tr>
+        </thead>
+        <tbody>
+          {split.rounds.map((r) => (
+            <tr key={r.round}>
+              <td>{ROUND_LABEL[r.round]}</td>
+              {countCell(r.seed)}
+              {countCell(r.climbed)}
+            </tr>
+          ))}
+        </tbody>
+      </HistoryTable>
+      <p className="legend">通過率(通過数/出場数)。欠場・出場予定は数えません。</p>
+      <details className="note">
+        <summary>
+          <span className="note-label">年ごとに見る</span>
+        </summary>
+        <HistoryTable caption="シード組と勝ち上がり組の通過率(年ごと)">
+          <thead>
+            <tr>
+              <th scope="col">年</th>
+              {split.rounds.map((r) => (
+                <th key={`${r.round}-s`} scope="col">
+                  {ROUND_LABEL[r.round]} シード
+                </th>
+              ))}
+              {split.rounds.map((r) => (
+                <th key={`${r.round}-c`} scope="col">
+                  {ROUND_LABEL[r.round]} 1回戦から
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[...split.byYear].reverse().map((y) => (
+              <tr key={y.year}>
+                <td className="year">{y.year}</td>
+                {split.rounds.map((r) => {
+                  const c = y[r.round]
+                  return c ? countCell(c.seed, `${r.round}-s`) : <td key={`${r.round}-s`} className="no">—</td>
+                })}
+                {split.rounds.map((r) => {
+                  const c = y[r.round]
+                  return c ? countCell(c.climbed, `${r.round}-c`) : <td key={`${r.round}-c`} className="no">—</td>
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </HistoryTable>
+      </details>
     </>
   )
 }

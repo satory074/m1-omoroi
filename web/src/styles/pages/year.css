@@ -249,7 +249,7 @@
   background: var(--c-surface-2);
 }
 
-/* コンビ詳細の年から来たときの「この組」。色だけでなく左の太線と「コンビ詳細から」の文字でも示す */
+/* コンビ詳細の年から来たときの「この組」。色だけでなく左の太線と「この組」の文字でも示す(記録・統計のラストイヤーの表からも来る) */
 .year-row.is-focus {
   background: var(--c-accent-tint);
   box-shadow: inset 4px 0 0 var(--c-focus);

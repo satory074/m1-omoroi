@@ -191,6 +191,12 @@
   line-height: 2;
 }
 
+/* 表のセルに単独で置くリンク(年度一覧へ飛ぶ回戦など)。行が詰まっていても押しやすい高さにする(WCAG 2.5.8 の 24px) */
+.history td .cell-target {
+  display: inline-block;
+  padding-block: var(--space-1);
+}
+
 /* セルの補足(審査員の担当年など)は折り返す。セル自体は数字の列なので折り返さない */
 .history td .cell-note {
   white-space: normal;

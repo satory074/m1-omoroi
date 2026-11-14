@@ -174,6 +174,26 @@ def _longest_streak(years: list[int]) -> tuple[int, int, int]:
     return best
 
 
+def _m1_limit_years(year: int) -> int:
+    """その年の出場資格「結成N年以内」のN。web/src/lib/eligibility.ts の m1LimitYears と同じ意味。
+
+    第1期 2001–2010 は10年、第2期 2015– は15年。満経過年数(大会年 − 結成年)がこれに一致する年がラストイヤー。
+    """
+    return 10 if year <= 2010 else 15
+
+
+def _agency_name(belong: str | None) -> str | None:
+    """公式DBの所属表記「プロ（吉本興業）」を事務所名「吉本興業」にする。レガシーは生の文字列のまま。"""
+    if belong is None:
+        return None
+    m = re.fullmatch(r"プロ（(.+)）", belong)
+    return m.group(1) if m else belong
+
+
+# 関西 = 近畿の2府4県。決勝の顔ぶれの推移(finalistsByYear)で使う。出身地(公式DBの members[].from)で判定し、活動拠点ではない
+KANSAI_PREFECTURES = {"大阪府", "京都府", "兵庫県", "奈良県", "和歌山県", "滋賀県"}
+
+
 def build_rankings(records: list[dict]) -> dict:
     def top(counter: dict[int, int], names: dict[int, str], n=30):
         ranked = sorted(counter.items(), key=lambda kv: (-kv[1], names.get(kv[0], "")))
@@ -220,6 +240,92 @@ def build_rankings(records: list[dict]) -> dict:
         "mostQuarterfinals": top(quarterfinal_up, names),
         "mostFirstRoundFails": top(first_fails, names),
         "longestStreaks": _top_with_ties(streaks, 30),
+        "lastYearEntrants": _last_year_entrants(records),
+    }
+
+
+def _last_year_entrants(records: list[dict]) -> dict | None:
+    """最新の年(records の history に出てくる最大の年)がラストイヤーの組と、その年の到達回戦。
+
+    シーズン中に「ラストイヤーの組がどこまで残っているか」を見るためのもの。round はその年の
+    results で一番先の本線の回戦(敗者復活戦は数えない)、result はその回戦の結果(scheduled なら出場予定)。
+    best は年度JSONの best と同じ意味の通算最高(1..6=MAIN_ROUNDS、7=優勝、0=結果なし)。
+    """
+    latest = max((int(y) for rec in records for y in rec.get("history", {})), default=None)
+    if latest is None:
+        return None
+    limit = _m1_limit_years(latest)
+    formed_target = latest - limit
+    combis = []
+    for rec in records:
+        entry = rec.get("history", {}).get(str(latest))
+        if entry is None or rec.get("formed") != formed_target:
+            continue
+        res = entry.get("results") or {}
+        level = _round_level(res)
+        round_key = MAIN_ROUNDS[level - 1] if level else None
+        combis.append(
+            {
+                "id": rec["id"],
+                "name": rec["name"],
+                "formed": rec["formed"],
+                "round": round_key,
+                "result": res.get(round_key) if round_key else None,
+                "best": max(
+                    (_result_level(h.get("results") or {}) for h in rec["history"].values()),
+                    default=0,
+                ),
+            }
+        )
+    combis.sort(key=lambda c: (-(MAIN_ROUNDS.index(c["round"]) + 1 if c["round"] else 0), c["name"]))
+    return {"year": latest, "limit": limit, "formed": formed_target, "combis": combis}
+
+
+# シード組と勝ち上がり組の比較で数える結果(出場予定・欠場・不明は数えない)
+_DECIDED = PASSING | {"fail", "fail_inferred"}
+SEED_SPLIT_ROUNDS = ("quarterfinal", "semifinal")
+
+
+def _seed_split(year_files: dict[int, dict]) -> dict:
+    """準々決勝・準決勝の通過率を「シード組」と「1回戦からの勝ち上がり組」に分ける(2015年以降)。
+
+    シード = その年の results.first が seed_pass(公式DBはシードの印を1回戦にしか付けない)。
+    シードは前年の実績で与えられるので、差は「実績のある組とそうでない組の差」であって
+    シードという制度の有利さではない(フロントで明記する)。その回戦に scheduled が1件でも残る年は
+    結果が出そろっていないので丸ごと外す(進行中のシーズンが途中まで混ざらないように)。
+    """
+    def bucket():
+        return {"appeared": 0, "passed": 0}
+
+    totals = {rk: {"seed": bucket(), "climbed": bucket()} for rk in SEED_SPLIT_ROUNDS}
+    by_year = []
+    for year, yf in sorted(year_files.items()):
+        if year < 2015:
+            continue
+        row: dict = {"year": year}
+        for rk in SEED_SPLIT_ROUNDS:
+            entries = [e for e in yf["entries"] if rk in e["results"]]
+            if not entries or any(e["results"][rk] == "scheduled" for e in entries):
+                continue
+            split = {"seed": bucket(), "climbed": bucket()}
+            for e in entries:
+                value = e["results"][rk]
+                if value not in _DECIDED:
+                    continue
+                side = "seed" if e["results"].get("first") == "seed_pass" else "climbed"
+                split[side]["appeared"] += 1
+                split[side]["passed"] += value in PASSING
+            row[rk] = split
+            for side in ("seed", "climbed"):
+                for k in ("appeared", "passed"):
+                    totals[rk][side][k] += split[side][k]
+        if len(row) > 1:
+            by_year.append(row)
+    return {
+        "fromYear": by_year[0]["year"] if by_year else None,
+        "toYear": by_year[-1]["year"] if by_year else None,
+        "rounds": [{"round": rk, **totals[rk]} for rk in SEED_SPLIT_ROUNDS],
+        "byYear": by_year,
     }
 
 
@@ -240,7 +346,7 @@ def build_stats(year_files: dict[int, dict]) -> dict:
                 "byRound": rounds,
             }
         )
-    return {"byYear": by_year}
+    return {"byYear": by_year, "seedSplit": _seed_split(year_files)}
 
 
 def build_champions(
@@ -680,12 +786,20 @@ def _find_champion_first_round(finals: dict) -> dict | None:
     return next((r for r in rows if _norm_name(r["name"]) == nm), None)
 
 
-def build_finals_stats(all_finals: list[dict], records: list[dict], champions: dict) -> dict:
+def build_finals_stats(
+    all_finals: list[dict],
+    records: list[dict],
+    champions: dict,
+    venues: dict[str, list[str]] | None = None,
+    finals_dates: dict[int, tuple[int, int, int]] | None = None,
+) -> dict:
     """決勝データ横断の統計(data/finals_stats.json)を集計する。
 
     出番順・順位・偏差値は各年 finals から、結成年数は merge_archive_history 後の
     records から、優勝系列は champions.json(2001〜2010の結成年補完済み)から算出。
     出番順が不明(order null)の行・結成年不明の組は分母から除外する。
+    venues(overrides/judges.json の会場票列。2001年の大阪/札幌/福岡)は1人あたり平均点から外す。
+    finals_dates(決勝開催日)は決勝進出者の満年齢に使い、無い年は12月31日で数える(people_stats と同じ)。
     """
     by_id = {r["id"]: r for r in records}
     finals_sorted = sorted(all_finals, key=lambda f: f["year"])
@@ -897,12 +1011,7 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
             if rec is None:
                 agency_excluded += 1
                 continue
-            belong = rec.get("belong")
-            if belong is None:
-                name = "不明"
-            else:
-                m = re.fullmatch(r"プロ（(.+)）", belong)
-                name = m.group(1) if m else belong
+            name = _agency_name(rec.get("belong")) or "不明"
             agency[name]["value"] += 1
             agency[name]["ids"].add(cid)
     agency_rows = [
@@ -952,6 +1061,154 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
             }
         )
 
+    # --- B14: 決勝の連続進出(大会連続)と、次の大会でも決勝に来た割合 ---
+    # 開かれた大会の並びで数える(2011〜2014は大会が無いので 2010→2015 は続けて数える)。
+    # 名寄せは B8 と同じ identity。1組に連続区間が複数あれば最長の1つだけ出す
+    held = [f["year"] for f in finals_sorted]
+    held_pos = {y: i for i, y in enumerate(held)}
+    streak_rows = []
+    for key, slot in fa_count.items():
+        length, s, e = _longest_streak(sorted({held_pos[y] for y in slot["years"]}))
+        if length < 2:
+            continue
+        streak_rows.append(
+            {
+                "id": slot["id"],
+                "name": slot["name"],
+                "value": length,
+                "start": held[s],
+                "end": held[e],
+                "ongoing": held[e] == held[-1],
+            }
+        )
+    streak_rows.sort(key=lambda r: (-r["value"], r["start"], r["name"]))
+    keys_by_year = [{identity(r) for r in f.get("firstRound", [])} for f in finals_sorted]
+    repeat = {
+        "pairs": sum(len(a) for a in keys_by_year[:-1]),
+        "back": sum(len(a & b) for a, b in zip(keys_by_year, keys_by_year[1:])),
+    }
+
+    # --- B15: ラストイヤー(結成年数 = その年の上限)で決勝に進んだ組 ---
+    # 比べる相手として、決勝進出の延べ組数と優勝数(全体)も一緒に出す
+    last_rows = []
+    total_finalists = 0
+    total_champions = 0
+    unknown_formed_finalists = 0
+    for finals in finals_sorted:
+        year = finals["year"]
+        final_keys = {identity(r) for r in finals.get("finalRound", [])}
+        champ = next((r for r in finals.get("finalRound", []) if r.get("champion")), None)
+        champ_key = identity(champ) if champ is not None else None
+        total_champions += champ is not None
+        for row in finals.get("firstRound", []):
+            total_finalists += 1
+            rec = by_id.get(row.get("combiId"))
+            formed = rec.get("formed") if rec else None
+            if formed is None:
+                unknown_formed_finalists += 1
+                continue
+            if year - formed != _m1_limit_years(year):
+                continue
+            key = identity(row)
+            # 1本目の順位は合計点から数える(同点は同順位)。rank 欄は2007・2008年だけ最終順位が入っているため使わない
+            first_rank = 1 + sum(
+                1
+                for r in finals.get("firstRound", [])
+                if (r.get("total") or 0) > (row.get("total") or 0)
+            )
+            last_rows.append(
+                {
+                    "year": year,
+                    "name": row["name"],
+                    "combiId": row.get("combiId"),
+                    "formed": formed,
+                    "rank": first_rank,
+                    "finalRound": key in final_keys,
+                    "champion": key == champ_key,
+                }
+            )
+
+    # --- B16: 1人あたり平均点(審査員の人数が年で5〜9人と違うので合計点ではなくこちらで比べる) ---
+    venue_map = venues or {}
+    per_judge = []
+    for finals in finals_sorted:
+        year = finals["year"]
+        venue_set = set(venue_map.get(str(year), []))
+        cols = [i for i, j in enumerate(finals.get("judges", [])) if j not in venue_set]
+        for row in finals.get("firstRound", []):
+            scores = row.get("scores") or []
+            vals = [scores[i] for i in cols if i < len(scores) and scores[i] is not None]
+            if not vals:
+                continue
+            per_judge.append(
+                {
+                    "year": year,
+                    "name": row["name"],
+                    "combiId": row.get("combiId"),
+                    "total": row.get("total"),
+                    "judges": len(vals),
+                    "perJudge": round(statistics.fmean(vals), 2),
+                }
+            )
+    per_judge.sort(key=lambda r: (-r["perJudge"], r["year"], r["name"]))
+    for i, r in enumerate(per_judge):
+        r["rank"] = (
+            per_judge[i - 1]["rank"]
+            if i and r["perJudge"] == per_judge[i - 1]["perJudge"]
+            else i + 1
+        )
+    per_judge_top = _top_with_ties(per_judge, 20, key=lambda r: r["perJudge"])
+
+    # --- B17: 決勝進出者の年齢・結成年数・関西出身・吉本の年ごとの推移 ---
+    # 年齢はメンバー1人ずつの決勝開催日時点の満年齢(10〜90歳の範囲外は自己申告の誤りとして外す)。
+    # 吉本は B7 と同じく公式DBの「現在の」所属で判定する(当時と違う組がある。フロントで注記)
+    dates = finals_dates or {}
+    finalists_by_year = []
+    for finals in finals_sorted:
+        year = finals["year"]
+        on = dates.get(year, (year, 12, 31))
+        ages: list[int] = []
+        formed_years: list[int] = []
+        kansai = {"all": 0, "some": 0, "none": 0, "unknown": 0}
+        yoshimoto = {"yes": 0, "no": 0, "unknown": 0}
+        rows = finals.get("firstRound", [])
+        for row in rows:
+            rec = by_id.get(row.get("combiId")) or {}
+            members = rec.get("members") or []
+            for m in members:
+                b = _parse_birth(m.get("birth"))
+                if b is None:
+                    continue
+                age = _age_at(b, on)
+                if 10 <= age <= 90:
+                    ages.append(age)
+            formed = rec.get("formed")
+            if formed is not None and year >= formed:
+                formed_years.append(year - formed)
+            origins = [m.get("from") for m in members]
+            if not origins or any(o is None for o in origins):
+                kansai["unknown"] += 1
+            else:
+                hits = sum(o in KANSAI_PREFECTURES for o in origins)
+                kansai["all" if hits == len(origins) else "some" if hits else "none"] += 1
+            agency_name = _agency_name(rec.get("belong"))
+            if agency_name is None:
+                yoshimoto["unknown"] += 1
+            else:
+                yoshimoto["yes" if agency_name.startswith("吉本興業") else "no"] += 1
+        finalists_by_year.append(
+            {
+                "year": year,
+                "n": len(rows),
+                "meanAge": round(statistics.fmean(ages), 1) if ages else None,
+                "ageN": len(ages),
+                "meanFormedYears": round(statistics.fmean(formed_years), 1) if formed_years else None,
+                "formedN": len(formed_years),
+                "kansai": kansai,
+                "yoshimoto": yoshimoto,
+            }
+        )
+
     def _slots(counter: dict[int, dict]) -> list[dict]:
         return [{"order": o, **counter[o]} for o in sorted(counter)]
 
@@ -990,6 +1247,16 @@ def build_finals_stats(all_finals: list[dict], records: list[dict], champions: d
         "nameLengthStats": name_length_rows,
         "agencyFinals": agency_rows,
         "agencyFinalsExcluded": agency_excluded,
+        "finalStreaks": _top_with_ties(streak_rows, 15),
+        "repeatFinalists": repeat,
+        "lastYearFinalists": {
+            "rows": last_rows,
+            "finalists": total_finalists,
+            "champions": total_champions,
+            "unknownFormed": unknown_formed_finalists,
+        },
+        "perJudgeTop": per_judge_top,
+        "finalistsByYear": finalists_by_year,
     }
 
 
@@ -1325,6 +1592,8 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
     )
     by_year_rows = []
     final_votes_rows = []
+    standardized_rows = []
+    single_scores: list[dict] = []  # 個人審査員の1点ずつ(会場票は含まない)
 
     for finals in sorted(all_finals, key=lambda f: f["year"]):
         year = finals["year"]
@@ -1372,6 +1641,8 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
                     "low": pc["low"],
                     "max": mx_val,
                     "min": mn_val,
+                    # 採点の幅(母標準偏差)。幅の広い審査員ほど合計点の順位を動かす力が大きい
+                    "sd": round(statistics.pstdev(pc["scores"]), 2),
                     # その審査員がその年に最も高く/低く評価した組(同点は全件、出番順)
                     "maxCombis": [c for v, c in zip(pc["scores"], pc["combis"]) if v == mx_val],
                     "minCombis": [c for v, c in zip(pc["scores"], pc["combis"]) if v == mn_val],
@@ -1383,6 +1654,13 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
             c["diff_sum"] += sum(pc["diffs"])
             c["topCount"] += pc["top"]
             c["lowCount"] += pc["low"]
+            for v, combi in zip(pc["scores"], pc["combis"]):
+                single_scores.append(
+                    {"year": year, "judge": canon, "score": v, **combi}
+                )
+        std = _standardized_top(finals)
+        if std is not None:
+            standardized_rows.append(std)
         if year_judges:
             by_year_rows.append(
                 {
@@ -1434,11 +1712,82 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
     for p in problems:
         print(f"[build] judges整合性警告: {p}")
 
+    highest = sorted(single_scores, key=lambda s: (-s["score"], s["year"], s["judge"]))
+    lowest = sorted(single_scores, key=lambda s: (s["score"], s["year"], s["judge"]))
     return {
         "career": career_rows,
         "byYear": by_year_rows,
         "finalVotes": final_votes_rows,
         "venueColumns": venues,
+        "standardized": standardized_rows,
+        # 5件+境界の同点。10件にすると98点の組が20件並んで読めなくなる
+        "scoreExtremes": {
+            "highest": _top_with_ties(highest, 5, key=lambda s: s["score"]),
+            "lowest": _top_with_ties(lowest, 5, key=lambda s: s["score"]),
+        },
+    }
+
+
+def _standardized_top(finals: dict) -> dict | None:
+    """審査員ごとに点数を標準化して足したら、最終決戦に進む組(上位N組)は変わったか。
+
+    標準化 = 列ごとに (点 − その列の平均) ÷ その列の母標準偏差。幅の広い審査員ほど単純合計の
+    順位を動かす力が大きいので、全員の幅をそろえた場合と比べる。合計点を作る全列を使う
+    (2001年の会場票も合計に入っていたので含める)。欠けた点がある列・標準偏差0の列は外す。
+    比べる相手は実際に finalRound へ進んだ組(同点の扱いを含めた本物の結果)を1本目の順位順に並べたもの。
+    """
+    first = finals.get("firstRound", [])
+    final_round = finals.get("finalRound", [])
+    n = len(final_round)
+    if len(first) < 2 or n == 0:
+        return None
+    z = [0.0] * len(first)
+    used = 0
+    for col in range(len(finals.get("judges", []))):
+        vals = [
+            (r.get("scores") or [])[col] if col < len(r.get("scores") or []) else None
+            for r in first
+        ]
+        if any(v is None for v in vals):
+            continue
+        mean = statistics.fmean(vals)
+        sd = statistics.pstdev(vals)
+        if sd == 0:
+            continue
+        used += 1
+        for i, v in enumerate(vals):
+            z[i] += (v - mean) / sd
+    if used == 0:
+        return None
+
+    final_ids = {r["combiId"] for r in final_round if r.get("combiId") is not None}
+    final_names = {_norm_name(r["name"]) for r in final_round}
+
+    def advanced(row: dict) -> bool:
+        return row.get("combiId") in final_ids or _norm_name(row["name"]) in final_names
+
+    def pick(row: dict) -> dict:
+        return {"name": row["name"], "combiId": row.get("combiId")}
+
+    # 並びは1本目の合計点順(同点だけ rank で決める)。rank だけに頼らないのは、2007・2008年の
+    # 公式アーカイブ由来の rank が最終順位(王者=1)になっていて1本目の順位と食い違うため
+    big = len(first) + 1
+
+    def first_round_order(r: dict) -> tuple:
+        return (-(r.get("total") or 0), r.get("rank") or big)
+
+    actual = sorted((r for r in first if advanced(r)), key=first_round_order)
+    by_z = sorted(range(len(first)), key=lambda i: (-z[i], first_round_order(first[i])))
+    std = [first[i] for i in by_z[:n]]
+    actual_names = [r["name"] for r in actual]
+    std_names = [r["name"] for r in std]
+    return {
+        "year": finals["year"],
+        "n": n,
+        "actual": [pick(r) for r in actual],
+        "standardized": [pick(r) for r in std],
+        "setChanged": set(actual_names) != set(std_names),
+        "orderChanged": actual_names != std_names,
     }
 
 
@@ -1648,20 +1997,31 @@ def build():
     _write(DATA_DIR / "champions.json", champions_data)
     _write(DATA_DIR / "advancers.json", advancers)
 
+    # 決勝開催日と審査員の名寄せ・会場票列は複数の統計で使うので1回だけ読む
+    finals_dates = _load_finals_dates()
+    judges_ov = _load_judges_overrides()
+
     # 人物・キャリア統計(年齢記録・コンビ内年齢差・アマチュア・職業別・トリオ)
     _write(
         DATA_DIR / "people_stats.json",
-        build_people_stats(records, all_finals, champ_overrides, _load_finals_dates()),
+        build_people_stats(records, all_finals, champ_overrides, finals_dates),
     )
 
-    # 決勝データ横断の統計(出番順・順位・偏差値・最終決戦進出・事務所別)
+    # 決勝データ横断の統計(出番順・順位・偏差値・最終決戦進出・事務所別・連続進出・ラストイヤー・
+    # 1人あたり平均点・決勝進出者の顔ぶれの推移)
     if all_finals:
         _write(
             DATA_DIR / "finals_stats.json",
-            build_finals_stats(all_finals, records, champions_data),
+            build_finals_stats(
+                all_finals,
+                records,
+                champions_data,
+                venues=judges_ov.get("venues", {}),
+                finals_dates=finals_dates,
+            ),
         )
-        # 審査員統計(名寄せ・採点傾向・最終決戦の投票)
-        _write(DATA_DIR / "judges_stats.json", build_judges_stats(all_finals))
+        # 審査員統計(名寄せ・採点傾向と幅・標準化との比較・個人の最高/最低点・最終決戦の投票)
+        _write(DATA_DIR / "judges_stats.json", build_judges_stats(all_finals, judges_ov))
 
     _write(
         DATA_DIR / "meta.json",

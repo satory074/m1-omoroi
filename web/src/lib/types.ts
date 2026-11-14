@@ -174,6 +174,27 @@ export interface Rankings {
   mostQuarterfinals: RankingItem[]
   mostFirstRoundFails: RankingItem[]
   longestStreaks: StreakItem[]
+  /** 最新の年がラストイヤー(結成 year − limit 年)の組。year のデータが無ければ null */
+  lastYearEntrants: LastYearEntrants | null
+}
+
+export interface LastYearEntrant {
+  id: number
+  name: string
+  formed: number
+  /** その年に到達した本線の回戦(敗者復活戦は数えない)。結果がまだ無ければ null */
+  round: RoundKey | null
+  result: ResultKey | null
+  /** 通算最高(年度JSONの best と同じ: 1..6=回戦、7=優勝、0=結果なし) */
+  best: number
+}
+
+export interface LastYearEntrants {
+  year: number
+  limit: number
+  formed: number
+  /** 到達の深い順、次に名前順 */
+  combis: LastYearEntrant[]
 }
 
 export interface YearStats {
@@ -185,6 +206,20 @@ export interface YearStats {
 
 export interface Stats {
   byYear: YearStats[]
+  seedSplit: SeedSplit
+}
+
+export interface PassCount {
+  appeared: number
+  passed: number
+}
+
+/** 準々決勝・準決勝の通過率を、シード組(その年の1回戦が seed_pass)と1回戦からの勝ち上がり組に分けたもの */
+export interface SeedSplit {
+  fromYear: number | null
+  toYear: number | null
+  rounds: { round: RoundKey; seed: PassCount; climbed: PassCount }[]
+  byYear: ({ year: number } & Partial<Record<RoundKey, { seed: PassCount; climbed: PassCount }>>)[]
 }
 
 export interface ChampionMember {
@@ -393,6 +428,8 @@ export interface JudgeYearRow {
   low: number
   max: number
   min: number
+  /** 採点の幅(母標準偏差) */
+  sd: number
   /** max/min を付けた組(同点は全件) */
   maxCombis: JudgePickCombi[]
   minCombis: JudgePickCombi[]
@@ -421,6 +458,33 @@ export interface JudgesStats {
   finalVotes: FinalVoteYear[]
   /** 個人審査員ではない会場票の列(2001年の大阪/札幌/福岡) */
   venueColumns: Record<string, string[]>
+  /** 審査員ごとに点数を標準化して足した場合の最終決戦進出組との比較(年ごと) */
+  standardized: StandardizedYear[]
+  /** 個人審査員の1点ずつの最高/最低(5件+境界の同点。会場票は含まない) */
+  scoreExtremes: { highest: SingleScore[]; lowest: SingleScore[] }
+}
+
+export interface StandardizedYear {
+  year: number
+  /** 最終決戦に進む組数(2001年は2、ほかは3) */
+  n: number
+  /** 実際に最終決戦へ進んだ組(1本目の合計点順) */
+  actual: JudgePickCombi[]
+  /** 標準化した点の上位 n 組 */
+  standardized: JudgePickCombi[]
+  /** 顔ぶれが変わる */
+  setChanged: boolean
+  /** 顔ぶれか並びが変わる */
+  orderChanged: boolean
+}
+
+export interface SingleScore {
+  year: number
+  /** 正規名 */
+  judge: string
+  score: number
+  name: string
+  combiId: number | null
 }
 
 /** 年齢記録の1行(人物単位の極値) */
@@ -500,4 +564,65 @@ export interface FinalsStats {
   nameLengthStats: { length: number; entrants: number; finalists: number; champions: number }[]
   agencyFinals: AgencyFinals[]
   agencyFinalsExcluded: number
+  /** 決勝の連続進出(大会連続。休止の2011〜2014は飛ばして数える)。2大会以上 */
+  finalStreaks: FinalStreak[]
+  /** 隣り合う大会どうしで、前の大会の決勝進出者が次の大会も決勝に来た数 */
+  repeatFinalists: { pairs: number; back: number }
+  lastYearFinalists: {
+    rows: LastYearFinalist[]
+    /** 比べる相手: 決勝進出の延べ組数と優勝数(全体) */
+    finalists: number
+    champions: number
+    unknownFormed: number
+  }
+  /** 1本目の1人あたり平均点の上位(20件+境界の同点) */
+  perJudgeTop: PerJudgeScore[]
+  finalistsByYear: FinalistsYear[]
+}
+
+export interface FinalStreak {
+  id: number | null
+  name: string
+  value: number
+  start: number
+  end: number
+  /** 最新の決勝の年で終わっている(今年も決勝に来れば伸びる) */
+  ongoing: boolean
+}
+
+export interface LastYearFinalist {
+  year: number
+  name: string
+  combiId: number | null
+  formed: number
+  /** 1本目の順位(合計点から数える。同点は同順位) */
+  rank: number
+  finalRound: boolean
+  champion: boolean
+}
+
+export interface PerJudgeScore {
+  rank: number
+  year: number
+  name: string
+  combiId: number | null
+  total: number
+  /** 平均に使った審査員の人数(2001年は会場票を除く7人) */
+  judges: number
+  perJudge: number
+}
+
+export interface FinalistsYear {
+  year: number
+  n: number
+  /** メンバーの決勝開催日時点の満年齢の平均 */
+  meanAge: number | null
+  ageN: number
+  /** 結成年数(大会年 − 結成年)の平均 */
+  meanFormedYears: number | null
+  formedN: number
+  /** 出身地: 全員が関西(2府4県) / 一部 / いない / 不明 */
+  kansai: { all: number; some: number; none: number; unknown: number }
+  /** 吉本(公式DBの現在の所属) */
+  yoshimoto: { yes: number; no: number; unknown: number }
 }

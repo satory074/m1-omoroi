@@ -63,7 +63,7 @@
   color: var(--c-text);
 }
 
-/* コンビ詳細から来た行の目印 */
+/* コンビ詳細や記録・統計から来た行の目印(「この組」) */
 .chip-focus {
   background: var(--c-focus);
   color: var(--c-bg);
