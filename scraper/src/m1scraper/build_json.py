@@ -622,6 +622,39 @@ def _make_final_identity(all_finals: list[dict]):
     return identity
 
 
+def normalize_first_round_ranks(all_finals: list[dict]) -> list[str]:
+    """firstRound の rank を「1本目(ファーストラウンド)の順位」にそろえる。戻り値は振り直した年の説明。
+
+    公式アーカイブ final.htm の「順位」欄は年によって意味が違い、2007・2008年は決勝全体の最終順位
+    (王者=1)が入っている(2002年などは1本目の順位)。合計点が高いのに rank が下、という逆転が1組でも
+    ある年は rank 欄を1本目の順位として信用できないので、合計点から振り直す(同点は同順位)。
+    逆転の無い年は触らない。同点の年の公式の決着(2021年の錦鯉とインディアンス等)を残すため。
+    """
+    notes = []
+    for finals in all_finals:
+        rows = [r for r in finals.get("firstRound", []) if r.get("total") is not None]
+        ranked = [r for r in rows if r.get("rank") is not None]
+        bad = next(
+            (
+                (a, b)
+                for a in ranked
+                for b in ranked
+                if a["total"] > b["total"] and a["rank"] > b["rank"]
+            ),
+            None,
+        )
+        if bad is None:
+            continue
+        a, b = bad
+        notes.append(
+            f"{finals['year']}: rank 欄が1本目の合計点の順と食い違うので合計点から振り直した"
+            f"(例: {a['name']} {a['total']}点が rank {a['rank']}、{b['name']} {b['total']}点が rank {b['rank']})"
+        )
+        for r in rows:
+            r["rank"] = 1 + sum(1 for x in rows if x["total"] > r["total"])
+    return notes
+
+
 def annotate_final_appearances(all_finals: list[dict]) -> None:
     """finals の firstRound 各行に finalAppearance(その年時点で通算N回目の決勝進出)を付与する。"""
     identity = _make_final_identity(all_finals)
@@ -1110,8 +1143,9 @@ def build_finals_stats(
             if year - formed != _m1_limit_years(year):
                 continue
             key = identity(row)
-            # 1本目の順位は合計点から数える(同点は同順位)。rank 欄は2007・2008年だけ最終順位が入っているため使わない
-            first_rank = 1 + sum(
+            # 1本目の順位。rank は build() が normalize_first_round_ranks で1本目の順位にそろえ済み
+            # (同点の公式の決着も残る)。rank が無いデータだけ合計点から数える(同点は同順位)
+            first_rank = row.get("rank") or 1 + sum(
                 1
                 for r in finals.get("firstRound", [])
                 if (r.get("total") or 0) > (row.get("total") or 0)
@@ -1769,8 +1803,8 @@ def _standardized_top(finals: dict) -> dict | None:
     def pick(row: dict) -> dict:
         return {"name": row["name"], "combiId": row.get("combiId")}
 
-    # 並びは1本目の合計点順(同点だけ rank で決める)。rank だけに頼らないのは、2007・2008年の
-    # 公式アーカイブ由来の rank が最終順位(王者=1)になっていて1本目の順位と食い違うため
+    # 並びは1本目の合計点順(同点だけ rank=公式の決着で決める)。比べるのは「合計点で決まった順」なので
+    # 合計点を先に使う(rank は build() で1本目の順位にそろえてあるが、この関数単体でも正しく動くように)
     big = len(first) + 1
 
     def first_round_order(r: dict) -> tuple:
@@ -1977,6 +2011,10 @@ def build():
                 row["combiId"] = link(row["name"], finals["year"])
             finals_years.append(int(f.stem))
             all_finals.append(finals)
+        # rank を1本目の順位にそろえる(2007・2008年の公式アーカイブは最終順位が入っている)。
+        # 王者の1本目順位(B3)・偏差値表の firstRoundRank(B5)・ラストイヤーの1本目順位(B15)がこれを使う
+        for note in normalize_first_round_ranks(all_finals):
+            print(f"[build] finals整合性警告: {note}")
         # 全年ロード後の注釈(通算進出回数は年横断の情報が必要)
         annotate_final_appearances(all_finals)
         merge_final_votes(all_finals, _load_final_votes())

@@ -310,3 +310,33 @@ def test_annotate_revivals_no_data_no_warning():
     finals["year"] = 2001
     assert annotate_revivals([finals], _year_file(2001, {"id": 1, "name": "x", "results": {}}), {}) == []
     assert all("revival" not in r for r in finals["firstRound"])
+
+
+def test_normalize_first_round_ranks_fixes_inversion_and_keeps_official_ties():
+    from m1scraper.build_json import normalize_first_round_ranks
+
+    # 2008年の公式アーカイブ: rank 欄が最終順位(王者 NON STYLE=1)で、合計点の順と逆転している
+    y2008 = {
+        "year": 2008,
+        "firstRound": [
+            {"name": "NON STYLE", "total": 644, "rank": 1},
+            {"name": "オードリー", "total": 649, "rank": 2},
+            {"name": "ナイツ", "total": 640, "rank": 3},
+        ],
+    }
+    # 2021年: 655点の同点を公式の決着(錦鯉が2位)で分けている。逆転ではないので触らない
+    y2021 = {
+        "year": 2021,
+        "firstRound": [
+            {"name": "オズワルド", "total": 665, "rank": 1},
+            {"name": "インディアンス", "total": 655, "rank": 3},
+            {"name": "錦鯉", "total": 655, "rank": 2},
+        ],
+    }
+    notes = normalize_first_round_ranks([y2008, y2021])
+    assert len(notes) == 1 and notes[0].startswith("2008")
+    for finals in (y2008, y2021):
+        rows = finals["firstRound"]
+        assert not any(a["total"] > b["total"] and a["rank"] > b["rank"] for a in rows for b in rows)
+    assert {r["name"]: r["rank"] for r in y2008["firstRound"]} == {"オードリー": 1, "NON STYLE": 2, "ナイツ": 3}
+    assert {r["name"]: r["rank"] for r in y2021["firstRound"]} == {"オズワルド": 1, "錦鯉": 2, "インディアンス": 3}
