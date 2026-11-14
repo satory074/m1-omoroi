@@ -14,6 +14,7 @@ import type {
   PeopleStats,
   Popularity,
   Rankings,
+  ScheduleFile,
   Stats,
   YearFile,
 } from './types'
@@ -65,6 +66,15 @@ export function useOfficialVideos() {
   return useQuery({
     queryKey: ['official-videos'],
     queryFn: () => fetchJsonOrNull<OfficialVideos>('official_videos.json'),
+    ...STATIC,
+  })
+}
+
+/** M-1公式サイトの準々決勝以降の日程(約1KB gz)。無いときは null で、日程を出さないだけになる */
+export function useSchedule() {
+  return useQuery({
+    queryKey: ['schedule'],
+    queryFn: () => fetchJsonOrNull<ScheduleFile>('schedule.json'),
     ...STATIC,
   })
 }

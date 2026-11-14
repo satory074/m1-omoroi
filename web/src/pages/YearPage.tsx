@@ -9,17 +9,36 @@ import CombiPhoto from '../components/CombiPhoto'
 import FormedChip from '../components/FormedChip'
 import { VideoLinks } from '../components/OfficialVideo'
 import { ErrorState, Loading, NotFound } from '../components/PageState'
+import RoundSchedule from '../components/RoundSchedule'
 import ScrollNav, { type ScrollNavItem } from '../components/ScrollNav'
 import Segmented from '../components/Segmented'
 import { useAbsentRows } from '../lib/absentRows'
-import { useMeta, useOfficialVideos, usePopularity, useYear } from '../lib/api'
+import { useMeta, useOfficialVideos, usePopularity, useSchedule, useYear } from '../lib/api'
 import { NARROW_QUERY } from '../lib/breakpoints'
 import { m1LimitYears } from '../lib/eligibility'
 import { OFFICIAL_CHANNEL_URL, combiVideos, playlistUrl } from '../lib/officialVideos'
 import { parseYear } from '../lib/params'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits, isPassing } from '../lib/rounds'
+import {
+  SCHEDULE_PAGE_URL,
+  combiVenue,
+  formatDay,
+  nextVenue,
+  roundDateLabel,
+  roundVenues,
+  todayJst,
+} from '../lib/schedule'
 import { clearRow, loadRow, saveRow } from '../lib/scrollMemory'
-import type { OfficialPlaylist, OfficialVideos, Popularity, ResultKey, RoundKey, YearEntry } from '../lib/types'
+import type {
+  OfficialPlaylist,
+  OfficialVideos,
+  Popularity,
+  ResultKey,
+  RoundKey,
+  ScheduleFile,
+  ScheduleVenue,
+  YearEntry,
+} from '../lib/types'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 import { useUrlParam } from '../lib/useUrlParam'
 
@@ -112,6 +131,7 @@ function Row({
   round,
   hits,
   official,
+  venue,
   focused,
 }: {
   e: YearEntry
@@ -119,6 +139,8 @@ function Row({
   round: RoundKey
   hits: number | undefined
   official: OfficialVideos | null | undefined
+  /** その回戦の出番の会場(公式日程に載っている組だけ) */
+  venue: ScheduleVenue | null
   focused: boolean
 }) {
   const res = e.results[round] as ResultKey
@@ -134,6 +156,13 @@ function Row({
         </CombiLink>
         <FormedChip year={year} formed={e.formed} />
         <BestChip level={e.best} until={year} />
+        {venue && (
+          <span className="chip chip-venue">
+            <span className="sr-only">出番 </span>
+            {formatDay(venue)}
+            {venue.area && ` ${venue.area}`}
+          </span>
+        )}
         {focused && <span className="chip chip-focus">コンビ詳細から</span>}
       </span>
       <span className="yr-meta">
@@ -162,6 +191,7 @@ function YearBoard({
   round,
   popularity,
   official,
+  schedule,
   focusId,
   ready,
   signature,
@@ -173,6 +203,7 @@ function YearBoard({
   round: RoundKey
   popularity: Popularity | null | undefined
   official: OfficialVideos | null | undefined
+  schedule: ScheduleFile | null | undefined
   focusId: number | null
   /** 並び順が確定したか(注目度順は注目度データが届くまで並びが変わる) */
   ready: boolean
@@ -313,6 +344,7 @@ function YearBoard({
                   round={round}
                   hits={e.id != null ? popularity?.hits[String(e.id)]?.n : undefined}
                   official={official}
+                  venue={combiVenue(schedule, year, e.id, round)}
                   focused={focused}
                 />
               </div>
@@ -336,6 +368,9 @@ export default function YearPage() {
   const { data: yearFile, isLoading, isError } = useYear(known ? parsedYear : null)
   const { data: popularity } = usePopularity()
   const { data: official } = useOfficialVideos()
+  // 公式日程(準々決勝以降)。持っているのはシーズン中の1年分だけ(schedule.year)
+  const { data: schedule, isPending: schedulePending } = useSchedule()
+  const today = todayJst()
 
   const [resultFilter, setResultFilter] = useUrlParam<ResultFilter>('result', 'all', RESULT_FILTERS)
   const [sort, setSort] = useUrlParam<SortKey>('sort', 'hits', SORTS)
@@ -355,16 +390,24 @@ export default function YearPage() {
   }, [yearFile])
 
   const showAbsent = roundParam === ABSENT
+  // 日程はあるが出場者がまだ居ない回戦(準決勝・決勝など)。ナビに日付で並べ、押すと日程だけを出す
+  const scheduleOnly = (rk: RoundKey) =>
+    (roundCounts.get(rk) ?? 0) === 0 && roundVenues(schedule, year, rk).length > 0
   // 年を移って、引き継いだ回戦がその年に無ければ1回戦を出す(URL はそのまま)
   const round: RoundKey =
     !showAbsent &&
     (ROUND_ORDER as string[]).includes(roundParam) &&
-    (roundCounts.get(roundParam as RoundKey) ?? 0) > 0
+    ((roundCounts.get(roundParam as RoundKey) ?? 0) > 0 || scheduleOnly(roundParam as RoundKey))
       ? (roundParam as RoundKey)
       : 'first'
+  const upcoming = !showAbsent && scheduleOnly(round)
+  const venues = showAbsent ? [] : roundVenues(schedule, year, round)
+  const next = nextVenue(schedule, year, today)
   useDocumentTitle(
     yearFile
-      ? `M-1グランプリ${year} ${showAbsent ? '資格がありながら未エントリーの組' : `${ROUND_LABEL[round]}の結果`}`
+      ? `M-1グランプリ${year} ${
+          showAbsent ? '資格がありながら未エントリーの組' : `${ROUND_LABEL[round]}の${upcoming ? '日程' : '結果'}`
+        }`
       : null,
   )
 
@@ -441,10 +484,14 @@ export default function YearPage() {
     )
   }
   if (isError) return <ErrorState message={`${year}年のデータを読み込めませんでした。`} />
-  if (isLoading || !yearFile) return <Loading />
+  // 最新の年は日程(約1KB)も待つ。待たないと ?round=semifinal を直接開いたとき一瞬1回戦が出て、
+  // 届いた日程の分だけ一覧が下にずれる(戻ったときの行の位置合わせも狂う)
+  const waitSchedule = schedulePending && (!meta || meta.latestYear === year)
+  if (isLoading || !yearFile || waitSchedule) return <Loading />
 
   const isArchive = yearFile.source === 'official-archive'
   const activeRounds = ROUND_ORDER.filter((rk) => (roundCounts.get(rk) ?? 0) > 0)
+  const upcomingRounds = ROUND_ORDER.filter(scheduleOnly)
   const passCount = rows.filter((e) => isPassing(e.results[round])).length
   const yearVideos = official?.years[String(year)]
   const total = roundCounts.get(round) ?? 0
@@ -469,6 +516,24 @@ export default function YearPage() {
       ),
     }
   })
+  if (upcomingRounds.length > 0) roundItems.push({ key: 'sep-upcoming', separator: '' })
+  for (const rk of upcomingRounds) {
+    const date = roundDateLabel(roundVenues(schedule, year, rk))
+    roundItems.push({
+      key: rk,
+      to: { search: searchFor(params, { round: rk, result: null }) },
+      inPage: true,
+      current: !showAbsent && rk === round,
+      className: 'is-upcoming',
+      ariaLabel: `${ROUND_LABEL[rk]} ${date}(出場者は未定)`,
+      label: (
+        <>
+          <span className="step-label">{ROUND_LABEL[rk]}</span>
+          <span className="step-count step-date">{date}</span>
+        </>
+      ),
+    })
+  }
   if (absentRows.length > 0) {
     roundItems.push({ key: 'sep', separator: '' })
     roundItems.push({
@@ -495,6 +560,16 @@ export default function YearPage() {
             エントリー {yearFile.entries.length.toLocaleString('ja-JP')}組
             {isArchive && '(公式アーカイブ由来のため、1回戦で敗退した組は載っていません)'}
           </p>
+          {next && (
+            <Link
+              className="year-next"
+              to={{ search: searchFor(params, { round: next.round, result: null }) }}
+              replace
+              preventScrollReset
+            >
+              {next.venue.date === today ? '今日は' : '次は'} {ROUND_LABEL[next.round]} {formatDay(next.venue)}
+            </Link>
+          )}
           {meta?.finalsYears.includes(year) && (
             <Link className="year-finals-link" to={`/finals/${year}`}>
               決勝の得点表
@@ -504,7 +579,16 @@ export default function YearPage() {
         <ScrollNav label="年" variant="pills" items={yearItems} />
         <ScrollNav label="回戦" variant="steps" items={roundItems} />
 
-        {!showAbsent && (
+        {venues.length > 0 && (
+          <RoundSchedule
+            venues={venues}
+            today={today}
+            url={schedule?.url ?? SCHEDULE_PAGE_URL}
+            detailed={upcoming}
+          />
+        )}
+
+        {!showAbsent && !upcoming && (
           <>
             <div className="year-toolbar">
               <Segmented
@@ -555,6 +639,8 @@ export default function YearPage() {
 
       {showAbsent ? (
         <AbsentAdvancers year={year} rows={absentRows} isArchive={isArchive} />
+      ) : upcoming ? (
+        <p className="page-state">{ROUND_LABEL[round]}の出場者は、公式の発表があり次第載せます。</p>
       ) : (
         <>
           <YearBoard
@@ -564,6 +650,7 @@ export default function YearPage() {
             round={round}
             popularity={popularity}
             official={official}
+            schedule={schedule}
             focusId={focusId}
             ready={ready}
             signature={`${round}|${resultFilter}|${sort}`}

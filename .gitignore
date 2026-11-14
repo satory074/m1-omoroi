@@ -12,6 +12,7 @@ scraper/work/*
 !scraper/work/finals/
 !scraper/work/popularity.json
 !scraper/work/official_videos.json
+!scraper/work/schedule.json
 
 # Node
 web/node_modules/

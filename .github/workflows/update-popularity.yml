@@ -3,6 +3,8 @@
 # 未取得 → 旧クエリ版 → 取得日の古い順で全組を約4週間周期で更新する。
 # あわせて M-1公式YouTube の回戦別プレイリスト/動画(年度ページのリンク)も取り直す
 # (playlists/playlistItems のみ1日30unit前後。search枠は使わない)。
+# M-1公式サイトの準々決勝以降の日程(会場・日時・出場者。年度ページの回戦ナビと出番チップ)も取り直す
+# (公式の会場JSONを7件前後。APIキー不要)。
 # data/ へのコミットで deploy.yml が発火し、サイトにも自動反映される。
 name: Update popularity
 
@@ -42,6 +44,7 @@ jobs:
           uv sync
           # 公式動画の取得に失敗しても注目度の更新は止めない(work は前回分のまま残る)
           uv run m1 fetch-official-videos || echo "::warning::公式YouTube動画の取得に失敗(前回分を維持)"
+          uv run m1 fetch-schedule || echo "::warning::公式日程の取得に失敗(前回分を維持)"
           if [ "${{ inputs.rescore }}" = "true" ]; then
             uv run m1 rescore-popularity
           fi
@@ -53,7 +56,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add scraper/work/popularity.json data/popularity.json
           git add scraper/work/official_videos.json data/official_videos.json 2>/dev/null || true
-          # build は data/meta.json 等も再生成するが注目度更新では popularity/official_videos のみ反映する。
+          git add scraper/work/schedule.json data/schedule.json 2>/dev/null || true
+          # build は data/meta.json 等も再生成するが注目度更新では popularity/official_videos/schedule のみ反映する。
           # 未stageの再生成物が残ると後続の git pull --rebase が失敗するため破棄する
           git checkout -- .
           if git diff --cached --quiet; then

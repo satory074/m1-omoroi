@@ -175,6 +175,12 @@ def cmd_fetch_official_videos(args):
         raise SystemExit("[official] YouTube API の枠切れ。work は前回のまま")
 
 
+def cmd_fetch_schedule(args):
+    from .official_schedule import fetch_schedule
+
+    fetch_schedule()
+
+
 def cmd_build(args):
     from .build_json import build
 
@@ -230,6 +236,12 @@ def main():
         help="M-1公式YouTubeの回戦別プレイリストと動画を取得(playlists/playlistItemsのみ、searchを消費しない)",
     )
     p.set_defaults(func=cmd_fetch_official_videos)
+
+    p = sub.add_parser(
+        "fetch-schedule",
+        help="M-1公式サイトの準々決勝以降の日程(会場・日時・出場者)を取得 → work/schedule.json",
+    )
+    p.set_defaults(func=cmd_fetch_schedule)
 
     p = sub.add_parser("build", help="work/* から data/* を生成")
     p.set_defaults(func=cmd_build)

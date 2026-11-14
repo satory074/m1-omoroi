@@ -33,6 +33,60 @@
   min-height: var(--tap-comfort);
 }
 
+/* 「次は 準々決勝 11/18(水)」(公式日程。今日以降の日程が無くなったら出ない) */
+.year-next {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-bold);
+}
+
+/* 選んだ回戦の日程(RoundSchedule.tsx)。会場ごとに1行、狭い画面では行の中で折り返す */
+.round-schedule {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+}
+
+.round-schedule-head {
+  font-weight: var(--fw-bold);
+}
+
+.round-schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.round-schedule-list li {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--space-2);
+}
+
+.round-schedule-list .rs-day {
+  font-weight: var(--fw-bold);
+}
+
+.round-schedule-list li.is-past {
+  color: var(--c-text-muted);
+}
+
+.round-schedule-list .rs-done {
+  font-weight: var(--fw-bold);
+}
+
+.round-schedule-src {
+  white-space: nowrap;
+}
+
 .year-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -328,6 +382,12 @@ a.yr-link:hover {
   }
   .year-finals-link {
     margin-left: 0;
+  }
+  .round-schedule {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .round-schedule-src {
+    grid-column: 2;
   }
   .year-cols {
     display: none;

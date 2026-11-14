@@ -113,6 +113,16 @@
   font-weight: var(--fw-black);
 }
 
+/* まだ出場者の居ない回戦(公式日程だけある)。件数の代わりに日付、枠は点線 */
+.scroll-nav-steps a.is-upcoming {
+  border-style: dashed;
+}
+
+.scroll-nav-steps .step-date {
+  font-size: var(--fs-3);
+  font-weight: var(--fw-bold);
+}
+
 .scroll-nav-steps .scroll-nav-sep {
   width: 1px;
   background: var(--c-border);

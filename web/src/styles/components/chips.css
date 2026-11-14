@@ -2,7 +2,8 @@
    意味ごとに1つの見た目にそろえる。同じ見た目を別の意味に使わない(以前は赤×金が4つの意味を兼ねていた)。
      結成年数 … 灰色。ラストイヤーは赤の淡い面
      最高戦績 … 3回戦以下=灰色 / 準々決勝・準決勝=黒の縁 / 決勝=赤地 / 優勝=舞台色に金
-     優勝経験 … 舞台色に金(最高戦績の「優勝」と同じ意味なので同じ見た目) */
+     優勝経験 … 舞台色に金(最高戦績の「優勝」と同じ意味なので同じ見た目)
+     出番の日 … 白地に灰の縁(公式日程。年度一覧の準々決勝以降) */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -45,6 +46,14 @@
 .chip-champion {
   background: var(--c-stage);
   color: var(--c-stage-gold);
+}
+
+/* 出番の日「11/19(木) 東京」 */
+.chip-venue {
+  background: var(--c-bg);
+  border-color: var(--c-border);
+  color: var(--c-text);
+  font-weight: var(--fw-regular);
 }
 
 /* 未エントリーの区分。「見送り」だけ確度が高いので枠で強める */

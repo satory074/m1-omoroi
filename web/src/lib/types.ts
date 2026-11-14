@@ -122,6 +122,35 @@ export interface OfficialVideos {
   >
 }
 
+/** 公式日程の1会場(data/schedule.json)。決まっていない項目は null */
+export interface ScheduleVenue {
+  /** 公式の会場ID */
+  id: string
+  /** YYYY-MM-DD */
+  date: string
+  /** 曜日1文字(日付から計算済み) */
+  wd: string
+  /** 開場・開演 "18:30" */
+  open: string | null
+  start: string | null
+  /** 地域「東京」と会場名 */
+  area: string | null
+  place: string | null
+  mc: string | null
+  /** 公式に載っている出場者の数(未発表は0) */
+  entrants: number
+}
+
+/** data/schedule.json。M-1公式サイトの準々決勝以降の日程(その時のシーズンの1年分だけ) */
+export interface ScheduleFile {
+  year: number
+  url: string
+  fetchedAt: string
+  rounds: Partial<Record<RoundKey, ScheduleVenue[]>>
+  /** コンビID → 回戦 → 会場ID(出番の分かる組だけ) */
+  combis: Record<string, Partial<Record<RoundKey, string>>>
+}
+
 export interface RankingItem {
   id: number
   name: string

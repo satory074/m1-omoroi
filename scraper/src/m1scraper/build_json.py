@@ -1606,6 +1606,16 @@ def build():
         print_report(ov_report)
         _write(DATA_DIR / "official_videos.json", official)
 
+    # 公式の大会日程(準々決勝以降)。work は update-popularity.yml が毎日取り直す(official_schedule.py)。
+    # data/ は上で消して作り直しているので、work があれば毎回ここで書く
+    sch_path = WORK_DIR / "schedule.json"
+    if sch_path.exists():
+        from .official_schedule import check_against_years
+
+        schedule = json.loads(sch_path.read_text(encoding="utf-8"))
+        check_against_years(schedule, year_files)
+        _write(DATA_DIR / "schedule.json", schedule)
+
     finals_dir = WORK_DIR / "finals"
     finals_years = []
     all_finals = []

@@ -11,6 +11,8 @@ export type ScrollNavItem =
       inPage?: boolean
       /** 読み上げ用の名前(label が数字を含む場合など) */
       ariaLabel?: string
+      /** 見た目の区別(まだ行われていない回戦など) */
+      className?: string
     }
   | { key: string; separator: ReactNode }
 
@@ -77,6 +79,7 @@ export default function ScrollNav({
                 to={item.to}
                 aria-current={item.current ? 'page' : undefined}
                 aria-label={item.ariaLabel}
+                className={item.className}
                 replace={item.inPage}
                 preventScrollReset={item.inPage}
               >
