@@ -1,7 +1,7 @@
 {
  "source": "youtube-official-v1",
  "channelId": "UCCTMMUDmBo6PXc7GmVHPrkw",
- "fetchedAt": "2026-11-15",
+ "fetchedAt": "2026-11-16",
  "playlists": [
   {
    "id": "PLANu0hMCCCfw",
@@ -11291,23 +11291,23 @@
      ]
     },
     {
-     "id": "ZFKExK5xmPM",
-     "year": 2022,
-     "round": "second",
-     "names": [
-      {
-       "name": "M-1グランプリ2022「ニッポンの社長」直撃!インタビュー",
-       "label": null
-      }
-     ]
-    },
-    {
      "id": "tpmBdDdYPQY",
      "year": 2022,
      "round": "second",
      "names": [
       {
        "name": "M-1グランプリ2022「フースーヤ」直撃!インタビュー",
+       "label": null
+      }
+     ]
+    },
+    {
+     "id": "ZFKExK5xmPM",
+     "year": 2022,
+     "round": "second",
+     "names": [
+      {
+       "name": "M-1グランプリ2022「ニッポンの社長」直撃!インタビュー",
        "label": null
       }
      ]
@@ -11401,23 +11401,23 @@
      ]
     },
     {
-     "id": "hXpkZJ22eqs",
-     "year": 2022,
-     "round": "second",
-     "names": [
-      {
-       "name": "M-1グランプリ2022「アイデンR」直撃!インタビュー",
-       "label": null
-      }
-     ]
-    },
-    {
      "id": "EVUWT8omowQ",
      "year": 2022,
      "round": "second",
      "names": [
       {
        "name": "M-1グランプリ2022「阿佐ヶ谷姉妹」直撃!インタビュー",
+       "label": null
+      }
+     ]
+    },
+    {
+     "id": "hXpkZJ22eqs",
+     "year": 2022,
+     "round": "second",
+     "names": [
+      {
+       "name": "M-1グランプリ2022「アイデンR」直撃!インタビュー",
        "label": null
       }
      ]
@@ -12083,23 +12083,23 @@
      ]
     },
     {
-     "id": "FLeBwj0zn1k",
-     "year": 2022,
-     "round": "second",
-     "names": [
-      {
-       "name": "M-1グランプリ2022「ブラゴーリ」直撃!インタビュー",
-       "label": null
-      }
-     ]
-    },
-    {
      "id": "O0-sIvPVDSQ",
      "year": 2022,
      "round": "second",
      "names": [
       {
        "name": "M-1グランプリ2022「フランスピアノ」直撃!インタビュー",
+       "label": null
+      }
+     ]
+    },
+    {
+     "id": "FLeBwj0zn1k",
+     "year": 2022,
+     "round": "second",
+     "names": [
+      {
+       "name": "M-1グランプリ2022「ブラゴーリ」直撃!インタビュー",
        "label": null
       }
      ]
