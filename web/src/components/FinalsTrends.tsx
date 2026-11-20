@@ -37,7 +37,9 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
     <>
       <h3 className="section-title">出番順別の成績(ファーストラウンド)</h3>
       <p className="section-note">
-        どの出番順が優勝しやすいか。全21大会分。10番手は決勝10組の年(2017年以降ほか)のみ存在。
+        どの出番順が優勝しやすいか。全{fs.firstRoundOrderStats[0]?.appearances ?? 0}大会分。10番手は決勝10組の年(2017年以降ほか)のみ存在。
+        「平均偏差値」は、その年の1本目の合計点を偏差値(その年の平均が50、標準偏差が10)にして、出番ごとに平均したものです。
+        比べる目安は全体の平均の50。1つの出番は各年1組なので、1大会ぶんの出来で大きく動きます。
       </p>
       <HistoryTable caption="出番順別の成績(ファーストラウンド)">
           <thead>
@@ -46,6 +48,7 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
               <th scope="col">出場</th>
               <th scope="col">最終決戦進出</th>
               <th scope="col">優勝</th>
+              <th scope="col">平均偏差値</th>
               <th scope="col">優勝コンビ</th>
             </tr>
           </thead>
@@ -56,6 +59,7 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
                 <td className="no">{r.appearances}</td>
                 <td className="no">{r.finalists}</td>
                 <td className="no">{r.wins}</td>
+                <td className="no">{r.meanDeviation != null ? r.meanDeviation.toFixed(1) : '—'}</td>
                 <td className="names-cell">
                   <WinnersCell winners={r.winners} />
                 </td>
@@ -150,6 +154,8 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
             ))}
           </tbody>
         </HistoryTable>
+
+      <SemifinalsBeforeFirstFinal data={fs.semifinalsBeforeFirstFinal} />
 
       <h3 className="section-title">王者のファーストラウンド順位</h3>
       <p className="section-note">優勝コンビが1本目で何位だったか。</p>
@@ -324,6 +330,57 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
         </HistoryTable>
 
       <FinalistMakeupSection rows={fs.finalistsByYear} />
+    </>
+  )
+}
+
+/**
+ * 何度目の準決勝で初めて決勝に届いたか。突破率 = n回目の準決勝で初めて決勝に進んだ組 ÷ n回目の準決勝に出た(まだ決勝経験のない)組
+ */
+function SemifinalsBeforeFirstFinal({ data }: { data: FinalsStats['semifinalsBeforeFirstFinal'] }) {
+  if (data.dist.length === 0) return null
+  const firstTry = data.dist.find((r) => r.n === 1)
+  return (
+    <>
+      <h3 className="section-title">何度目の準決勝で初めて決勝に届いたか</h3>
+      <p className="section-note">
+        初めて決勝に進んだ年までに、準決勝に何回出たか(その年を含む。敗者復活から決勝に進んだ年も、その年の準決勝に出ているので数えます)。
+        {data.sinceYear}年以降に初めて決勝へ進んだ{data.combis}組が対象です({data.sinceYear}年は第1回なので、その年の決勝進出組は全組1回目)。
+        {firstTry && (
+          <>
+            初めての準決勝でそのまま決勝に進んだのは{firstTry.count}組({Math.round((firstTry.count / data.combis) * 100)}%)でした。
+          </>
+        )}
+      </p>
+      <p className="section-note">
+        「突破率」は、n回目の準決勝に出た(まだ決勝経験のない)組のうち、その年に決勝へ進んだ割合です。
+        回数が増えるほど突破率が上がって見えますが、何度も準決勝に来られる組はもともと強い組なので、挑戦の回数そのものの効果とは言えません。
+      </p>
+      <HistoryTable caption="何度目の準決勝で初めて決勝に届いたか">
+        <thead>
+          <tr>
+            <th scope="col">準決勝</th>
+            <th scope="col">出た組</th>
+            <th scope="col">決勝へ</th>
+            <th scope="col">突破率</th>
+            <th scope="col">初めて決勝に届いた組</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.dist.map((r) => (
+            <tr key={r.n}>
+              <td className="no">{r.n}回目</td>
+              <td className="no">{r.attempts}</td>
+              <td className="no">{r.count}</td>
+              <td className="no">{r.attempts ? `${Math.round((r.count / r.attempts) * 100)}%` : '—'}</td>
+              <td className="names-cell">
+                <WinnersCell winners={r.combis} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </HistoryTable>
+      <p className="legend">組の名前の横の年は、初めて決勝に進んだ年。準決勝の記録は決勝の得点表がある年(休止の2011〜2014年を除く)だけ数えます。</p>
     </>
   )
 }

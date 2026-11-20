@@ -207,6 +207,33 @@ export interface YearStats {
 export interface Stats {
   byYear: YearStats[]
   seedSplit: SeedSplit
+  formationReach: FormationReach
+  nextYear: NextYear
+}
+
+/** 結成年数(大会年 − 結成年)別の到達数。reached は「その回戦かそれより先」まで進んだ延べ組数 */
+export interface FormationReachRow {
+  years: number
+  entries: number
+  reached: { third: number; quarterfinal: number; semifinal: number; final: number }
+}
+
+export interface FormationReach {
+  fromYear: number | null
+  toYear: number | null
+  /** 終わっていない大会(王者が決まっていない年) */
+  excludedYears: number[]
+  rows: FormationReachRow[]
+  excluded: { scheduled: number; noResult: number; unknownFormed: number; outOfRange: number }
+}
+
+/** 前年の最高到達(from: 1..6 = 1回戦〜決勝)→ 翌年の最高到達の組数(to[0..5])。両年とも出場した組だけ */
+export interface NextYear {
+  fromYear: number | null
+  toYear: number | null
+  rows: { from: number; total: number; to: number[] }[]
+  /** 翌年に出場しなかった組(表に入れない) */
+  notNextYear: number
 }
 
 export interface PassCount {
@@ -311,6 +338,8 @@ export interface OrderStat {
   finalists?: number
   wins: number
   winners: FinalsStatsWinner[]
+  /** 1本目の年内偏差値の平均(ファーストラウンドのみ) */
+  meanDeviation?: number
 }
 
 export interface ChampionRankStat {
@@ -462,6 +491,64 @@ export interface JudgesStats {
   standardized: StandardizedYear[]
   /** 個人審査員の1点ずつの最高/最低(5件+境界の同点。会場票は含まない) */
   scoreExtremes: { highest: SingleScore[]; lowest: SingleScore[] }
+  /** 審査員(列)を1人ずつ外して残りの合計で上位N組を選び直した結果 */
+  leaveOneOut: { skipped: number[]; rows: LeaveOneOutYear[] }
+  /** 審査員の評価が割れた/揃った組(割れ具合の大きい順10件・小さい順5件+境界の同点) */
+  splitScores: { mean: number | null; count: number; highest: SplitScore[]; lowest: SplitScore[] }
+  /** 最終決戦の票が1本目の自分の採点どおりだったか */
+  voteConsistency: { years: VoteConsistencyYear[]; total: Omit<VoteConsistencyYear, 'year' | 'n'> }
+  /** トップバッター(出番1番)への点 − その審査員のその年の平均点(3回以上) */
+  firstPerformer: { name: string; n: number; meanDiff: number }[]
+}
+
+export interface LeaveOneOutChange {
+  /** 得点表の表記 */
+  judge: string
+  /** 名寄せ後の名前(会場票は表記のまま) */
+  canonical: string
+  venue: boolean
+  /** 選び直すと入る組 / 外れる組 */
+  added: JudgePickCombi[]
+  dropped: JudgePickCombi[]
+  /** 選び直すとN位とN+1位が同点になり、どちらが残るか決まらない */
+  tie: boolean
+  tied: JudgePickCombi[]
+}
+
+export interface LeaveOneOutYear {
+  year: number
+  n: number
+  /** N位とN+1位の点差(全員の合計) */
+  cutMargin: number | null
+  changes: LeaveOneOutChange[]
+}
+
+export interface SplitScore {
+  year: number
+  name: string
+  combiId: number | null
+  rank: number | null
+  /** 審査員ごとに平均0・幅1にそろえた点の、審査員の間の標準偏差 */
+  spread: number
+  maxScore: number
+  maxJudges: string[]
+  minScore: number
+  minJudges: string[]
+}
+
+export interface VoteConsistencyYear {
+  year: number
+  /** 最終決戦の組数 */
+  n: number
+  votes: number
+  /** 1本目の自分の採点で単独1位の組に投票 */
+  same: number
+  /** 1本目の自分の採点で最終決戦の組の1位が同点 */
+  tie: number
+  /** 1本目の自分の採点で1位でなかった組に投票 */
+  switched: number
+  /** 1本目を見ずに選んだ場合の乗り換えの期待値(1位が単独の票だけ) */
+  expectedSwitch: number
 }
 
 export interface StandardizedYear {
@@ -557,6 +644,12 @@ export interface FinalsStats {
   /** 無冠の帝王: 決勝2回以上進出かつ優勝なし */
   uncrownedKings: FinalAppearanceRank[]
   championNthFinal: ChampionNthFinal[]
+  /** 何度目の準決勝で初めて決勝に届いたか。attempts = 決勝経験の無い組の n 回目の準決勝の数 */
+  semifinalsBeforeFirstFinal: {
+    sinceYear: number | null
+    combis: number
+    dist: { n: number; attempts: number; count: number; combis: FinalsStatsWinner[] }[]
+  }
   revivalStats: RevivalStats
   debutFinalists: DebutFinalist[]
   firstRoundMargins: FirstRoundMargin[]

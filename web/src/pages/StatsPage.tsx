@@ -7,9 +7,13 @@ import FinalsRecords from '../components/FinalsRecords'
 import FinalsTrends from '../components/FinalsTrends'
 import {
   JudgeCareerSection,
+  JudgeFirstPerformerSection,
+  JudgeLeaveOneOutSection,
   JudgeScoreExtremesSection,
+  JudgeSplitSection,
   JudgeStandardizedSection,
   JudgesYearlySection,
+  JudgeVoteConsistencySection,
 } from '../components/JudgesRecords'
 import PageToc from '../components/PageToc'
 import { ErrorState, Loading } from '../components/PageState'
@@ -121,7 +125,11 @@ function JudgesTab() {
           <>
             <JudgeCareerSection js={js} />
             <JudgesYearlySection js={js} />
+            <JudgeVoteConsistencySection js={js} />
             <JudgeStandardizedSection js={js} />
+            <JudgeLeaveOneOutSection js={js} />
+            <JudgeSplitSection js={js} />
+            <JudgeFirstPerformerSection js={js} />
             <JudgeScoreExtremesSection js={js} />
           </>
         )}

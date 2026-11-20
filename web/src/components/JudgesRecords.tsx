@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
-import type { JudgePickCombi, JudgesStats, SingleScore } from '../lib/types'
+import type { JudgePickCombi, JudgesStats, LeaveOneOutChange, SingleScore, SplitScore } from '../lib/types'
 import { useUrlParam } from '../lib/useUrlParam'
 import CombiLink from './CombiLink'
 import HistoryTable from './HistoryTable'
@@ -262,6 +262,284 @@ export function JudgeStandardizedSection({ js }: { js: JudgesStats }) {
         </tbody>
       </HistoryTable>
       <p className="legend">太字の組は、標準化すると最終決戦に入る組。2001年は会場票(大阪・札幌・福岡)も合計に入っていたので、標準化にも含めています。</p>
+    </>
+  )
+}
+
+function percent(part: number, whole: number): string {
+  return whole ? `${Math.round((part / whole) * 100)}%` : '—'
+}
+
+/**
+ * 最終決戦の1票ずつを、投票した審査員の1本目の採点と比べる。
+ * 比べる目安は「1本目を全く見ずに選んだ場合」(N組なら乗り換えは (N−1)/N)と「1本目どおりにしか入れない場合」(0%)
+ */
+export function JudgeVoteConsistencySection({ js }: { js: JudgesStats }) {
+  const { years, total } = js.voteConsistency
+  if (years.length === 0) return null
+  const decided = total.same + total.switched
+  return (
+    <>
+      <h2 className="section-title">最終決戦の票は1本目の採点どおりか</h2>
+      <p className="section-note">
+        最終決戦の1票ずつについて、投票した審査員が1本目(ファーストラウンド)で最終決戦の組に付けた点を見ました。
+        自分の採点で1位だった組に入れた票が「1本目どおり」、それ以外の組に入れた票が「乗り換え」です。
+        自分の採点で1位が同点だった票は「同点」として分けます。
+        全{total.votes}票のうち、1位が同点でない{decided}票では、乗り換えが
+        <strong>
+          {total.switched}票({percent(total.switched, decided)})
+        </strong>
+        でした。
+      </p>
+      <p className="section-note">
+        比べる目安: 1本目の点を全く見ずに最終決戦の組から選んだとすると、乗り換えは約{percent(total.expectedSwitch, decided)}
+        (3組なら3票に2票)。1本目どおりにしか入れないなら0%です。
+      </p>
+      <HistoryTable caption="最終決戦の票と1本目の採点">
+        <thead>
+          <tr>
+            <th scope="col">年</th>
+            <th scope="col">票</th>
+            <th scope="col">1本目どおり</th>
+            <th scope="col">同点</th>
+            <th scope="col">乗り換え</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[...years].reverse().map((r) => (
+            <tr key={r.year}>
+              <td className="no">
+                <Link to={`/finals/${r.year}`}>{r.year}</Link>
+              </td>
+              <td className="no">{r.votes}</td>
+              <td className="no">{r.same}</td>
+              <td className="no">{r.tie}</td>
+              <td className="no">{r.switched}</td>
+            </tr>
+          ))}
+          <tr>
+            <td>合計</td>
+            <td className="no">{total.votes}</td>
+            <td className="no">{total.same}</td>
+            <td className="no">{total.tie}</td>
+            <td className="no">
+              <strong>{total.switched}</strong>
+            </td>
+          </tr>
+        </tbody>
+      </HistoryTable>
+      <p className="legend">2001年は最終決戦が2組、それ以外は3組。2001年の会場票は投票していません。</p>
+    </>
+  )
+}
+
+/** 同じ結果になる審査員を1行にまとめるための鍵 */
+function changeKey(c: LeaveOneOutChange): string {
+  const names = (xs: JudgePickCombi[]) => xs.map((x) => x.name).join('/')
+  return [c.tie, names(c.added), names(c.dropped), names(c.tied)].join('|')
+}
+
+function judgeLabel(c: LeaveOneOutChange): string {
+  return c.venue ? `会場票(${c.canonical})` : c.canonical
+}
+
+function ChangeResult({ c }: { c: LeaveOneOutChange }) {
+  const strong = new Set(c.added.map((x) => x.name))
+  return (
+    <>
+      {c.added.length > 0 && (
+        <>
+          <NameList combis={c.added} strong={strong} />
+          が入り、
+          <NameList combis={c.dropped} />
+          が外れる
+        </>
+      )}
+      {c.added.length === 0 && c.dropped.length > 0 && (
+        <>
+          <NameList combis={c.dropped} />
+          が外れる
+        </>
+      )}
+      {c.tie && (
+        <>
+          {c.added.length > 0 || c.dropped.length > 0 ? '。さらに ' : ''}
+          <NameList combis={c.tied} />
+          が同じ点で並び、決まらない
+        </>
+      )}
+    </>
+  )
+}
+
+/**
+ * 審査員(列)を1人ずつ外し、残りの審査員の合計で最終決戦の組を選び直す。
+ * 「その人がいなかったら」の結果ではなく(代わりの人は別の点を付けたはず)、境目がどれだけ僅差だったかを示す
+ */
+export function JudgeLeaveOneOutSection({ js }: { js: JudgesStats }) {
+  const rows = js.leaveOneOut.rows
+  if (rows.length === 0) return null
+  const flipYears = rows.filter((r) => r.changes.some((c) => !c.tie)).length
+  const onepoint = rows.filter((r) => r.cutMargin === 1).length
+  const shown = [...rows].reverse().filter((r) => r.changes.length > 0)
+  return (
+    <>
+      <h2 className="section-title">審査員を1人外すと最終決戦の顔ぶれは変わるか</h2>
+      <p className="section-note">
+        1本目の得点表から審査員を1人ずつ外し、残りの審査員の合計で上位の組(2001年は2組、それ以外は3組)を選び直して、
+        実際に最終決戦へ進んだ組と比べました。
+        {rows.length}大会のうち、誰か1人を外すと顔ぶれが変わるのは<strong>{flipYears}大会</strong>です。
+        最終決戦に進む最後の組とその次の組の点差(境目の点差)が1点だった大会は{onepoint}大会ありました。
+      </p>
+      <p className="section-note">
+        外した審査員の代わりに別の人がいれば、別の点を付けたはずです。なので「その人がいなかったら」の結果ではなく、
+        境目がどれだけ僅差だったかを示すものです。
+      </p>
+      <HistoryTable caption="審査員を1人外して選び直した最終決戦の組">
+        <thead>
+          <tr>
+            <th scope="col">年</th>
+            <th scope="col">境目の点差</th>
+            <th scope="col">外した審査員</th>
+            <th scope="col">選び直すと</th>
+          </tr>
+        </thead>
+        <tbody>
+          {shown.flatMap((r) => {
+            const groups = new Map<string, LeaveOneOutChange[]>()
+            for (const c of r.changes) {
+              const k = changeKey(c)
+              groups.set(k, [...(groups.get(k) ?? []), c])
+            }
+            return [...groups.values()].map((cs, i) => (
+              <tr key={`${r.year}-${i}`}>
+                {i === 0 && (
+                  <>
+                    <td className="no" rowSpan={groups.size}>
+                      <Link to={`/finals/${r.year}`}>{r.year}</Link>
+                    </td>
+                    <td className="no" rowSpan={groups.size}>
+                      {r.cutMargin != null ? `${r.cutMargin}点` : '—'}
+                    </td>
+                  </>
+                )}
+                <td>{cs.map(judgeLabel).join('・')}</td>
+                <td className="names-cell">
+                  <ChangeResult c={cs[0]} />
+                </td>
+              </tr>
+            ))
+          })}
+        </tbody>
+      </HistoryTable>
+      <p className="legend">
+        境目の点差は、全員の合計で最終決戦に進む最後の組(3位。2001年は2位)と次の組の点差。
+        太字は選び直すと入る組。「同じ点で並び、決まらない」は、選び直すと最後の枠を同じ点の組が争う場合です
+        (実際の大会の同点の決め方はこの計算に入れていません)。2001年は会場票(大阪・札幌・福岡)も合計に入っていたので、1列ずつ外す対象に含めています。
+        載せているのは、誰かを外すと結果が変わる大会だけです。
+      </p>
+    </>
+  )
+}
+
+function SplitTable({ caption, rows }: { caption: string; rows: SplitScore[] }) {
+  return (
+    <HistoryTable caption={caption}>
+      <thead>
+        <tr>
+          <th scope="col" className="sticky-name">
+            コンビ
+          </th>
+          <th scope="col">年</th>
+          <th scope="col">割れ具合</th>
+          <th scope="col">最高点</th>
+          <th scope="col">最低点</th>
+          <th scope="col">1本目の順位</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={`${r.year}-${r.name}`}>
+            <td className="sticky-name">
+              <CombiLink id={r.combiId}>{r.name}</CombiLink>
+            </td>
+            <td className="no">
+              <Link to={`/finals/${r.year}`}>{r.year}</Link>
+            </td>
+            <td className="no">{r.spread.toFixed(2)}</td>
+            <td>
+              {r.maxScore}点<span className="cell-note">{r.maxJudges.join('・')}</span>
+            </td>
+            <td>
+              {r.minScore}点<span className="cell-note">{r.minJudges.join('・')}</span>
+            </td>
+            <td className="no">{r.rank != null ? `${r.rank}位` : '—'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </HistoryTable>
+  )
+}
+
+/** 審査員ごとに点の甘さ・幅をそろえたうえで、組ごとに審査員の評価がどれだけ分かれたか */
+export function JudgeSplitSection({ js }: { js: JudgesStats }) {
+  const { mean, count, highest, lowest } = js.splitScores
+  if (highest.length === 0 || mean == null) return null
+  return (
+    <>
+      <h2 className="section-title">審査員の評価が割れたネタ・揃ったネタ</h2>
+      <p className="section-note">
+        審査員ごとに、その年の全組への点を「(点 − その審査員の平均点) ÷ その審査員の標準偏差」にそろえてから
+        (甘い・辛い・点の幅の違いを消すため)、組ごとに審査員の間でのばらつき(標準偏差)を測りました。
+        0なら全員が同じ評価で、大きいほど審査員によって評価が分かれたネタです。
+        比べる目安: 1本目の全{count}組の平均は{mean.toFixed(2)}です。2001年の会場票は個人の点ではないので除きます。
+      </p>
+      <h3 className="chart-small-title">評価が割れたネタ</h3>
+      <SplitTable caption="審査員の評価が割れたネタ" rows={highest} />
+      <h3 className="chart-small-title">評価が揃ったネタ</h3>
+      <SplitTable caption="審査員の評価が揃ったネタ" rows={lowest} />
+      <p className="legend">最高点・最低点の下は、その点を付けた審査員。上位10件・5件(境目の同点は全件)。</p>
+    </>
+  )
+}
+
+/** トップバッター(出番1番)に付けた点 − その審査員のその年の平均点 */
+export function JudgeFirstPerformerSection({ js }: { js: JudgesStats }) {
+  const rows = js.firstPerformer
+  if (rows.length === 0) return null
+  const lower = rows.filter((r) => r.meanDiff < 0).length
+  return (
+    <>
+      <h2 className="section-title">トップバッターへの採点</h2>
+      <p className="section-note">
+        出番1番の組に付けた点から、その審査員のその年の平均点を引いた値の平均です(3回以上トップバッターを採点した審査員)。
+        0ならその審査員の平均どおり、マイナスなら平均より低く付けています。{rows.length}人のうち
+        <strong>{lower}人</strong>がマイナスでした。
+        回数が少ないので、1組の出来で大きく動きます(トップバッターの組が本当に弱かった年もあります)。
+      </p>
+      <HistoryTable caption="トップバッターへの採点(審査員別)">
+        <thead>
+          <tr>
+            <th scope="col" className="sticky-name">
+              審査員
+            </th>
+            <th scope="col">平均との差</th>
+            <th scope="col">回数</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.name}>
+              <td className="sticky-name">{r.name}</td>
+              <td className="no">
+                {r.meanDiff > 0 ? '+' : ''}
+                {r.meanDiff.toFixed(1)}点
+              </td>
+              <td className="no">{r.n}回</td>
+            </tr>
+          ))}
+        </tbody>
+      </HistoryTable>
     </>
   )
 }

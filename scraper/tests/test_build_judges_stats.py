@@ -192,3 +192,54 @@ def test_judge_sd_and_score_extremes():
     ex = s["scoreExtremes"]
     assert ex["highest"][0]["score"] == 97 and ex["lowest"][0]["score"] == 81
     assert min(e["score"] for e in ex["highest"]) >= max(e["score"] for e in ex["lowest"])
+
+
+def test_leave_one_out_skips_mismatched_years_and_keeps_ties_apart():
+    """全員の合計の上位N組が実際の最終決戦と違う年は数えない。選び直して同点になる列は入れ替わりに数えない。"""
+    rows = [
+        {"name": "A", "combiId": 1, "scores": [90, 80], "total": 170},
+        {"name": "B", "combiId": 2, "scores": [80, 85], "total": 165},
+        {"name": "C", "combiId": 3, "scores": [70, 90], "total": 160},
+    ]
+    ok = _finals(2016, ["松本", "巨人"], rows, [{"name": "A", "combiId": 1}])
+    wrong = _finals(2017, ["松本", "巨人"], rows, [{"name": "B", "combiId": 2}])
+    # 巨人を外すと A 90 / B 80 / C 70、松本を外すと A 80 / B 85 / C 90
+    tie_rows = [
+        {"name": "A", "combiId": 1, "scores": [90, 80], "total": 170},
+        {"name": "B", "combiId": 2, "scores": [90, 75], "total": 165},
+        {"name": "C", "combiId": 3, "scores": [60, 70], "total": 130},
+    ]
+    tie = _finals(2018, ["松本", "巨人"], tie_rows, [{"name": "A", "combiId": 1}])
+    loo = build_judges_stats([ok, wrong, tie], OV)["leaveOneOut"]
+    assert loo["skipped"] == [2017]
+    by_year = {r["year"]: r for r in loo["rows"]}
+    assert by_year[2016]["cutMargin"] == 5
+    [change] = by_year[2016]["changes"]
+    assert change["canonical"] == "松本人志"
+    assert [c["name"] for c in change["added"]] == ["C"]
+    assert [c["name"] for c in change["dropped"]] == ["A"]
+    # 2018年は巨人を外すと A と B が 90 で並ぶ: 入れ替わりではなく同点
+    [tied] = by_year[2018]["changes"]
+    assert tied["tie"] and tied["added"] == [] and tied["dropped"] == []
+    assert {c["name"] for c in tied["tied"]} == {"A", "B"}
+
+
+def test_vote_consistency_counts_every_vote_once():
+    """各年の 1本目どおり・同点・乗り換え の合計は票数と一致する。"""
+    y = _finals(
+        2019,
+        ["松本", "巨人"],
+        [
+            {"name": "A", "combiId": 1, "scores": [95, 90], "total": 185},
+            {"name": "B", "combiId": 2, "scores": [90, 90], "total": 180},
+            {"name": "C", "combiId": 3, "scores": [80, 70], "total": 150},
+        ],
+        [
+            {"name": "A", "combiId": 1, "voters": []},
+            # 松本は1本目で A を上にしたのに B へ(乗り換え)、巨人は A・B 同点(同点)
+            {"name": "B", "combiId": 2, "voters": ["松本", "巨人"]},
+        ],
+    )
+    [row] = build_judges_stats([y], OV)["voteConsistency"]["years"]
+    assert row["same"] + row["tie"] + row["switched"] == row["votes"] == 2
+    assert (row["same"], row["tie"], row["switched"]) == (0, 1, 1)
