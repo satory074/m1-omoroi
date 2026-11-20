@@ -497,7 +497,7 @@ export interface JudgesStats {
   splitScores: { mean: number | null; count: number; highest: SplitScore[]; lowest: SplitScore[] }
   /** 最終決戦の票が1本目の自分の採点どおりだったか */
   voteConsistency: { years: VoteConsistencyYear[]; total: Omit<VoteConsistencyYear, 'year' | 'n'> }
-  /** トップバッター(出番1番)への点 − その審査員のその年の平均点(3回以上) */
+  /** トップバッター(出番1番)への点 − その審査員のその年の平均点(全員。回数の多い順) */
   firstPerformer: { name: string; n: number; meanDiff: number }[]
 }
 

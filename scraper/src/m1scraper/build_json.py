@@ -2009,13 +2009,14 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
     split_lo = sorted(split_rows, key=lambda r: (r["spread"], r["year"], r["name"]))
     vote_total = {k: sum(r[k] for r in vote_years) for k in ("votes", "same", "tie", "switched")}
     vote_total["expectedSwitch"] = round(sum(r["expectedSwitch"] for r in vote_years), 2)
+    # 全員を載せる(回数の少ない人は1組の出来で決まるので、フロントは5回以上とそれ以外で表を分ける)。
+    # 並びは回数の多い順 → 平均との差の順
     first_perf_rows = sorted(
         (
             {"name": name, "n": len(diffs), "meanDiff": round(statistics.fmean(diffs), 1)}
             for name, diffs in first_perf.items()
-            if len(diffs) >= 3  # 2回以下は1組の出来で決まってしまう
         ),
-        key=lambda r: (r["meanDiff"], r["name"]),
+        key=lambda r: (-r["n"], r["meanDiff"], r["name"]),
     )
     flip_years = [r["year"] for r in loo_rows if any(not c["tie"] for c in r["changes"])]
     tie_cols = sum(1 for r in loo_rows for c in r["changes"] if c["tie"])

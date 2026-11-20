@@ -60,6 +60,8 @@
 
 .toc-list a {
   display: block;
+  /* 押せる大きさを24px以上に(WCAG 2.5.8)。既定の文字を小さくしているブラウザでは文字と余白だけだと届かない */
+  min-height: var(--space-6);
   margin-left: -2px;
   padding: var(--space-1) var(--space-3);
   border-left: 2px solid transparent;

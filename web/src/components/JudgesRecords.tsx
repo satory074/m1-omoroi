@@ -295,10 +295,9 @@ export function JudgeVoteConsistencySection({ js }: { js: JudgesStats }) {
         比べる目安: 1本目の点を全く見ずに最終決戦の組から選んだとすると、乗り換えは約{percent(total.expectedSwitch, decided)}
         (3組なら3票に2票)。1本目どおりにしか入れないなら0%です。
       </p>
-      <HistoryTable caption="最終決戦の票と1本目の採点">
+      <HistoryTable caption={`最終決戦の票と1本目の採点(${years[0].year}〜${years[years.length - 1].year}年の合計)`}>
         <thead>
           <tr>
-            <th scope="col">年</th>
             <th scope="col">票</th>
             <th scope="col">1本目どおり</th>
             <th scope="col">同点</th>
@@ -306,29 +305,48 @@ export function JudgeVoteConsistencySection({ js }: { js: JudgesStats }) {
           </tr>
         </thead>
         <tbody>
-          {[...years].reverse().map((r) => (
-            <tr key={r.year}>
-              <td className="no">
-                <Link to={`/finals/${r.year}`}>{r.year}</Link>
-              </td>
-              <td className="no">{r.votes}</td>
-              <td className="no">{r.same}</td>
-              <td className="no">{r.tie}</td>
-              <td className="no">{r.switched}</td>
-            </tr>
-          ))}
           <tr>
-            <td>合計</td>
             <td className="no">{total.votes}</td>
             <td className="no">{total.same}</td>
             <td className="no">{total.tie}</td>
             <td className="no">
-              <strong>{total.switched}</strong>
+              <strong>
+                {total.switched}({percent(total.switched, decided)})
+              </strong>
             </td>
           </tr>
         </tbody>
       </HistoryTable>
-      <p className="legend">2001年は最終決戦が2組、それ以外は3組。2001年の会場票は投票していません。</p>
+      <p className="legend">乗り換えの割合は、1位が同点の票を除いた{decided}票に対するもの。2001年は最終決戦が2組、それ以外は3組。2001年の会場票は投票していません。</p>
+      <details className="note">
+        <summary>
+          <span className="note-label">年ごとに見る</span>
+        </summary>
+        <HistoryTable caption="最終決戦の票と1本目の採点(年ごと)">
+          <thead>
+            <tr>
+              <th scope="col">年</th>
+              <th scope="col">票</th>
+              <th scope="col">1本目どおり</th>
+              <th scope="col">同点</th>
+              <th scope="col">乗り換え</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...years].reverse().map((r) => (
+              <tr key={r.year}>
+                <td className="no">
+                  <Link to={`/finals/${r.year}`}>{r.year}</Link>
+                </td>
+                <td className="no">{r.votes}</td>
+                <td className="no">{r.same}</td>
+                <td className="no">{r.tie}</td>
+                <td className="no">{r.switched}</td>
+              </tr>
+            ))}
+          </tbody>
+        </HistoryTable>
+      </details>
     </>
   )
 }
@@ -503,43 +521,65 @@ export function JudgeSplitSection({ js }: { js: JudgesStats }) {
   )
 }
 
-/** トップバッター(出番1番)に付けた点 − その審査員のその年の平均点 */
+// これ未満の回数は1組の出来で決まってしまうので、本文の集計に入れず参考として分ける
+const FIRST_PERFORMER_MIN = 5
+
+function FirstPerformerTable({ caption, rows }: { caption: string; rows: JudgesStats['firstPerformer'] }) {
+  return (
+    <HistoryTable caption={caption}>
+      <thead>
+        <tr>
+          <th scope="col" className="sticky-name">
+            審査員
+          </th>
+          <th scope="col">回数</th>
+          <th scope="col">平均との差</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.name}>
+            <td className="sticky-name">{r.name}</td>
+            <td className="no">{r.n}回</td>
+            <td className="no">
+              {r.meanDiff > 0 ? '+' : ''}
+              {r.meanDiff.toFixed(1)}点
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </HistoryTable>
+  )
+}
+
+/** トップバッター(出番1番)に付けた点 − その審査員のその年の平均点。回数の多い順 */
 export function JudgeFirstPerformerSection({ js }: { js: JudgesStats }) {
   const rows = js.firstPerformer
   if (rows.length === 0) return null
-  const lower = rows.filter((r) => r.meanDiff < 0).length
+  const main = rows.filter((r) => r.n >= FIRST_PERFORMER_MIN)
+  const few = rows.filter((r) => r.n < FIRST_PERFORMER_MIN)
+  const lower = (xs: typeof rows) => xs.filter((r) => r.meanDiff < 0).length
   return (
     <>
       <h2 className="section-title">トップバッターへの採点</h2>
       <p className="section-note">
-        出番1番の組に付けた点から、その審査員のその年の平均点を引いた値の平均です(3回以上トップバッターを採点した審査員)。
-        0ならその審査員の平均どおり、マイナスなら平均より低く付けています。{rows.length}人のうち
-        <strong>{lower}人</strong>がマイナスでした。
-        回数が少ないので、1組の出来で大きく動きます(トップバッターの組が本当に弱かった年もあります)。
+        出番1番の組に付けた点から、その審査員のその年の平均点を引いた値の平均です。
+        0ならその審査員の平均どおり、マイナスなら平均より低く付けています。
+        トップバッターを{FIRST_PERFORMER_MIN}回以上採点した{main.length}人のうち、<strong>{lower(main)}人</strong>がマイナスでした
+        (回数の少ない人も含めた全{rows.length}人では{lower(rows)}人)。
+        回数が少ないと1組の出来で大きく動くので、{FIRST_PERFORMER_MIN}回未満の人は参考として分けています。
+        トップバッターの組が本当に弱かった年もあります。
       </p>
-      <HistoryTable caption="トップバッターへの採点(審査員別)">
-        <thead>
-          <tr>
-            <th scope="col" className="sticky-name">
-              審査員
-            </th>
-            <th scope="col">平均との差</th>
-            <th scope="col">回数</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.name}>
-              <td className="sticky-name">{r.name}</td>
-              <td className="no">
-                {r.meanDiff > 0 ? '+' : ''}
-                {r.meanDiff.toFixed(1)}点
-              </td>
-              <td className="no">{r.n}回</td>
-            </tr>
-          ))}
-        </tbody>
-      </HistoryTable>
+      <h3 className="chart-small-title">{FIRST_PERFORMER_MIN}回以上</h3>
+      <FirstPerformerTable caption={`トップバッターへの採点(${FIRST_PERFORMER_MIN}回以上)`} rows={main} />
+      {few.length > 0 && (
+        <details className="note">
+          <summary>
+            <span className="note-label">{FIRST_PERFORMER_MIN - 1}回以下の{few.length}人(参考)</span>
+          </summary>
+          <FirstPerformerTable caption={`トップバッターへの採点(${FIRST_PERFORMER_MIN - 1}回以下・参考)`} rows={few} />
+        </details>
+      )}
     </>
   )
 }
