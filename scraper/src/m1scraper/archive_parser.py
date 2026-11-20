@@ -89,14 +89,20 @@ def parse_result_page(html: str) -> tuple[str | None, list[tuple[str, str | None
         first_tr = table.find("tr")
         header = [td.get_text(strip=True) for td in first_tr.find_all("td")] if first_tr else []
 
-        if len(header) >= 2 and any("合格者" in h for h in header):
-            # 2003〜2005年形式: 出場者/名前 | 合格者(花マーク画像) [| インタビュー]
-            pass_col = next(i for i, h in enumerate(header) if "合格者" in h)
+        if len(header) >= 2 and any(h.startswith("合格") for h in header):
+            # 合否の列に花マーク画像が付く形式。列の並びは年で違う:
+            #   2003〜2005年: 出場者/名前 | 合格者 [| インタビュー]
+            #   2001・2002年の準決勝: 合格 | 名前
+            pass_col = next(i for i, h in enumerate(header) if h.startswith("合格"))
+            name_col = next(
+                (i for i, h in enumerate(header) if i != pass_col and ("名前" in h or "出場者" in h)),
+                0,
+            )
             for tr in table.find_all("tr")[1:]:
                 tds = tr.find_all("td")
-                if len(tds) <= pass_col:
+                if len(tds) <= max(pass_col, name_col):
                     continue
-                name, agency = split_name_agency(tds[0].get_text())
+                name, agency = split_name_agency(tds[name_col].get_text())
                 if not name:
                     continue
                 rows.append((name, agency, tds[pass_col].find("img") is not None))
