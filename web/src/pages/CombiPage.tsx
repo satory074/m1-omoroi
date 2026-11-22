@@ -21,6 +21,7 @@ import {
   furthestRound,
 } from '../lib/rounds'
 import type { ResultKey, RoundKey } from '../lib/types'
+import { combiTitle } from '../lib/seo'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 import { finalsPath, yearPath } from '../lib/paths'
 
@@ -46,7 +47,7 @@ export default function CombiPage() {
   const { data: official } = useOfficialVideos()
   const likes = useLikes()
   const { data: meta } = useMeta()
-  useDocumentTitle(combi ? `${combi.name}のM-1戦績` : null)
+  useDocumentTitle(combi ? combiTitle(combi) : null)
 
   if (parsed === null || combi === null) {
     return (

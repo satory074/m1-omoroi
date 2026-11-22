@@ -3,20 +3,28 @@
 // scripts/prerender.mjs が読み込んでページごとの HTML を書き出す。ブラウザ用の JS には入らない
 // (react-dom/server をブラウザに読ませないため、main.tsx からは import しない)。
 //
-// 何を事前描画するか: トップ、年度 /years/{年}/、決勝 /finals/{年}/、記録・統計 /stats/{テーマ}/。
+// 何を事前描画するか: トップ、年度 /years/{年}/、決勝 /finals/{年}/、記録・統計 /stats/{テーマ}/、
+// コンビ詳細 /combi/{id}/(最高到達が準々決勝以上の組だけ = virtual:combi-pages。1〜3回戦止まりの約4.2万組は
+// 中身の薄いページになるので作らない。直接開くと今まで通り 404.html から画面を描く)。
 // 画面と同じ部品をそのまま描くので、HTML の中身とブラウザの最初の画面は一致する(main.tsx が hydrate で引き継ぐ)。
-// HTML に埋め込むデータは小さいものだけ(meta、年度の要約、決勝1年分、記録統計のそのテーマの JSON = 最大約70KB)。
-// 年度ファイル(最大1.7MB)・注目度・日程は埋め込まず、HTML では「読み込み中」の形になる(ブラウザが後から取る)。
+// HTML に埋め込むデータは小さいものだけ(meta、年度の要約、決勝1年分、記録統計のそのテーマの JSON = 最大約70KB、
+// コンビ1組の記録 = 約1KB)。年度ファイル(最大1.7MB)・注目度・公式動画・日程・コンビの束(100分割の1ファイル)は
+// 埋め込まず、HTML では「読み込み中」や「その情報なし」の形になる(ブラウザが後から取る)。
 import { StrictMode } from 'react'
 import { renderToString } from 'react-dom/server'
 import { QueryClient, QueryClientProvider, dehydrate, type DehydratedState } from '@tanstack/react-query'
 import { StaticRouterProvider, createStaticHandler, createStaticRouter } from 'react-router-dom'
 
 import { QUERY } from './lib/api'
-import { finalsPath, statsPath, yearPath } from './lib/paths'
+import combiPages from 'virtual:combi-pages'
+
+import { combiPath, finalsPath, statsPath, yearPath } from './lib/paths'
 import {
   SITE_DESCRIPTION,
   STATS_SECTIONS,
+  combiAbout,
+  combiDescription,
+  combiTitle,
   finalsDescription,
   finalsSpan,
   finalsTitle,
@@ -25,7 +33,7 @@ import {
   yearDescription,
   yearTitle,
 } from './lib/seo'
-import type { Champions, FinalsFile, MetaFile, YearSummary } from './lib/types'
+import type { Champions, CombiDetail, FinalsFile, MetaFile, YearSummary } from './lib/types'
 import { routes } from './routes'
 
 export { SITE_URL, pageUrl } from './lib/seo'
@@ -53,8 +61,22 @@ export interface Page {
 /** data/ のファイルを読む(prerender.mjs が渡す)。無ければ null */
 export type ReadData = (file: string) => unknown
 
-function page(path: string, title: string, description: string, data: [Key, unknown][], extra: Partial<Page> = {}): Page {
-  return { path, title: fullTitle(title), description, jsonLd: jsonLd(path, title || fullTitle(''), description), data, ...extra }
+function page(
+  path: string,
+  title: string,
+  description: string,
+  data: [Key, unknown][],
+  extra: Partial<Page> & { about?: Record<string, unknown> } = {},
+): Page {
+  const { about, ...rest } = extra
+  return {
+    path,
+    title: fullTitle(title),
+    description,
+    jsonLd: jsonLd(path, title || fullTitle(''), description, about),
+    data,
+    ...rest,
+  }
 }
 
 /** 事前描画するページの一覧。データを読んで、タイトル・説明文・埋め込むデータを決める */
@@ -116,6 +138,22 @@ export function listPages(read: ReadData): Page[] {
     const data: [Key, unknown][] = [metaData]
     if (q) data.push([q.key, read(q.file)])
     pages.push(page(statsPath(s.key), s.title, s.description(span), data, { lazy: 'src/pages/StatsPage.tsx' }))
+  }
+
+  // コンビ詳細。埋め込むのはその組の記録だけ(束のファイル約200KBやコンビの索引は埋め込まない)
+  const shards = new Map<string, Record<string, CombiDetail>>()
+  for (const id of [...combiPages].sort((a, b) => a - b)) {
+    const q = QUERY.combi(id)
+    if (!shards.has(q.file)) shards.set(q.file, need<Record<string, CombiDetail>>(q.file))
+    const combi = shards.get(q.file)![String(id)]
+    if (!combi) throw new Error(`[prerender] コンビ ${id} の記録が ${q.file} にありません`)
+    pages.push(
+      page(combiPath(id), combiTitle(combi), combiDescription(combi), [metaData, [q.key, combi]], {
+        about: combiAbout(combi),
+        // 今シーズンに出ている組は記録が変わりうるので、データの更新日時を付ける
+        lastmod: combi.history[String(meta.latestYear)] ? updated : undefined,
+      }),
+    )
   }
   return pages
 }
