@@ -6,7 +6,8 @@
 // HTML を返す。ブラウザでは main.tsx がその HTML を引き継ぐ(hydrate)。
 //
 // 書き出すもの:
-//   dist/index.html、dist/{years,finals}/{年}/index.html、dist/stats/{テーマ}/index.html … 事前描画したページ
+//   dist/index.html、dist/{years,finals}/{年}/index.html、dist/stats/{テーマ}/index.html、
+//   dist/combi/{id}/index.html(最高到達が準々決勝以上の組) … 事前描画したページ
 //   dist/years/index.html・dist/finals/index.html … 最新の年へ転送するだけのページ(noindex。ヘッダーのナビの先)
 //   dist/404.html … 中身が空の殻(noindex・canonical なし)。コンビ詳細など事前描画していない URL はこれが描く。
 //                   トップの HTML を写すと、知らない URL で一瞬トップの中身が出て hydrate も食い違うので必ず殻にする
@@ -81,8 +82,11 @@ const base = new URL(SITE_URL).pathname // '/m1-omoroi/'
 for (const page of pages) {
   const { html: appHtml, state } = await render(page)
   // 念のための不変条件: 見つからない・エラーの画面を書き出していない / 戻りリンクのバーが HTML にある
-  if (/ページが見つかりません|表示できませんでした|の大会はありません/.test(appHtml)) {
+  if (/ページが見つかりません|表示できませんでした|の大会はありません|コンビが見つかりません/.test(appHtml)) {
     throw new Error(`[prerender] ${page.path} が「見つからない」画面になった`)
+  }
+  if (page.path.startsWith('/combi/') && !appHtml.includes('combi-name')) {
+    throw new Error(`[prerender] ${page.path} にコンビ名の見出しが無い(読み込み中のまま描いた?)`)
   }
   if (!appHtml.includes('app-backlink-bar')) throw new Error(`[prerender] ${page.path} に app-backlink-bar が無い`)
 
@@ -184,4 +188,7 @@ writeFileSync(
 
 // どの画面がどの JS を読むかの表は公開しない
 rmSync(join(dist, '.vite'), { recursive: true, force: true })
-console.log(`[prerender] ${pages.length} ページ + 転送 ${redirects.length} + 404.html + likes/ + sitemap.xml を ${dist} に書きました`)
+const combiCount = pages.filter((p) => p.path.startsWith('/combi/')).length
+console.log(
+  `[prerender] ${pages.length} ページ(うちコンビ詳細 ${combiCount})+ 転送 ${redirects.length} + 404.html + likes/ + sitemap.xml を ${dist} に書きました`,
+)

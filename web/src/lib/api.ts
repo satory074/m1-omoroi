@@ -54,6 +54,8 @@ export const QUERY = {
   peopleStats: { key: ['people-stats'], file: 'people_stats.json' },
   finals: (year: number) => ({ key: ['finals', year], file: `finals/${year}.json` }),
   yearSummary: (year: number) => ({ key: ['year-summary', year], file: `years/${year}.summary.json` }),
+  /** 1組分。ファイルは100分割の束(file)だが、キャッシュに入るのはその組の記録だけ(無ければ null) */
+  combi: (id: number) => ({ key: ['combi', id], file: `combi/${id % 100}.json` }),
 } as const
 
 export function useMeta() {
@@ -163,10 +165,11 @@ export function useCombiMembers(enabled: boolean) {
 }
 
 export function useCombiDetail(id: number | null) {
+  const q = QUERY.combi(id ?? 0)
   return useQuery({
-    queryKey: ['combi', id],
+    queryKey: q.key,
     queryFn: async () => {
-      const shard = await fetchJson<Record<string, CombiDetail>>(`combi/${id! % 100}.json`)
+      const shard = await fetchJson<Record<string, CombiDetail>>(q.file)
       // 該当が無い ID は「見つからない」(null)。通信の失敗(例外)とは分けて見せる
       return shard[String(id)] ?? null
     },

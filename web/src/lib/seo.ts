@@ -1,8 +1,8 @@
 // ページの <title>・説明文・構造化データ(JSON-LD)を作る。ここだけに書く。
 // 事前描画(src/entry-server.tsx → scripts/prerender.mjs)が HTML の <head> に入れ、
 // 画面(useDocumentTitle)も同じ関数でタブの名前を付けるので、HTML と画面のタイトルが食い違わない。
-import { ROUND_LABEL } from './rounds'
-import type { FinalsFile, MetaFile, RoundKey, YearSummary } from './types'
+import { ROUND_LABEL, bestResultLabel, bestResultOfHistory, resultLevel } from './rounds'
+import type { CombiDetail, FinalsFile, MetaFile, RoundKey, YearSummary } from './types'
 
 export const SITE_NAME = 'M-1オモロイ'
 /** 公開 URL(末尾 /)。canonical・og:url・サイトマップはこれを頭に付けた絶対 URL */
@@ -63,6 +63,51 @@ export function finalsDescription(f: FinalsFile): string {
   }
   parts.push(`${f.firstRound.length}組のネタへの審査員別の点数と順位、最終決戦の投票を載せています。`)
   return parts.join('')
+}
+
+// ---------- コンビ詳細 ----------
+
+/** 出場年(昇順) */
+const combiYears = (c: CombiDetail) =>
+  Object.keys(c.history)
+    .map(Number)
+    .sort((a, b) => a - b)
+
+const yearSpan = (ys: number[]) =>
+  ys.length === 0 ? '' : ys.length === 1 ? `${ys[0]}年` : `${ys[0]}〜${ys[ys.length - 1]}年`
+
+/** 「ミルクボーイのM-1戦績(2015〜2019年、最高 優勝)」の見出し部分 */
+export function combiTitle(c: CombiDetail): string {
+  const best = bestResultLabel(bestResultOfHistory(c.history))
+  const facts = [yearSpan(combiYears(c)), best && `最高 ${best}`].filter(Boolean).join('、')
+  return facts ? `${c.name}のM-1戦績(${facts})` : `${c.name}のM-1戦績`
+}
+
+/** 画面に出ている事実(出場年・最高成績とその年・メンバー・所属)だけで書く */
+export function combiDescription(c: CombiDetail): string {
+  const ys = combiYears(c)
+  const level = bestResultOfHistory(c.history)
+  const best = bestResultLabel(level)
+  const bestYears = ys.filter((y) => resultLevel(c.history[String(y)].results) === level)
+  const parts = [`${c.name}のM-1グランプリの出場記録。`]
+  if (ys.length) parts.push(`${yearSpan(ys)}に${ys.length}回出場`)
+  if (best) parts.push(`${ys.length ? '、' : ''}最高成績は${best}(${bestYears.join('・')}年)`)
+  parts.push('。')
+  const names = c.members.map((m) => m.name).filter(Boolean)
+  if (names.length) parts.push(`メンバーは${names.join('・')}。`)
+  if (c.belong) parts.push(`所属は${c.belong}。`)
+  parts.push('年ごと・回戦ごとの結果を一覧できます。')
+  return parts.join('')
+}
+
+/** 構造化データの about(ページの主題のコンビ)。画面に出ている名前とメンバー名だけ */
+export function combiAbout(c: CombiDetail): Record<string, unknown> {
+  const names = c.members.map((m) => m.name).filter((n): n is string => !!n)
+  return {
+    '@type': 'PerformingGroup',
+    name: c.name,
+    ...(names.length ? { member: names.map((name) => ({ '@type': 'Person', name })) } : {}),
+  }
 }
 
 // ---------- 記録・統計 ----------
@@ -133,7 +178,12 @@ const AUTHOR = {
 const WEBSITE_ID = `${SITE_URL}#website`
 
 /** トップは WebSite、下層は WebPage(isPartOf でトップを指す)。画面に出ている名前・説明と同じものだけを書く */
-export function jsonLd(path: string, title: string, description: string): Record<string, unknown> {
+export function jsonLd(
+  path: string,
+  title: string,
+  description: string,
+  about?: Record<string, unknown>,
+): Record<string, unknown> {
   const url = pageUrl(path)
   if (url === SITE_URL) {
     return {
@@ -155,6 +205,7 @@ export function jsonLd(path: string, title: string, description: string): Record
     description,
     inLanguage: 'ja',
     isPartOf: { '@type': 'WebSite', '@id': WEBSITE_ID, name: SITE_NAME, url: SITE_URL },
+    ...(about ? { about } : {}),
     author: AUTHOR,
   }
 }
