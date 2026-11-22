@@ -57,6 +57,8 @@ jobs:
           git add scraper/work/popularity.json data/popularity.json
           git add scraper/work/official_videos.json data/official_videos.json 2>/dev/null || true
           git add scraper/work/schedule.json data/schedule.json 2>/dev/null || true
+          # 回戦ごとの出番順(data/schedule/{回戦}.json)。1つでも無いパスを混ぜると git add 全体が失敗するので別の行
+          git add data/schedule 2>/dev/null || true
           # build は data/meta.json 等も再生成するが注目度更新では popularity/official_videos/schedule のみ反映する。
           # 未stageの再生成物が残ると後続の git pull --rebase が失敗するため破棄する
           git checkout -- .

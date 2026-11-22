@@ -1,0 +1,118 @@
+/* ============ いいね(/likes) ============ */
+.likes-page {
+  max-width: 48em;
+}
+
+.likes-lead {
+  margin: 0 0 var(--space-5);
+  color: var(--c-text-muted);
+}
+
+.likes-import,
+.likes-backup {
+  margin: 0 0 var(--space-6);
+  padding: var(--space-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-m);
+}
+
+/* リンクで開いたときの下見。自分の一覧と見分けるため面の色を変える(見出しでも「このリンクの」と書く) */
+.likes-import {
+  background: var(--c-surface-2);
+}
+
+.likes-import p,
+.likes-backup p {
+  margin: 0 0 var(--space-3);
+}
+
+.likes-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.likes-since {
+  font-weight: var(--fw-bold);
+}
+
+.likes-warn {
+  color: var(--c-accent-strong);
+  font-weight: var(--fw-bold);
+}
+
+.likes-done {
+  margin: 0 0 var(--space-5);
+  font-weight: var(--fw-bold);
+}
+
+.likes-link input {
+  width: 100%;
+  min-height: var(--tap-comfort);
+  padding: 0 var(--space-3);
+  border: 1.5px solid var(--c-border-strong);
+  border-radius: var(--radius-s);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-size: var(--fs-3); /* 16px 未満だと iOS が拡大する */
+}
+
+.likes-group-count {
+  margin-left: var(--space-2);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  color: var(--c-text-muted);
+}
+
+.likes-list {
+  list-style: none;
+  margin: 0 0 var(--space-6);
+  padding: 0;
+}
+
+.likes-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 36px 40px;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 52px;
+  border-bottom: 1px solid var(--c-border-subtle);
+}
+
+.likes-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
+  text-decoration: none;
+}
+
+a.likes-name:hover {
+  color: var(--c-accent);
+  text-decoration: underline;
+}
+
+.likes-result {
+  white-space: nowrap;
+  font-size: var(--fs-2);
+  font-weight: var(--fw-bold);
+}
+
+.likes-result.result-pass,
+.likes-result.result-seed_pass {
+  color: var(--c-pass);
+}
+
+.likes-result.result-fail,
+.likes-result.result-fail_inferred,
+.likes-result.result-unknown {
+  color: var(--c-fail);
+  font-weight: var(--fw-regular);
+}
+
+.likes-video,
+.likes-like {
+  display: flex;
+  justify-content: center;
+}

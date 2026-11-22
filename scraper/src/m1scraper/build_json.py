@@ -2344,6 +2344,7 @@ def build():
     # M-1公式YouTubeの回戦別動画。work は「いま公開中のもの」を毎日取り直したもの(youtube_official.py)。
     # 紐付けは年度データの出場組が相手なので、シーズン更新で結果が増えると紐付けも追随する
     ov_path = WORK_DIR / "official_videos.json"
+    official = None
     if ov_path.exists():
         from .youtube_official import load_overrides, match_official_videos, print_report
 
@@ -2353,15 +2354,21 @@ def build():
         print_report(ov_report)
         _write(DATA_DIR / "official_videos.json", official)
 
-    # 公式の大会日程(準々決勝以降)。work は update-popularity.yml が毎日取り直す(official_schedule.py)。
-    # data/ は上で消して作り直しているので、work があれば毎回ここで書く
+    # 公式の大会日程(1回戦〜決勝)。work は update-popularity.yml が毎日取り直す(official_schedule.py)。
+    # data/ は上で消して作り直しているので、work があれば毎回ここで書く。
+    # schedule.json = 会場の一覧と人数(年度ページが到着を待つので小さく)、schedule/{回戦}.json = 会場ごとの出番順
     sch_path = WORK_DIR / "schedule.json"
     if sch_path.exists():
-        from .official_schedule import check_against_years
+        from .official_schedule import check_against_years, check_order_against_videos, public_schedule
 
         schedule = json.loads(sch_path.read_text(encoding="utf-8"))
         check_against_years(schedule, year_files)
-        _write(DATA_DIR / "schedule.json", schedule)
+        if official is not None:
+            check_order_against_videos(schedule, official)
+        head, round_files = public_schedule(schedule)
+        _write(DATA_DIR / "schedule.json", head)
+        for rk, venues in round_files.items():
+            _write(DATA_DIR / "schedule" / f"{rk}.json", venues)
 
     finals_dir = WORK_DIR / "finals"
     finals_years = []

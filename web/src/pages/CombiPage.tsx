@@ -3,10 +3,13 @@ import { Link, useParams } from 'react-router-dom'
 import BestChip from '../components/BestChip'
 import CombiPhoto from '../components/CombiPhoto'
 import FormedChip from '../components/FormedChip'
+import { HeartIcon } from '../components/LikeButton'
 import { VideoLinks } from '../components/OfficialVideo'
 import { ErrorState, Loading, NotFound } from '../components/PageState'
 import TableRegion from '../components/TableRegion'
 import { useCombiDetail, useMeta, useOfficialVideos, usePopularity } from '../lib/api'
+import { useLikes } from '../lib/likes'
+import { likeKey } from '../lib/likesCodec'
 import { combiVideos } from '../lib/officialVideos'
 import { parseId } from '../lib/params'
 import {
@@ -40,6 +43,7 @@ export default function CombiPage() {
   const { data: combi, isError } = useCombiDetail(parsed)
   const { data: popularity } = usePopularity()
   const { data: official } = useOfficialVideos()
+  const likes = useLikes()
   const { data: meta } = useMeta()
   useDocumentTitle(combi ? `${combi.name}のM-1戦績` : null)
 
@@ -193,6 +197,13 @@ export default function CombiPage() {
                           </>
                         )}
                         <VideoLinks links={combiVideos(official, y, id, rk)} name={combi.name} />
+                        {/* いいねの印は表示だけ(狭いセルに押せる部品を足すと押し間違いが増える。付け外しは年度一覧で) */}
+                        {likes.has(likeKey(y, rk, id)) && (
+                          <span className="like-mark">
+                            <HeartIcon filled />
+                            <span className="sr-only">いいね済み</span>
+                          </span>
+                        )}
                       </td>
                     )
                   })}

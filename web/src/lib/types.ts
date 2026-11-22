@@ -141,15 +141,18 @@ export interface ScheduleVenue {
   entrants: number
 }
 
-/** data/schedule.json。M-1公式サイトの準々決勝以降の日程(その時のシーズンの1年分だけ) */
+/** data/schedule.json。M-1公式サイトの1回戦〜決勝の日程(その時のシーズンの1年分だけ)。
+ *  会場の一覧と人数だけ。組ごとの出番は回戦ごとの別ファイル(ScheduleRoundFile) */
 export interface ScheduleFile {
   year: number
   url: string
   fetchedAt: string
   rounds: Partial<Record<RoundKey, ScheduleVenue[]>>
-  /** コンビID → 回戦 → 会場ID(出番の分かる組だけ) */
-  combis: Record<string, Partial<Record<RoundKey, string>>>
 }
+
+/** data/schedule/{回戦}.json。会場ID → その会場のコンビIDの列(公式の並び=出番順。欠席は含まない)。
+ *  1回戦は再エントリーがあるので、同じ組が2会場に居ることがある */
+export type ScheduleRoundFile = Record<string, number[]>
 
 export interface RankingItem {
   id: number

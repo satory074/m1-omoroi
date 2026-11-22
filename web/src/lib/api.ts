@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery, type UseQueryResult } from '@tanstack/react-query'
 
 import type {
   Advancers,
@@ -14,7 +14,9 @@ import type {
   PeopleStats,
   Popularity,
   Rankings,
+  RoundKey,
   ScheduleFile,
+  ScheduleRoundFile,
   Stats,
   YearFile,
 } from './types'
@@ -50,6 +52,21 @@ export function useYear(year: number | null) {
   })
 }
 
+/**
+ * 複数の年の年度ファイル(いいねの一覧用)。useYear と同じキーなので、年度ページで読んだものはそのまま使う。
+ * combine は部品の外で定義した関数を渡すこと(結果が変わらない限り同じ値が返り、useMemo の依存にできる)
+ */
+export function useYears<T>(years: readonly number[], combine: (results: UseQueryResult<YearFile>[]) => T) {
+  return useQueries({
+    queries: years.map((year) => ({
+      queryKey: ['year', year],
+      queryFn: () => fetchJson<YearFile>(`years/${year}.json`),
+      ...STATIC,
+    })),
+    combine,
+  })
+}
+
 /** enabled=false で取得を抑止できる(ヘッダー常駐の検索が未使用のページで無駄に取らないため) */
 export function usePopularity(enabled = true) {
   return useQuery({
@@ -75,6 +92,16 @@ export function useSchedule() {
   return useQuery({
     queryKey: ['schedule'],
     queryFn: () => fetchJsonOrNull<ScheduleFile>('schedule.json'),
+    ...STATIC,
+  })
+}
+
+/** その回戦の会場ごとの出番順(data/schedule/{回戦}.json)。1回戦は約30KB(gzip)あるので、その回戦を開いたときだけ */
+export function useScheduleRound(round: RoundKey | null) {
+  return useQuery({
+    queryKey: ['schedule-round', round],
+    queryFn: () => fetchJsonOrNull<ScheduleRoundFile>(`schedule/${round}.json`),
+    enabled: round !== null,
     ...STATIC,
   })
 }

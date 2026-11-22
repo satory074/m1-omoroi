@@ -39,6 +39,7 @@ const NAV = [
   { to: '/years', label: '年度別' },
   { to: '/finals', label: '決勝' },
   { to: '/stats', label: '記録・統計' },
+  { to: '/likes', label: 'いいね' },
 ] as const
 
 /** 全ページ共通の枠(ヘッダー・フッター)。中身は <Outlet /> に入る */

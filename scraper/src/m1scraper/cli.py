@@ -239,7 +239,7 @@ def main():
 
     p = sub.add_parser(
         "fetch-schedule",
-        help="M-1公式サイトの準々決勝以降の日程(会場・日時・出場者)を取得 → work/schedule.json",
+        help="M-1公式サイトの1回戦〜決勝の日程(会場・日時・出番順の出場者)を取得 → work/schedule.json",
     )
     p.set_defaults(func=cmd_fetch_schedule)
 

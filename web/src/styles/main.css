@@ -20,8 +20,10 @@
 @import './components/history.css' layer(components);
 @import './components/search.css' layer(components);
 @import './components/youtube.css' layer(components);
+@import './components/likes.css' layer(components);
 @import './pages/home.css' layer(pages);
 @import './pages/year.css' layer(pages);
 @import './pages/finals.css' layer(pages);
 @import './pages/combi.css' layer(pages);
 @import './pages/stats.css' layer(pages);
+@import './pages/likes.css' layer(pages);

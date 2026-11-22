@@ -10,6 +10,7 @@
     "build": "node scripts/check-tokens.mjs && tsc -b && vite build",
     "postbuild": "cp dist/index.html dist/404.html",
     "lint": "oxlint",
+    "test": "node --experimental-strip-types --no-warnings=ExperimentalWarning --test scripts/test-likes.mjs",
     "preview": "vite preview",
     "check": "node scripts/check-tokens.mjs && node scripts/check-css.mjs && node scripts/check-bundle.mjs"
   },
