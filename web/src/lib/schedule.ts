@@ -1,5 +1,5 @@
 import { ROUND_ORDER } from './rounds'
-import type { RoundKey, ScheduleFile, ScheduleVenue } from './types'
+import type { RoundKey, ScheduleFile, ScheduleRoundFile, ScheduleVenue } from './types'
 
 /** 公式の日程ページ(データが無いときの既定。schedule.json の url と同じ) */
 export const SCHEDULE_PAGE_URL = 'https://www.m-1gp.com/schedule/'
@@ -46,15 +46,45 @@ export function nextVenue(
   return null
 }
 
-/** そのコンビのその回戦の出番の会場。分からなければ null */
-export function combiVenue(
-  s: ScheduleFile | null | undefined,
-  year: number,
-  combiId: number | null,
-  round: RoundKey,
-): ScheduleVenue | null {
-  if (!s || s.year !== year || combiId == null) return null
-  const vid = s.combis[String(combiId)]?.[round]
-  if (!vid) return null
-  return s.rounds[round]?.find((v) => v.id === vid) ?? null
+/** 1組の出番。n = 会場の中で何組目か(1始まり、欠席は数えない) */
+export interface Slot {
+  venue: ScheduleVenue
+  n: number
+}
+
+/** 出番の引き当て。組ごとに、その回戦で出番のある会場の一覧(日付順。1回戦は再エントリーで2つのことがある) */
+export type SlotIndex = Map<number, Slot[]>
+
+export function buildSlots(venues: ScheduleVenue[], file: ScheduleRoundFile | null | undefined): SlotIndex {
+  const index: SlotIndex = new Map()
+  if (!file) return index
+  // venues は日付順(build が並べている)。この順で足すので、組ごとの一覧も日付順になる
+  for (const venue of venues) {
+    const ids = file[venue.id]
+    if (!ids) continue
+    ids.forEach((id, i) => {
+      const slot = { venue, n: i + 1 }
+      const list = index.get(id)
+      if (list) list.push(slot)
+      else index.set(id, [slot])
+    })
+  }
+  return index
+}
+
+/**
+ * 行に出す出番。会場で絞っていればその会場の出番、絞っていなければ遅い方(1回戦の再エントリーなら、
+ * その年の結果を決めた方)。出番が無ければ null
+ */
+export function slotFor(index: SlotIndex, id: number | null, venueId: string | null): Slot | null {
+  if (id == null) return null
+  const list = index.get(id)
+  if (!list) return null
+  if (venueId) return list.find((s) => s.venue.id === venueId) ?? null
+  return list[list.length - 1]
+}
+
+/** 「11/18(水) 大阪 13組目」 */
+export function slotLabel(slot: Slot): string {
+  return `${formatDay(slot.venue)}${slot.venue.area ? ` ${slot.venue.area}` : ''} ${slot.n}組目`
 }

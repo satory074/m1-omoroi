@@ -122,6 +122,7 @@ for (const page of pages) {
 const notFound = replaceOnce(template, OG_URL, '<meta name="robots" content="noindex" />', 'og:url')
 writeFileSync(join(dist, '404.html'), notFound)
 
+
 // ---------- /years/・/finals/(最新の年へ転送) ----------
 
 const meta = readData('meta.json')
@@ -161,6 +162,13 @@ for (const r of redirects) {
   )
 }
 
+// ---------- /likes/(いいね。中身の無い殻) ----------
+// 中身は端末ごとの localStorage なので事前描画しない。ただしヘッダーのナビが全ページから指すので、
+// 404 ではなく HTTP 200 で返るよう 404.html と同じ殻を置く(noindex のまま。サイトマップにも載せない)。
+// 戻りリンクのバーは #root の中に入れる: 静的 HTML にもバーがあり(seo-check の条件)、ブラウザでは
+// main.tsx が createRoot で #root を描き直すときにアプリ自身のバーに置き換わる(二重にならない)
+writePage('/likes/', replaceOnce(notFound, ROOT, `<div id="root">${backlink}</div>`, '#root'))
+
 // ---------- sitemap.xml ----------
 
 const urls = pages
@@ -176,4 +184,4 @@ writeFileSync(
 
 // どの画面がどの JS を読むかの表は公開しない
 rmSync(join(dist, '.vite'), { recursive: true, force: true })
-console.log(`[prerender] ${pages.length} ページ + 転送 ${redirects.length} + 404.html + sitemap.xml を ${dist} に書きました`)
+console.log(`[prerender] ${pages.length} ページ + 転送 ${redirects.length} + 404.html + likes/ + sitemap.xml を ${dist} に書きました`)

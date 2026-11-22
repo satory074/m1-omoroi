@@ -7,6 +7,7 @@ import BestChip from '../components/BestChip'
 import CombiLink from '../components/CombiLink'
 import CombiPhoto from '../components/CombiPhoto'
 import FormedChip from '../components/FormedChip'
+import LikeButton, { HeartIcon } from '../components/LikeButton'
 import { VideoLinks } from '../components/OfficialVideo'
 import { ErrorState, Loading, NotFound } from '../components/PageState'
 import RoundSchedule from '../components/RoundSchedule'
@@ -14,19 +15,33 @@ import ScrollNav, { type ScrollNavItem } from '../components/ScrollNav'
 import Segmented from '../components/Segmented'
 import YearSummary from '../components/YearSummary'
 import { useAbsentRows } from '../lib/absentRows'
-import { useMeta, useOfficialVideos, usePopularity, useSchedule, useYear, useYearSummary } from '../lib/api'
+import {
+  useMeta,
+  useOfficialVideos,
+  usePopularity,
+  useSchedule,
+  useScheduleRound,
+  useYear,
+  useYearSummary,
+} from '../lib/api'
 import { NARROW_QUERY } from '../lib/breakpoints'
 import { m1LimitYears } from '../lib/eligibility'
+import { useLikes } from '../lib/likes'
+import { likeKey } from '../lib/likesCodec'
 import { OFFICIAL_CHANNEL_URL, combiVideos, playlistUrl } from '../lib/officialVideos'
 import { parseYear } from '../lib/params'
 import { RESULT_DISPLAY, ROUND_LABEL, ROUND_ORDER, formatHits, isPassing } from '../lib/rounds'
 import {
   SCHEDULE_PAGE_URL,
-  combiVenue,
+  type Slot,
+  type SlotIndex,
+  buildSlots,
   formatDay,
   nextVenue,
   roundDateLabel,
   roundVenues,
+  slotFor,
+  slotLabel,
   todayJst,
 } from '../lib/schedule'
 import { clearRow, loadRow, saveRow } from '../lib/scrollMemory'
@@ -36,7 +51,6 @@ import type {
   Popularity,
   ResultKey,
   RoundKey,
-  ScheduleFile,
   ScheduleVenue,
   YearEntry,
 } from '../lib/types'
@@ -46,7 +60,8 @@ import { useUrlParam } from '../lib/useUrlParam'
 import { finalsPath, yearPath } from '../lib/paths'
 
 const RESULT_FILTERS = ['all', 'pass', 'fail'] as const
-const SORTS = ['hits', 'no', 'kana'] as const
+const SORTS = ['hits', 'no', 'kana', 'order'] as const
+const LIKED = ['0', '1'] as const
 type ResultFilter = (typeof RESULT_FILTERS)[number]
 type SortKey = (typeof SORTS)[number]
 /** 回戦の代わりに「資格がありながら未エントリー」の表を出す表示(?round=absent) */
@@ -56,6 +71,51 @@ const SORT_LABEL: Record<SortKey, string> = {
   hits: '注目度順',
   no: 'エントリーNo.順',
   kana: '五十音順',
+  order: '出番順',
+}
+
+/** 日程の会場の行(開演・MC)を出すのは会場がこの数までの回戦。1回戦(74会場)・2回戦(15会場)は
+ *  行を並べると一覧がずっと下へ押し出されるので、会場のプルダウンだけにする */
+const SCHEDULE_ROWS_MAX = 9
+
+/** 会場のプルダウン。日付ごとに区切り、今日の会場には「今日」と付ける */
+function VenueSelect({
+  venues,
+  value,
+  today,
+  onChange,
+}: {
+  venues: ScheduleVenue[]
+  value: string | null
+  today: string
+  onChange: (venueId: string | null) => void
+}) {
+  const days: { date: string; venues: ScheduleVenue[] }[] = []
+  for (const v of venues) {
+    const last = days[days.length - 1]
+    if (last && last.date === v.date) last.venues.push(v)
+    else days.push({ date: v.date, venues: [v] })
+  }
+  return (
+    <label className="select venue-select">
+      <span className="sr-only">会場で絞り込む</span>
+      <select value={value ?? ''} onChange={(e) => onChange(e.target.value || null)}>
+        <option value="">すべての会場</option>
+        {days.map((d) => (
+          <optgroup key={d.date} label={`${formatDay(d.venues[0])}${d.date === today ? ' 今日' : ''}`}>
+            {d.venues.map((v) => (
+              <option key={v.id} value={v.id}>
+                {/* 同じ会場で昼と夜の2回ある日(3回戦の大阪など)は時刻でしか見分けられないので、狭い画面で切れない前の方に置く */}
+                {formatDay(v)}
+                {v.start ? ` ${v.start}` : ''} {v.area ? `${v.area} ` : ''}
+                {v.place ?? '会場は調整中'}({v.entrants.toLocaleString('ja-JP')}組)
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    </label>
+  )
 }
 
 /** 行の高さ。広い画面は CSS で 56px に固定、狭い画面は名前の折り返しで変わるので実測する(見積もりは1行の名前) */
@@ -134,7 +194,7 @@ function Row({
   round,
   hits,
   official,
-  venue,
+  slot,
   focused,
 }: {
   e: YearEntry
@@ -142,8 +202,8 @@ function Row({
   round: RoundKey
   hits: number | undefined
   official: OfficialVideos | null | undefined
-  /** その回戦の出番の会場(公式日程に載っている組だけ) */
-  venue: ScheduleVenue | null
+  /** その回戦の出番(公式日程に載っている組だけ) */
+  slot: Slot | null
   focused: boolean
 }) {
   const res = e.results[round] as ResultKey
@@ -159,11 +219,10 @@ function Row({
         </CombiLink>
         <FormedChip year={year} formed={e.formed} />
         <BestChip level={e.best} until={year} />
-        {venue && (
+        {slot && (
           <span className="chip chip-venue">
             <span className="sr-only">出番 </span>
-            {formatDay(venue)}
-            {venue.area && ` ${venue.area}`}
+            {slotLabel(slot)}
           </span>
         )}
         {focused && <span className="chip chip-focus">この組</span>}
@@ -175,6 +234,15 @@ function Row({
       <span className={`yr-result result-${res}`}>
         <span aria-hidden="true">{disp.sym}</span> {disp.label || e.raw?.[round] || '不明'}
         <VideoLinks links={combiVideos(official, year, e.id, round)} name={e.name} />
+      </span>
+      <span className="yr-like">
+        {/* いいねはコンビIDで覚えるので、IDの紐付かないアーカイブの行(2001〜2010の一部)には付けない */}
+        {e.id != null && (
+          <LikeButton
+            likeKey={likeKey(year, round, e.id)}
+            label={`${e.name}(${year}年 ${ROUND_LABEL[round]})をいいね`}
+          />
+        )}
       </span>
     </>
   )
@@ -194,19 +262,24 @@ function YearBoard({
   round,
   popularity,
   official,
-  schedule,
+  slots,
+  venueId,
   focusId,
   ready,
   signature,
   headRef,
   status,
+  emptyText,
 }: {
   rows: YearEntry[]
   year: number
   round: RoundKey
   popularity: Popularity | null | undefined
   official: OfficialVideos | null | undefined
-  schedule: ScheduleFile | null | undefined
+  /** その回戦の出番(今シーズンだけ) */
+  slots: SlotIndex
+  /** 会場で絞っているときの会場ID */
+  venueId: string | null
   focusId: number | null
   /** 並び順が確定したか(注目度順は注目度データが届くまで並びが変わる) */
   ready: boolean
@@ -215,6 +288,7 @@ function YearBoard({
   /** 一覧より上の部分。高さが変わったら一覧の開始位置(scrollMargin)を測り直す */
   headRef: RefObject<HTMLDivElement | null>
   status: ReactNode
+  emptyText: string
 }) {
   const location = useLocation()
   const listRef = useRef<HTMLDivElement>(null)
@@ -314,10 +388,11 @@ function YearBoard({
           <span>コンビ</span>
           <span>結果</span>
           <span>注目度</span>
+          <span>いいね</span>
         </div>
       </div>
       {rows.length === 0 ? (
-        <p className="page-state">該当するコンビがいません</p>
+        <p className="page-state">{emptyText}</p>
       ) : (
         <div
           ref={listRef}
@@ -347,7 +422,7 @@ function YearBoard({
                   round={round}
                   hits={e.id != null ? popularity?.hits[String(e.id)]?.n : undefined}
                   official={official}
-                  venue={combiVenue(schedule, year, e.id, round)}
+                  slot={slotFor(slots, e.id, venueId)}
                   focused={focused}
                 />
               </div>
@@ -363,7 +438,7 @@ export default function YearPage() {
   const { year: yearParam } = useParams()
   const parsedYear = parseYear(yearParam)
   const year = parsedYear ?? 0
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
 
   const { data: meta } = useMeta()
   // 大会の無い年(2011〜2014 や未来の年)は取りに行かない
@@ -374,10 +449,13 @@ export default function YearPage() {
   const { data: official } = useOfficialVideos()
   // 公式日程(準々決勝以降)。持っているのはシーズン中の1年分だけ(schedule.year)
   const { data: schedule, isPending: schedulePending } = useSchedule()
+  const likes = useLikes()
   const today = todayJst()
 
   const [resultFilter, setResultFilter] = useUrlParam<ResultFilter>('result', 'all', RESULT_FILTERS)
   const [sort, setSort] = useUrlParam<SortKey>('sort', 'hits', SORTS)
+  const [liked, setLiked] = useUrlParam<(typeof LIKED)[number]>('liked', '0', LIKED)
+  const venueParam = params.get('venue')
   const roundParam = params.get('round') ?? 'first'
   const focusId = Number(params.get('focus')) || null
   const headRef = useRef<HTMLDivElement>(null)
@@ -405,8 +483,53 @@ export default function YearPage() {
       ? (roundParam as RoundKey)
       : 'first'
   const upcoming = !showAbsent && scheduleOnly(round)
-  const venues = showAbsent ? [] : roundVenues(schedule, year, round)
+  const venues = useMemo(
+    () => (showAbsent ? [] : roundVenues(schedule, year, round)),
+    [showAbsent, schedule, year, round],
+  )
   const next = nextVenue(schedule, year, today)
+  // 出番(会場ごとの公式の並び)。日程のある今シーズンの、出場者の載った回戦だけ取りに行く
+  const wantSlots = !showAbsent && !upcoming && venues.some((v) => v.entrants > 0)
+  const { data: roundFile, isPending: slotsPending } = useScheduleRound(wantSlots ? round : null)
+  const slots = useMemo(() => buildSlots(venues, wantSlots ? roundFile : null), [venues, roundFile, wantSlots])
+  const hasSlots = slots.size > 0
+  const slotsLoading = wantSlots && slotsPending
+  const venueId = hasSlots && venueParam && venues.some((v) => v.id === venueParam) ? venueParam : null
+  const venueOrder = useMemo(() => new Map(venues.map((v, i) => [v.id, i])), [venues])
+  // 出番の無い回戦(過去の年など)で ?sort=order が来たら注目度順。出番の到着を待つ間はそのまま
+  const sortKey: SortKey = sort === 'order' && !hasSlots && !slotsLoading ? 'hits' : sort
+
+  // 「いいねだけ」の間に外したいいねは、絞り込みを切り替えるまで行を残す(押し間違えても押し直せるように)
+  const likeSig = `${year}|${round}|${liked}`
+  const [kept, setKept] = useState({ sig: likeSig, keys: likes })
+  if (kept.sig !== likeSig) setKept({ sig: likeSig, keys: likes })
+  const likedOnly = liked === '1'
+  const likedNow = likedOnly ? likes : null
+  const roundLikeCount = useMemo(() => {
+    const prefix = `${year}:${round}:`
+    let n = 0
+    for (const k of likes) if (k.startsWith(prefix)) n++
+    return n
+  }, [likes, year, round])
+
+  const setVenue = (id: string | null) => {
+    setParams(
+      (prev) => {
+        const p = new URLSearchParams(prev)
+        // 会場を選んだら出番順にする(観ている会場の組が出てくる順に並ぶ)
+        if (id) {
+          p.set('venue', id)
+          p.set('sort', 'order')
+        } else {
+          p.delete('venue')
+        }
+        p.delete('focus')
+        return p
+      },
+      { replace: true, preventScrollReset: true },
+    )
+  }
+
   // 回戦の指定が無い URL(事前描画したページ)は年のタイトル。HTML の <title> と同じ関数(lib/seo.ts)で作る。
   // 年が無いとき(NotFound が自分のタイトルを付ける)と、回戦の指定があって年度ファイルを待っている間は触らない
   const invalidYear = parsedYear === null || (meta !== undefined && !known)
@@ -423,14 +546,36 @@ export default function YearPage() {
   const rows = useMemo(() => {
     if (!yearFile) return []
     let list = yearFile.entries.filter((e) => e.results[round])
+    if (venueId) list = list.filter((e) => slotFor(slots, e.id, venueId) !== null)
+    if (likedNow) {
+      list = list.filter((e) => {
+        if (e.id == null) return false
+        const k = likeKey(year, round, e.id)
+        return likedNow.has(k) || kept.keys.has(k)
+      })
+    }
     if (resultFilter === 'pass') list = list.filter((e) => isPassing(e.results[round]))
     if (resultFilter === 'fail')
       list = list.filter((e) => e.results[round] === 'fail' || e.results[round] === 'fail_inferred')
     const kanaCmp = (a: YearEntry, b: YearEntry) => (a.kana || a.name).localeCompare(b.kana || b.name, 'ja')
     const sorted = [...list]
-    if (sort === 'kana') {
+    if (sortKey === 'kana') {
       sorted.sort(kanaCmp)
-    } else if (sort === 'hits') {
+    } else if (sortKey === 'order') {
+      // 会場(日付順)→ 会場の中の出番。出番の分からない組(欠席など)は後ろに五十音順
+      const posOf = (e: YearEntry) => {
+        const sl = slotFor(slots, e.id, venueId)
+        return sl ? (venueOrder.get(sl.venue.id) ?? 0) * 100000 + sl.n : null
+      }
+      sorted.sort((a, b) => {
+        const pa = posOf(a)
+        const pb = posOf(b)
+        if (pa != null && pb != null) return pa - pb
+        if (pa != null) return -1
+        if (pb != null) return 1
+        return kanaCmp(a, b)
+      })
+    } else if (sortKey === 'hits') {
       const hitOf = (e: YearEntry) => (e.id != null ? popularity?.hits[String(e.id)]?.n : undefined)
       sorted.sort((a, b) => {
         const ha = hitOf(a)
@@ -444,7 +589,7 @@ export default function YearPage() {
       sorted.sort((a, b) => (a.no ?? Number.MAX_SAFE_INTEGER) - (b.no ?? Number.MAX_SAFE_INTEGER))
     }
     return sorted
-  }, [yearFile, round, resultFilter, sort, popularity])
+  }, [yearFile, round, resultFilter, sortKey, popularity, slots, venueId, venueOrder, likedNow, kept, year])
 
   // 「資格がありながら未エントリー」の判定用。その年エントリーした全組のID
   const enteredIds = useMemo(() => {
@@ -460,8 +605,10 @@ export default function YearPage() {
     return yearFile.entries.filter((e) => combiVideos(official, year, e.id, round).length > 0).length
   }, [yearFile, official, year, round])
 
-  // 戻るボタンの位置を正しくするため、注目度順は注目度データが届いてから並びを確定とみなす
-  const ready = sort !== 'hits' || popularity !== undefined
+  // 戻るボタンの位置を正しくするため、注目度順は注目度データが届いてから、出番順・会場の絞り込みは
+  // 出番が届いてから並びを確定とみなす
+  const ready =
+    (sortKey !== 'hits' || popularity !== undefined) && (!(sort === 'order' || venueParam) || !slotsLoading)
 
   // 年の並び。年を移っても回戦・絞り込み・並び順は引き継ぐ(その年に無い回戦なら1回戦を出す)
   const yearItems = useMemo<ScrollNavItem[]>(() => {
@@ -472,7 +619,7 @@ export default function YearPage() {
       if (i > 0 && sorted[i - 1] - y > 1) items.push({ key: `gap-${y}`, separator: '休止' })
       items.push({
         key: String(y),
-        to: { pathname: yearPath(y), search: searchFor(params, {}) },
+        to: { pathname: yearPath(y), search: searchFor(params, { venue: null }) },
         label: y,
         current: y === year,
       })
@@ -546,13 +693,14 @@ export default function YearPage() {
   const passCount = rows.filter((e) => isPassing(e.results[round])).length
   const yearVideos = official?.years[String(year)]
   const total = roundCounts.get(round) ?? 0
+  const selectedVenue = venueId ? (venues.find((v) => v.id === venueId) ?? null) : null
 
   const roundItems: ScrollNavItem[] = activeRounds.map((rk) => {
     const count = roundCounts.get(rk) ?? 0
     const hasVideo = (yearVideos?.playlists[rk]?.length ?? 0) > 0
     return {
       key: rk,
-      to: { search: searchFor(params, { round: rk === 'first' ? null : rk }) },
+      to: { search: searchFor(params, { round: rk === 'first' ? null : rk, venue: null }) },
       inPage: true,
       current: !showAbsent && rk === round,
       ariaLabel: `${ROUND_LABEL[rk]} ${count.toLocaleString('ja-JP')}組${hasVideo ? '(公式動画あり)' : ''}`,
@@ -572,7 +720,7 @@ export default function YearPage() {
     const date = roundDateLabel(roundVenues(schedule, year, rk))
     roundItems.push({
       key: rk,
-      to: { search: searchFor(params, { round: rk, result: null }) },
+      to: { search: searchFor(params, { round: rk, result: null, venue: null }) },
       inPage: true,
       current: !showAbsent && rk === round,
       className: 'is-upcoming',
@@ -589,7 +737,7 @@ export default function YearPage() {
     roundItems.push({ key: 'sep', separator: '' })
     roundItems.push({
       key: ABSENT,
-      to: { search: searchFor(params, { round: ABSENT, result: null }) },
+      to: { search: searchFor(params, { round: ABSENT, result: null, venue: null }) },
       inPage: true,
       current: showAbsent,
       ariaLabel: `資格がありながら未エントリー ${absentRows.length}組`,
@@ -610,7 +758,7 @@ export default function YearPage() {
           next && (
             <Link
               className="year-next"
-              to={{ search: searchFor(params, { round: next.round, result: null }) }}
+              to={{ search: searchFor(params, { round: next.round, result: null, venue: null }) }}
               replace
               preventScrollReset
             >
@@ -621,7 +769,7 @@ export default function YearPage() {
         {yearNav}
         <ScrollNav label="回戦" variant="steps" items={roundItems} />
 
-        {venues.length > 0 && (
+        {venues.length > 0 && (upcoming || venues.length <= SCHEDULE_ROWS_MAX) && (
           <RoundSchedule
             venues={venues}
             today={today}
@@ -645,8 +793,8 @@ export default function YearPage() {
               />
               <label className="select">
                 <span className="sr-only">並び順</span>
-                <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
-                  {SORTS.map((s) => (
+                <select value={sortKey} onChange={(e) => setSort(e.target.value as SortKey)}>
+                  {SORTS.filter((s) => s !== 'order' || hasSlots || sortKey === 'order').map((s) => (
                     <option key={s} value={s}>
                       {SORT_LABEL[s]}
                     </option>
@@ -662,6 +810,19 @@ export default function YearPage() {
                   を検索した上位動画のうち、コンビ名またはメンバー名を単語として含むものの再生数の合計です。3回戦以上に出たことのあるコンビが対象で、データが無いコンビは五十音順で後ろに並びます。
                 </p>
               </details>
+            </div>
+            <div className="year-toolbar year-watch">
+              <button
+                type="button"
+                className="like-filter"
+                aria-pressed={likedOnly}
+                onClick={() => setLiked(likedOnly ? '0' : '1')}
+              >
+                <HeartIcon filled />
+                いいねだけ
+                <span className="like-filter-count">{roundLikeCount.toLocaleString('ja-JP')}</span>
+              </button>
+              {hasSlots && <VenueSelect venues={venues} value={venueId} today={today} onChange={setVenue} />}
             </div>
             {/* 動画データの到着前から高さを確保して、一覧の位置がずれないようにする */}
             <div className="round-videos-slot">
@@ -692,20 +853,32 @@ export default function YearPage() {
             round={round}
             popularity={popularity}
             official={official}
-            schedule={schedule}
+            slots={slots}
+            venueId={venueId}
             focusId={focusId}
             ready={ready}
-            signature={`${round}|${resultFilter}|${sort}`}
+            signature={`${round}|${resultFilter}|${sortKey}|${venueId}|${liked}`}
             headRef={headRef}
+            emptyText={
+              likedOnly
+                ? `${ROUND_LABEL[round]}でいいねした組はまだありません。各行の右端の ♡ で付けられます。`
+                : '該当するコンビがいません'
+            }
             status={
               <p className="year-status-text">
                 <strong>{ROUND_LABEL[round]}</strong>
                 <span>
-                  {resultFilter === 'all'
+                  {resultFilter === 'all' && !venueId && !likedOnly
                     ? `${total.toLocaleString('ja-JP')}組(通過 ${passCount.toLocaleString('ja-JP')})`
-                    : `${resultFilter === 'pass' ? '通過' : '敗退'} ${rows.length.toLocaleString('ja-JP')}組`}
+                    : `${[
+                        selectedVenue && `${formatDay(selectedVenue)} ${selectedVenue.area ?? ''}`.trim(),
+                        likedOnly && 'いいね',
+                        resultFilter === 'pass' ? '通過' : resultFilter === 'fail' ? '敗退' : null,
+                      ]
+                        .filter(Boolean)
+                        .join('・')} ${rows.length.toLocaleString('ja-JP')}組`}
                 </span>
-                <span className="year-status-sort">{SORT_LABEL[sort]}</span>
+                <span className="year-status-sort">{SORT_LABEL[sortKey]}</span>
               </p>
             }
           />

@@ -33,6 +33,11 @@ export const routes: RouteObject[] = [
         path: 'stats/:section?',
         lazy: () => import('./pages/StatsPage').then((m) => ({ Component: m.default })),
       },
+      // いいねの一覧とバックアップ用リンク。使う人だけが開くので最初の JS から外す
+      {
+        path: 'likes',
+        lazy: () => import('./pages/LikesPage').then((m) => ({ Component: m.default })),
+      },
       // 旧「記録ランキング」は記録・統計のコンビタブへ統合した(共有済みのリンク用)
       { path: 'rankings', element: <Navigate to="/stats/combi/" replace /> },
       { path: '*', element: <NotFound /> },

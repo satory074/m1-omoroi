@@ -1,0 +1,82 @@
+/* ============ いいね(ハート) ============
+   塗り=いいね済み・白抜き=まだ。色だけでなく形でも状態を示す。
+   見た目は 20px、押せる範囲は 44px(負のマージンで行の高さは押し広げない。▶ の .yt-link と同じ考え方)。
+   狭い画面では行全体がコンビ詳細へのリンク(.yr-link::after)なので、その上に出す */
+.like-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--tap-comfort);
+  height: var(--tap-comfort);
+  margin: -12px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--c-text-muted);
+  cursor: pointer;
+}
+
+.like-btn:hover {
+  color: var(--c-accent);
+}
+
+.like-btn.is-on {
+  color: var(--c-accent);
+}
+
+.like-btn:focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: -8px;
+}
+
+/* 「♡ いいねだけ」の切り替え。押されている間は黒地(絞り込みの Segmented と同じ見え方) */
+.like-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: none;
+  min-height: var(--tap-comfort);
+  padding: 0 var(--space-4) 0 var(--space-3);
+  border: 1.5px solid var(--c-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-size: var(--fs-3);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.like-filter svg {
+  color: var(--c-accent);
+}
+
+.like-filter[aria-pressed='true'] {
+  border-color: var(--c-text);
+  background: var(--c-text);
+  color: var(--c-bg);
+  font-weight: var(--fw-bold);
+}
+
+.like-filter[aria-pressed='true'] svg {
+  color: currentColor;
+}
+
+.like-filter-count {
+  font-size: var(--fs-2);
+}
+
+/* コンビ詳細の履歴表など、押せない印 */
+.like-mark {
+  display: inline-flex;
+  vertical-align: -3px;
+  color: var(--c-accent);
+}
+
+.like-mark svg {
+  width: 14px;
+  height: 14px;
+}

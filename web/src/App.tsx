@@ -40,6 +40,8 @@ const NAV = [
   { to: '/years/', label: '年度別' },
   { to: '/finals/', label: '決勝' },
   { to: '/stats/', label: '記録・統計' },
+  // いいねは事前描画しない(端末ごとの中身)。prerender.mjs が空の殻を likes/index.html に置くので末尾 / 付き
+  { to: '/likes/', label: 'いいね' },
 ] as const
 
 /** 全ページ共通の枠(ヘッダー・フッター)。中身は <Outlet /> に入る */
