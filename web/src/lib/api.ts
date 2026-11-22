@@ -17,6 +17,7 @@ import type {
   ScheduleFile,
   Stats,
   YearFile,
+  YearSummary,
 } from './types'
 import { buildMemberKeys } from './search'
 
@@ -37,8 +38,35 @@ async function fetchJsonOrNull<T>(path: string): Promise<T | null> {
 
 const STATIC = { staleTime: Infinity, gcTime: Infinity } as const
 
+/**
+ * 事前描画(src/entry-server.tsx)が HTML に埋め込むデータのキー。サーバーで同じキーにデータを入れておくと、
+ * ブラウザは取りに行かずにそのデータで最初の画面を描く(hydrate)。キーとファイルの対応はここだけに書く。
+ */
+export const QUERY = {
+  meta: { key: ['meta'], file: 'meta.json' },
+  stats: { key: ['stats'], file: 'stats.json' },
+  champions: { key: ['champions'], file: 'champions.json' },
+  rankings: { key: ['rankings'], file: 'rankings.json' },
+  finalsStats: { key: ['finals-stats'], file: 'finals_stats.json' },
+  judgesStats: { key: ['judges-stats'], file: 'judges_stats.json' },
+  peopleStats: { key: ['people-stats'], file: 'people_stats.json' },
+  finals: (year: number) => ({ key: ['finals', year], file: `finals/${year}.json` }),
+  yearSummary: (year: number) => ({ key: ['year-summary', year], file: `years/${year}.summary.json` }),
+} as const
+
 export function useMeta() {
-  return useQuery({ queryKey: ['meta'], queryFn: () => fetchJson<MetaFile>('meta.json'), ...STATIC })
+  return useQuery({ queryKey: QUERY.meta.key, queryFn: () => fetchJson<MetaFile>(QUERY.meta.file), ...STATIC })
+}
+
+/** 年度の要約(数KB)。年度ファイル(最大1.7MB)より先に届き、事前描画した HTML にも入る。無い年は null */
+export function useYearSummary(year: number | null) {
+  const q = QUERY.yearSummary(year ?? 0)
+  return useQuery({
+    queryKey: q.key,
+    queryFn: () => fetchJsonOrNull<YearSummary>(q.file),
+    enabled: year !== null,
+    ...STATIC,
+  })
 }
 
 export function useYear(year: number | null) {
@@ -122,20 +150,20 @@ export function useCombiDetail(id: number | null) {
 
 export function useRankings() {
   return useQuery({
-    queryKey: ['rankings'],
-    queryFn: () => fetchJson<Rankings>('rankings.json'),
+    queryKey: QUERY.rankings.key,
+    queryFn: () => fetchJson<Rankings>(QUERY.rankings.file),
     ...STATIC,
   })
 }
 
 export function useStats() {
-  return useQuery({ queryKey: ['stats'], queryFn: () => fetchJson<Stats>('stats.json'), ...STATIC })
+  return useQuery({ queryKey: QUERY.stats.key, queryFn: () => fetchJson<Stats>(QUERY.stats.file), ...STATIC })
 }
 
 export function useChampions() {
   return useQuery({
-    queryKey: ['champions'],
-    queryFn: () => fetchJsonOrNull<Champions>('champions.json'),
+    queryKey: QUERY.champions.key,
+    queryFn: () => fetchJsonOrNull<Champions>(QUERY.champions.file),
     ...STATIC,
   })
 }
@@ -150,32 +178,33 @@ export function useAdvancers() {
 
 export function useFinalsStats() {
   return useQuery({
-    queryKey: ['finals-stats'],
-    queryFn: () => fetchJsonOrNull<FinalsStats>('finals_stats.json'),
+    queryKey: QUERY.finalsStats.key,
+    queryFn: () => fetchJsonOrNull<FinalsStats>(QUERY.finalsStats.file),
     ...STATIC,
   })
 }
 
 export function useJudgesStats() {
   return useQuery({
-    queryKey: ['judges-stats'],
-    queryFn: () => fetchJsonOrNull<JudgesStats>('judges_stats.json'),
+    queryKey: QUERY.judgesStats.key,
+    queryFn: () => fetchJsonOrNull<JudgesStats>(QUERY.judgesStats.file),
     ...STATIC,
   })
 }
 
 export function usePeopleStats() {
   return useQuery({
-    queryKey: ['people-stats'],
-    queryFn: () => fetchJsonOrNull<PeopleStats>('people_stats.json'),
+    queryKey: QUERY.peopleStats.key,
+    queryFn: () => fetchJsonOrNull<PeopleStats>(QUERY.peopleStats.file),
     ...STATIC,
   })
 }
 
 export function useFinals(year: number | null) {
+  const q = QUERY.finals(year ?? 0)
   return useQuery({
-    queryKey: ['finals', year],
-    queryFn: () => fetchJsonOrNull<FinalsFile>(`finals/${year}.json`),
+    queryKey: q.key,
+    queryFn: () => fetchJsonOrNull<FinalsFile>(q.file),
     enabled: year !== null,
     ...STATIC,
   })

@@ -17,6 +17,7 @@ import { useTokens } from '../lib/tokens'
 import type { FormationReach, NextYear, PassCount, SeedSplit, Stats, YearStats } from '../lib/types'
 import { hiatusArea, yearsWithHiatus } from './chartHiatus'
 import HistoryTable from './HistoryTable'
+import { yearPath } from '../lib/paths'
 
 // 回戦の色。dataviz スキルの検証スクリプトで確認済み(色覚の違いでの区別 ΔE 19.3 以上・白地で 3:1 以上)。
 // 以前の橙(#d99f23)は白地で 2.35:1 しかなかった。色は CSS のトークンから読む(styles/tokens/theme.css)
@@ -113,7 +114,7 @@ export default function TournamentStats({ data }: { data: Stats }) {
         <ul className="chart-legend" aria-label="線の色">
           {SERIES.map((s) => (
             <li key={s.key}>
-              <i style={{ background: t[s.token] }} aria-hidden="true" />
+              <i style={{ background: `var(${s.token})` }} aria-hidden="true" />
               {s.label}
             </li>
           ))}
@@ -194,7 +195,7 @@ export default function TournamentStats({ data }: { data: Stats }) {
             {[...byYear].reverse().map((y) => (
               <tr key={y.year}>
                 <td className="year">
-                  <Link to={`/years/${y.year}`}>{y.year}</Link>
+                  <Link to={yearPath(y.year)}>{y.year}</Link>
                 </td>
                 <td className="no">{y.entries.toLocaleString('ja-JP')}</td>
                 {ROUND_ORDER.map((rk) => {
@@ -365,7 +366,7 @@ function FormationReachSection({ reach }: { reach: FormationReach }) {
       <ul className="chart-legend" aria-label="線の色">
         {REACH_SERIES.map((s) => (
           <li key={s.key}>
-            <i style={{ background: t[s.token] }} aria-hidden="true" />
+            <i style={{ background: `var(${s.token})` }} aria-hidden="true" />
             {s.label}
           </li>
         ))}

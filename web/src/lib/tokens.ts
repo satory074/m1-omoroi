@@ -1,7 +1,12 @@
 // CSS のトークン(src/styles/tokens/theme.css の --c-*)を JS から読む。
 // recharts は SVG の属性に色を渡すため var() を確実には使えない。そこで描画前に実際の値を読んで渡す。
 // 値はページの読み込み中に変わらないので、一度読んだらモジュール内に覚えておく。
+// サーバー(事前描画)には CSS が無く、hydrate の最初の描画は HTML と同じでなければならないので、
+// その間は空文字を返し、画面を引き継いだ直後に実際の値で描き直す(useHydrated)。
+// 凡例の色見本のように HTML の時点で色が要るものは、ここを通さず style に var(--c-*) を直接書く。
 import { useMemo } from 'react'
+
+import { useHydrated } from './useHydrated'
 
 const cache = new Map<string, string>()
 
@@ -14,12 +19,13 @@ export function readToken(name: `--${string}`): string {
 }
 
 export function useTokens<const T extends readonly `--${string}`[]>(names: T): Record<T[number], string> {
+  const hydrated = useHydrated()
   const key = names.join(',')
   return useMemo(
-    () => Object.fromEntries(names.map((n) => [n, readToken(n)])) as Record<T[number], string>,
+    () => Object.fromEntries(names.map((n) => [n, hydrated ? readToken(n) : ''])) as Record<T[number], string>,
     // names は呼び出し側で定数の配列を渡す前提。中身が同じなら作り直さない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [key],
+    [key, hydrated],
   )
 }
 

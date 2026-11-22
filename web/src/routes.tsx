@@ -34,7 +34,7 @@ export const routes: RouteObject[] = [
         lazy: () => import('./pages/StatsPage').then((m) => ({ Component: m.default })),
       },
       // 旧「記録ランキング」は記録・統計のコンビタブへ統合した(共有済みのリンク用)
-      { path: 'rankings', element: <Navigate to="/stats/combi" replace /> },
+      { path: 'rankings', element: <Navigate to="/stats/combi/" replace /> },
       { path: '*', element: <NotFound /> },
     ],
   },

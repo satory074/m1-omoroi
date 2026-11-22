@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 
 import { MY_SCORE_DEFAULT, clampMyScore, loadMyScores, saveMyScores } from '../lib/myScores'
+import { useHydrated } from '../lib/useHydrated'
 import { competitionRanksOf } from '../lib/rank'
 import type { MyScores } from '../lib/myScores'
 import type { FinalsFile, FinalsScore } from '../lib/types'
@@ -53,10 +54,18 @@ export default function FinalsScoreTable({ finals }: Props) {
   // setAll が judges.length 長の配列を作り直すため、混ぜると全選択/全解除の瞬間に要素が落ちる
   const [youEnabled, setYouEnabled] = useState(true)
   // あなたがつけた点数。FinalsPage が key={finals.year} で再マウントするので初期化時に読める。
-  // その年の出場組に無い古いキー(データ修正で消えた組)はここで捨てる
+  // その年の出場組に無い古いキー(データ修正で消えた組)はここで捨てる。
+  // 事前描画した HTML を引き継ぐ(hydrate)ときは、最初の描画を HTML と同じ「未入力」にし、
+  // 引き継いだ直後(hydrated が true になった描画)に端末の点数を読む。保存は入力の操作のときだけなので消えない
+  const hydrated = useHydrated()
   const [myScores, setMyScores] = useState<MyScores>(() =>
-    loadMyScores(finals.year, rows.map(rowKeyOf)),
+    hydrated ? loadMyScores(finals.year, rows.map(rowKeyOf)) : {},
   )
+  const [scoresLoaded, setScoresLoaded] = useState(hydrated)
+  if (hydrated && !scoresLoaded) {
+    setScoresLoaded(true)
+    setMyScores(loadMyScores(finals.year, rows.map(rowKeyOf)))
+  }
   // null=既定(再計算順位の昇順)
   const [sort, setSort] = useState<SortState | null>(null)
 

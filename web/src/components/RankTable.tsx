@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { competitionRanks } from '../lib/rank'
 import CombiLink from './CombiLink'
 import type { FinalsStatsWinner } from '../lib/types'
+import { finalsPath } from '../lib/paths'
 
 export interface RankRow {
   id: number | null
@@ -52,7 +53,7 @@ export function WinnersCell({ winners }: { winners: FinalsStatsWinner[] }) {
       {winners.map((w, i) => (
         <span key={`${w.year}-${w.name}`} className="winner-item">
           {i > 0 && '・'}
-          <CombiLink id={w.combiId}>{w.name}</CombiLink>(<Link to={`/finals/${w.year}`}>{w.year}</Link>)
+          <CombiLink id={w.combiId}>{w.name}</CombiLink>(<Link to={finalsPath(w.year)}>{w.year}</Link>)
         </span>
       ))}
     </>

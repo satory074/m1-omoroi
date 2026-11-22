@@ -19,6 +19,7 @@ import {
 } from '../lib/rounds'
 import type { ResultKey, RoundKey } from '../lib/types'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
+import { finalsPath, yearPath } from '../lib/paths'
 
 /** 戦績表の列見出し。狭い画面では略す(読み上げは正式名) */
 const SHORT: Record<RoundKey, string> = {
@@ -160,7 +161,7 @@ export default function CombiPage() {
                     {/* その年の一覧の、この組が最後に出た回戦を開き、この組の行へ移る(?focus) */}
                     <Link
                       className="history-year"
-                      to={`/years/${y}?round=${furthestRound(h.results) ?? 'first'}&focus=${id}`}
+                      to={yearPath(y, `?round=${furthestRound(h.results) ?? 'first'}&focus=${id}`)}
                     >
                       {y}
                       <span className="sr-only">年の一覧でこのコンビを見る</span>
@@ -178,7 +179,7 @@ export default function CombiPage() {
                     return (
                       <td key={rk} className={`cell result-${res}`}>
                         {toFinals ? (
-                          <Link to={`/finals/${y}`} className="cell-link">
+                          <Link to={finalsPath(y)} className="cell-link">
                             <span aria-hidden="true">{disp.sym}</span>
                             <span className="sr-only">
                               {ROUND_LABEL[rk]} {label}({y}年 決勝の得点表へ)

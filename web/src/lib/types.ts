@@ -39,6 +39,21 @@ export interface YearFile {
   notes?: string
 }
 
+/**
+ * 年度の要約 years/{year}.summary.json(数KB)。web/scripts/year-summaries.mjs が年度ファイルから作る。
+ * 年度ページの「この年のまとめ」と、事前描画した HTML(1.7MB の年度ファイルは埋め込めない)が使う。
+ */
+export interface YearSummary {
+  year: number
+  source: YearFile['source']
+  entries: number
+  /** 出場者のいる回戦(ROUND_ORDER の順)。appeared=その回戦に結果がある組、passed=通過(シード・優勝を含む) */
+  rounds: { round: RoundKey; appeared: number; passed: number }[]
+  champion: { id: number | null; name: string } | null
+  /** 決勝・準決勝・準々決勝に出た組(上の回戦から、五十音順) */
+  reached: { round: RoundKey; combis: { id: number | null; name: string }[] }[]
+}
+
 export interface MetaFile {
   schemaVersion: number
   generatedAt: string

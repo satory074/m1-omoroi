@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 
 import { useAdvancers, useChampions } from '../lib/api'
 import { competitionRanks, sliceWithTies } from '../lib/rank'
@@ -8,6 +7,7 @@ import JapanGridMap, { type PrefNameGroup, type PrefRow } from './JapanGridMap'
 import HistoryTable from './HistoryTable'
 import Segmented from './Segmented'
 import { useUrlParam } from '../lib/useUrlParam'
+import CombiLink from './CombiLink'
 
 const ROW_CAP = 30 // 長い表(結成年別/年齢別/回数)の表示件数上限(境界の同点はすべて表示)
 
@@ -193,7 +193,7 @@ export default function RecordsExplorer() {
   const rankingRanks = competitionRanks(rankingRows, (r) => r.count)
 
   const combiCell = (id: number | null, name: string) =>
-    id != null ? <Link to={`/combi/${id}`}>{name}</Link> : name
+    <CombiLink id={id}>{name}</CombiLink>
 
   return (
     <>

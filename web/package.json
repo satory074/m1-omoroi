@@ -4,14 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/copy-data.mjs",
+    "predev": "node scripts/copy-data.mjs && node scripts/year-summaries.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/copy-data.mjs",
-    "build": "node scripts/check-tokens.mjs && tsc -b && vite build",
-    "postbuild": "cp dist/index.html dist/404.html",
+    "prebuild": "node scripts/copy-data.mjs && node scripts/year-summaries.mjs",
+    "build": "node scripts/check-tokens.mjs && tsc -b && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
-    "check": "node scripts/check-tokens.mjs && node scripts/check-css.mjs && node scripts/check-bundle.mjs"
+    "check": "node scripts/check-tokens.mjs && node scripts/check-css.mjs && node scripts/check-bundle.mjs",
+    "seo-check": "node scripts/seo-check.mjs dist https://satory074.github.io/m1-omoroi/ --require-backlink"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",

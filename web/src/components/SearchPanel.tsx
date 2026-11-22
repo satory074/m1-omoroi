@@ -14,6 +14,7 @@ import {
   type PanelTab,
 } from '../lib/search'
 import type { CombiIndexRow } from '../lib/types'
+import { combiPath } from '../lib/paths'
 
 /** 行の高さ。index.css の .search-panel-row と対応するので、片方だけ変えないこと */
 const ROW_HEIGHT = 56
@@ -274,7 +275,7 @@ export default function SearchPanel({
                     }}
                   >
                     <Link
-                      to={`/combi/${row[0]}`}
+                      to={combiPath(row[0])}
                       className="search-panel-row"
                       data-row={v.index}
                       tabIndex={v.index === cursor ? 0 : -1}
