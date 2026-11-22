@@ -12,8 +12,9 @@ import { ErrorState, Loading, NotFound } from '../components/PageState'
 import RoundSchedule from '../components/RoundSchedule'
 import ScrollNav, { type ScrollNavItem } from '../components/ScrollNav'
 import Segmented from '../components/Segmented'
+import YearSummary from '../components/YearSummary'
 import { useAbsentRows } from '../lib/absentRows'
-import { useMeta, useOfficialVideos, usePopularity, useSchedule, useYear } from '../lib/api'
+import { useMeta, useOfficialVideos, usePopularity, useSchedule, useYear, useYearSummary } from '../lib/api'
 import { NARROW_QUERY } from '../lib/breakpoints'
 import { m1LimitYears } from '../lib/eligibility'
 import { OFFICIAL_CHANNEL_URL, combiVideos, playlistUrl } from '../lib/officialVideos'
@@ -39,8 +40,10 @@ import type {
   ScheduleVenue,
   YearEntry,
 } from '../lib/types'
+import { yearTitle } from '../lib/seo'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 import { useUrlParam } from '../lib/useUrlParam'
+import { finalsPath, yearPath } from '../lib/paths'
 
 const RESULT_FILTERS = ['all', 'pass', 'fail'] as const
 const SORTS = ['hits', 'no', 'kana'] as const
@@ -366,6 +369,7 @@ export default function YearPage() {
   // 大会の無い年(2011〜2014 や未来の年)は取りに行かない
   const known = parsedYear !== null && (!meta || meta.years.includes(parsedYear))
   const { data: yearFile, isLoading, isError } = useYear(known ? parsedYear : null)
+  const { data: summary } = useYearSummary(known ? parsedYear : null)
   const { data: popularity } = usePopularity()
   const { data: official } = useOfficialVideos()
   // 公式日程(準々決勝以降)。持っているのはシーズン中の1年分だけ(schedule.year)
@@ -403,12 +407,17 @@ export default function YearPage() {
   const upcoming = !showAbsent && scheduleOnly(round)
   const venues = showAbsent ? [] : roundVenues(schedule, year, round)
   const next = nextVenue(schedule, year, today)
+  // 回戦の指定が無い URL(事前描画したページ)は年のタイトル。HTML の <title> と同じ関数(lib/seo.ts)で作る。
+  // 年が無いとき(NotFound が自分のタイトルを付ける)と、回戦の指定があって年度ファイルを待っている間は触らない
+  const invalidYear = parsedYear === null || (meta !== undefined && !known)
   useDocumentTitle(
-    yearFile
-      ? `M-1グランプリ${year} ${
-          showAbsent ? '資格がありながら未エントリーの組' : `${ROUND_LABEL[round]}の${upcoming ? '日程' : '結果'}`
-        }`
-      : null,
+    invalidYear
+      ? null
+      : params.get('round') === null
+        ? yearTitle(year, null)
+        : yearFile
+          ? yearTitle(year, showAbsent ? 'absent' : { round, upcoming })
+          : null,
   )
 
   const rows = useMemo(() => {
@@ -463,7 +472,7 @@ export default function YearPage() {
       if (i > 0 && sorted[i - 1] - y > 1) items.push({ key: `gap-${y}`, separator: '休止' })
       items.push({
         key: String(y),
-        to: { pathname: `/years/${y}`, search: searchFor(params, {}) },
+        to: { pathname: yearPath(y), search: searchFor(params, {}) },
         label: y,
         current: y === year,
       })
@@ -487,9 +496,51 @@ export default function YearPage() {
   // 最新の年は日程(約1KB)も待つ。待たないと ?round=semifinal を直接開いたとき一瞬1回戦が出て、
   // 届いた日程の分だけ一覧が下にずれる(戻ったときの行の位置合わせも狂う)
   const waitSchedule = schedulePending && (!meta || meta.latestYear === year)
-  if (isLoading || !yearFile || waitSchedule) return <Loading />
 
-  const isArchive = yearFile.source === 'official-archive'
+  // 見出しの行と年の並び。年度ファイル(最大1.7MB)を待たず、要約(数KB)と meta だけで出せる部分。
+  // 事前描画した HTML はこの「読み込み中」の形(年度ファイル・日程・注目度は HTML に埋め込まない)。
+  // 読み込み中と読み込み後で同じ位置に同じ要素を置くので、開いた「勝ち上がり」は閉じない
+  const fileSource = yearFile?.source ?? summary?.source
+  const entryCount = yearFile?.entries.length ?? summary?.entries
+  const isArchive = fileSource === 'official-archive'
+  const head = (nextLink: ReactNode) => (
+    <div className="year-title">
+      <h1 className="page-title">M-1グランプリ {year}</h1>
+      {entryCount != null && (
+        <p className="year-entries">
+          エントリー {entryCount.toLocaleString('ja-JP')}組
+          {isArchive && '(公式アーカイブ由来のため、1回戦で敗退した組は載っていません)'}
+        </p>
+      )}
+      {summary?.champion && (
+        <p className="year-champion">
+          <span className="chip chip-champion">優勝</span>
+          <CombiLink id={summary.champion.id}>{summary.champion.name}</CombiLink>
+        </p>
+      )}
+      {nextLink}
+      {summary && <YearSummary summary={summary} />}
+      {meta?.finalsYears.includes(year) && (
+        <Link className="year-finals-link" to={finalsPath(year)}>
+          決勝の得点表
+        </Link>
+      )}
+    </div>
+  )
+  const yearNav = <ScrollNav label="年" variant="pills" items={yearItems} />
+
+  if (isLoading || !yearFile || waitSchedule) {
+    return (
+      <div className="year-page">
+        <div className="year-head">
+          {head(null)}
+          {yearNav}
+        </div>
+        <Loading />
+      </div>
+    )
+  }
+
   const activeRounds = ROUND_ORDER.filter((rk) => (roundCounts.get(rk) ?? 0) > 0)
   const upcomingRounds = ROUND_ORDER.filter(scheduleOnly)
   const passCount = rows.filter((e) => isPassing(e.results[round])).length
@@ -554,13 +605,9 @@ export default function YearPage() {
   return (
     <div className="year-page">
       <div ref={headRef} className="year-head">
-        <div className="year-title">
-          <h1 className="page-title">M-1グランプリ {year}</h1>
-          <p className="year-entries">
-            エントリー {yearFile.entries.length.toLocaleString('ja-JP')}組
-            {isArchive && '(公式アーカイブ由来のため、1回戦で敗退した組は載っていません)'}
-          </p>
-          {next && (
+        {/* 「次は…」は今日の日付で変わるので、年度ファイルの後(事前描画した HTML の後)にだけ出す */}
+        {head(
+          next && (
             <Link
               className="year-next"
               to={{ search: searchFor(params, { round: next.round, result: null }) }}
@@ -569,14 +616,9 @@ export default function YearPage() {
             >
               {next.venue.date === today ? '今日は' : '次は'} {ROUND_LABEL[next.round]} {formatDay(next.venue)}
             </Link>
-          )}
-          {meta?.finalsYears.includes(year) && (
-            <Link className="year-finals-link" to={`/finals/${year}`}>
-              決勝の得点表
-            </Link>
-          )}
-        </div>
-        <ScrollNav label="年" variant="pills" items={yearItems} />
+          ),
+        )}
+        {yearNav}
         <ScrollNav label="回戦" variant="steps" items={roundItems} />
 
         {venues.length > 0 && (

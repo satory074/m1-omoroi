@@ -6,6 +6,7 @@ import { useUrlParam } from '../lib/useUrlParam'
 import CombiLink from './CombiLink'
 import HistoryTable from './HistoryTable'
 import ScrollNav, { type ScrollNavItem } from './ScrollNav'
+import { finalsPath } from '../lib/paths'
 
 /** 連続年をまとめて表示する: [2001..2010, 2016..2023] → "2001〜2010・2016〜2023" */
 function compressYears(years: number[]): string {
@@ -82,7 +83,7 @@ function PickCell({
       {combis.map((c, i) => (
         <span key={`${c.name}-${i}`} className="winner-item">
           {i > 0 && '・'}
-          {c.combiId != null ? <Link to={`/combi/${c.combiId}`}>{c.name}</Link> : c.name}
+          <CombiLink id={c.combiId}>{c.name}</CombiLink>
           {c.combiId != null && c.combiId === championId && <span className="chip chip-champion">王者</span>}
         </span>
       ))}
@@ -175,11 +176,7 @@ export function JudgesYearlySection({ js }: { js: JudgesStats }) {
               <tr key={r.year}>
                 <td className="no">{r.year}</td>
                 <td>
-                  {r.championCombiId != null ? (
-                    <Link to={`/combi/${r.championCombiId}`}>{r.champion}</Link>
-                  ) : (
-                    r.champion
-                  )}
+                  <CombiLink id={r.championCombiId}>{r.champion}</CombiLink>
                   {r.unanimous && <span className="chip chip-champion">満場一致</span>}
                 </td>
                 <td className="no">{r.votes.join(' - ')}</td>
@@ -247,7 +244,7 @@ export function JudgeStandardizedSection({ js }: { js: JudgesStats }) {
             return (
               <tr key={r.year}>
                 <td className="no">
-                  <Link to={`/finals/${r.year}`}>{r.year}</Link>
+                  <Link to={finalsPath(r.year)}>{r.year}</Link>
                 </td>
                 <td className="names-cell">
                   <NameList combis={r.actual} />
@@ -336,7 +333,7 @@ export function JudgeVoteConsistencySection({ js }: { js: JudgesStats }) {
             {[...years].reverse().map((r) => (
               <tr key={r.year}>
                 <td className="no">
-                  <Link to={`/finals/${r.year}`}>{r.year}</Link>
+                  <Link to={finalsPath(r.year)}>{r.year}</Link>
                 </td>
                 <td className="no">{r.votes}</td>
                 <td className="no">{r.same}</td>
@@ -434,7 +431,7 @@ export function JudgeLeaveOneOutSection({ js }: { js: JudgesStats }) {
                 {i === 0 && (
                   <>
                     <td className="no" rowSpan={groups.size}>
-                      <Link to={`/finals/${r.year}`}>{r.year}</Link>
+                      <Link to={finalsPath(r.year)}>{r.year}</Link>
                     </td>
                     <td className="no" rowSpan={groups.size}>
                       {r.cutMargin != null ? `${r.cutMargin}点` : '—'}
@@ -482,7 +479,7 @@ function SplitTable({ caption, rows }: { caption: string; rows: SplitScore[] }) 
               <CombiLink id={r.combiId}>{r.name}</CombiLink>
             </td>
             <td className="no">
-              <Link to={`/finals/${r.year}`}>{r.year}</Link>
+              <Link to={finalsPath(r.year)}>{r.year}</Link>
             </td>
             <td className="no">{r.spread.toFixed(2)}</td>
             <td>
@@ -600,7 +597,7 @@ function ScoreTable({ caption, rows }: { caption: string; rows: SingleScore[] })
           <tr key={`${r.year}-${r.judge}-${r.name}`}>
             <td className="no">{r.score}点</td>
             <td className="no">
-              <Link to={`/finals/${r.year}`}>{r.year}</Link>
+              <Link to={finalsPath(r.year)}>{r.year}</Link>
             </td>
             <td>{r.judge}</td>
             <td>

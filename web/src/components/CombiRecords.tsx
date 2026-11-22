@@ -7,6 +7,7 @@ import BestChip from './BestChip'
 import CombiLink from './CombiLink'
 import HistoryTable from './HistoryTable'
 import { RankTable, type RankRow } from './RankTable'
+import { yearPath } from '../lib/paths'
 
 const SHOWN = 15 // 各ランキングの表示件数(境界の同点はすべて表示)
 
@@ -31,7 +32,7 @@ function StreakSection({ streaks }: { streaks: StreakItem[] }) {
           {perfect.map((s, i) => (
             <span key={s.id}>
               {i > 0 && '・'}
-              <Link to={`/combi/${s.id}`}>{s.name}</Link>
+              <CombiLink id={s.id}>{s.name}</CombiLink>
             </span>
           ))}
         </p>
@@ -82,7 +83,7 @@ function LastYearSection({ ly }: { ly: LastYearEntrants | null }) {
               </td>
               <td>
                 {c.round ? (
-                  <Link className="cell-target" to={`/years/${ly.year}?round=${c.round}&focus=${c.id}`}>
+                  <Link className="cell-target" to={yearPath(ly.year, `?round=${c.round}&focus=${c.id}`)}>
                     {ROUND_LABEL[c.round]}
                     {c.result && RESULT_DISPLAY[c.result].label && ` ${RESULT_DISPLAY[c.result].label}`}
                   </Link>

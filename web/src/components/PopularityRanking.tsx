@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 
 import { useAdvancers, useCombiIndex, usePopularity } from '../lib/api'
 import { ROUND_LABEL, formatHits } from '../lib/rounds'
@@ -6,6 +5,7 @@ import type { RoundKey } from '../lib/types'
 import HistoryTable from './HistoryTable'
 import { Loading } from './PageState'
 import { competitionRanks } from '../lib/rank'
+import CombiLink from './CombiLink'
 
 const TOP = 30
 const HIDDEN_TOP = 15
@@ -18,15 +18,29 @@ export default function PopularityRanking() {
   const { data: pop } = usePopularity()
   const { data: index } = useCombiIndex(!!pop)
   const { data: advancers } = useAdvancers()
-  if (pop === null) return <p className="page-state">注目度のデータはまだありません。</p>
-  if (!pop || !index) return <Loading />
+  const lede = (
+    <p className="page-lede">
+      YouTube再生数からみた現在の注目度。年度別の結果ページのソートにも使われている指標。
+    </p>
+  )
+  if (pop === null)
+    return (
+      <>
+        {lede}
+        <p className="page-state">注目度のデータはまだありません。</p>
+      </>
+    )
 
-  const names = new Map(index.map((r) => [r[0], r[1]]))
-  const rows = Object.entries(pop.hits)
-    .map(([id, h]) => ({ id: Number(id), n: h.n, v: h.v, m: h.m ?? 0, at: h.at }))
-    .filter((r) => names.has(r.id) && r.n > 0)
-    .sort((a, b) => b.n - a.n)
-  if (rows.length === 0) return null
+  // 名前は combi/index.json(約770KB gz)から引くので、事前描画した HTML には表を入れず、説明の文だけを出す
+  const names = index ? new Map(index.map((r) => [r[0], r[1]])) : null
+  const rows =
+    pop && names
+      ? Object.entries(pop.hits)
+          .map(([id, h]) => ({ id: Number(id), n: h.n, v: h.v, m: h.m ?? 0, at: h.at }))
+          .filter((r) => names.has(r.id) && r.n > 0)
+          .sort((a, b) => b.n - a.n)
+      : null
+  if (rows?.length === 0) return lede
 
   // 最高到達ラウンド(advancers は準々決勝以上のみ。注目度の対象は3回戦以上経験組)
   const reach = new Map<number, RoundKey>()
@@ -36,9 +50,10 @@ export default function PopularityRanking() {
   const finalIds = new Set(
     (advancers?.tiers ?? []).filter((t) => t.round === 'final').flatMap((t) => t.combis.map((c) => c.id)),
   )
-  const hidden = rows.filter((r) => !finalIds.has(r.id)).slice(0, HIDDEN_TOP)
+  const hidden = rows?.filter((r) => !finalIds.has(r.id)).slice(0, HIDDEN_TOP) ?? []
 
-  const table = (list: typeof rows, showReach: boolean, caption: string) => {
+  type Row = NonNullable<typeof rows>[number]
+  const table = (list: Row[], showReach: boolean, caption: string) => {
     // 同じ再生数は同じ順位(以前は並び順の番号 i+1 だった)
     const ranks = competitionRanks(list, (r) => r.n)
     return (
@@ -58,7 +73,7 @@ export default function PopularityRanking() {
             <tr key={r.id}>
               <td className="no">{ranks[i]}</td>
               <td className="sticky-name">
-                <Link to={`/combi/${r.id}`}>{names.get(r.id)}</Link>
+                <CombiLink id={r.id}>{names?.get(r.id)}</CombiLink>
               </td>
               <td className="no">{formatHits(r.n)}</td>
               <td className="no">{r.m > 0 ? formatHits(r.m) : '—'}</td>
@@ -73,9 +88,7 @@ export default function PopularityRanking() {
 
   return (
     <>
-      <p className="page-lede">
-        YouTube再生数からみた現在の注目度。年度別の結果ページのソートにも使われている指標。
-      </p>
+      {lede}
       <h2 className="section-title">注目度ランキング(YouTube再生数)</h2>
       <p className="section-note">
         「コンビ名 漫才」と「メンバー名」それぞれのYouTube検索上位10本のうち、コンビ名またはメンバー名を単語として含む動画
@@ -84,11 +97,11 @@ export default function PopularityRanking() {
         字面で判別できない同名の楽曲・番組・同姓同名は手動で除外。動画数は合計に含めた本数(メンバー名義分を含む)。
         対象は3回戦以上の出場経験があるコンビで、取得日はコンビごとに異なる(約4週間周期の自動更新)。
       </p>
-      {table(rows.slice(0, TOP), false, `注目度ランキング 上位${TOP}組`)}
+      {rows ? table(rows.slice(0, TOP), false, `注目度ランキング 上位${TOP}組`) : <Loading />}
 
       <h2 className="section-title">決勝未経験の注目株</h2>
       <p className="section-note">決勝に進んだことがないのに再生数が多いコンビ。</p>
-      {table(hidden, true, '決勝未経験の注目株')}
+      {rows && table(hidden, true, '決勝未経験の注目株')}
     </>
   )
 }

@@ -5,6 +5,7 @@ import { useChampions, useFinals, useMeta, useStats } from '../lib/api'
 import { ROUND_LABEL } from '../lib/rounds'
 import type { RoundKey, YearStats } from '../lib/types'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
+import { finalsPath, statsPath, yearPath } from '../lib/paths'
 
 /** 進み具合に並べる回戦(敗者復活戦は本線の段階に数えない) */
 const STEPS: RoundKey[] = ['first', 'second', 'third', 'quarterfinal', 'semifinal', 'final']
@@ -21,17 +22,19 @@ function stepsOf(stats: YearStats | undefined) {
 }
 
 const STATS_LINKS = [
-  { to: '/stats', name: '大会', desc: 'エントリー数と、回戦ごとの通過率の推移' },
-  { to: '/stats/combi', name: 'コンビ', desc: '準々決勝の最多進出、連続出場などの通算記録' },
-  { to: '/stats/finals', name: '決勝', desc: '最多進出・出番順の有利不利・得点偏差値' },
-  { to: '/stats/judges', name: '審査員', desc: '辛口・甘口と、年ごとの採点の傾向' },
-  { to: '/stats/people', name: '人物', desc: '最年少・最年長の記録と出身地の地図' },
-  { to: '/stats/popularity', name: '注目度', desc: 'YouTube の再生数で見る人気ランキング' },
+  { to: statsPath(), name: '大会', desc: 'エントリー数と、回戦ごとの通過率の推移' },
+  { to: statsPath('combi'), name: 'コンビ', desc: '準々決勝の最多進出、連続出場などの通算記録' },
+  { to: statsPath('finals'), name: '決勝', desc: '最多進出・出番順の有利不利・得点偏差値' },
+  { to: statsPath('judges'), name: '審査員', desc: '辛口・甘口と、年ごとの採点の傾向' },
+  { to: statsPath('people'), name: '人物', desc: '最年少・最年長の記録と出身地の地図' },
+  { to: statsPath('popularity'), name: '注目度', desc: 'YouTube の再生数で見る人気ランキング' },
 ] as const
 
+/** データ更新日を日本時間で。getDate() などは実行環境の時刻帯で変わり、事前描画(CI は UTC)と
+ *  ブラウザ(日本時間)で日付が食い違って hydrate が失敗するので、9時間ずらして UTC として読む */
 function formatDate(iso: string) {
-  const d = new Date(iso)
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
+  const d = new Date(Date.parse(iso) + 9 * 60 * 60 * 1000)
+  return `${d.getUTCFullYear()}年${d.getUTCMonth() + 1}月${d.getUTCDate()}日`
 }
 
 /**
@@ -88,7 +91,7 @@ export default function HomePage() {
                 最終決戦 {totalVotes}票中{votes}票
               </p>
             ) : null}
-            <Link to={`/finals/${champion.year}`} className="home-champion-link">
+            <Link to={finalsPath(champion.year)} className="home-champion-link">
               {champion.year}年 決勝の得点表を見る
             </Link>
           </figure>
@@ -101,7 +104,7 @@ export default function HomePage() {
             <div className="home-season-head">
               <h2 id="home-season-title">{latest}年大会</h2>
               {waiting && <p>{ROUND_LABEL[waiting.rk]}の結果待ち</p>}
-              <Link to={`/years/${latest}`} className="home-season-all">
+              <Link to={yearPath(latest)} className="home-season-all">
                 {latest}年の一覧へ
               </Link>
             </div>
@@ -115,7 +118,7 @@ export default function HomePage() {
                       <span className="home-step-note">未実施</span>
                     </div>
                   ) : (
-                    <Link className="home-step-body" to={`/years/${latest}?round=${s.rk}`}>
+                    <Link className="home-step-body" to={yearPath(latest, `?round=${s.rk}`)}>
                       <span className="home-step-round">{ROUND_LABEL[s.rk]}</span>
                       <span className="home-step-count">
                         {s.appeared.toLocaleString('ja-JP')}
@@ -154,7 +157,7 @@ export default function HomePage() {
           <ul className="home-years">
             {years.map((y) => (
               <li key={y}>
-                <Link to={`/years/${y}`}>{y}</Link>
+                <Link to={yearPath(y)}>{y}</Link>
               </li>
             ))}
           </ul>

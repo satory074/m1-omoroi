@@ -40,6 +40,11 @@ jobs:
         run: |
           npm ci
           npm run build
+      # 事前描画した HTML が検索エンジン・AI クローラーに読める形かを確かめ、破っていたら deploy しない
+      # (タイトル・説明文の重複、canonical、サイトマップ、JSON-LD の作者、サイト内リンク、戻りリンクのバー)
+      - name: SEO check
+        working-directory: web
+        run: node scripts/seo-check.mjs dist https://satory074.github.io/m1-omoroi/ --require-backlink
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

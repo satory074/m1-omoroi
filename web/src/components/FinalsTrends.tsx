@@ -1,10 +1,9 @@
-import { Link } from 'react-router-dom'
-
 import { competitionRanks } from '../lib/rank'
 import type { FinalsStats } from '../lib/types'
 import { FinalistAgeSection, FinalistMakeupSection } from './FinalistTrends'
 import { WinnersCell } from './RankTable'
 import HistoryTable from './HistoryTable'
+import CombiLink from './CombiLink'
 
 /** 決勝の傾向(分布・傾向系): 出番順別/王者の1本目順位/結成年数別/年齢と結成年数の推移/事務所別/顔ぶれの推移。記録・統計の「決勝」タブが表示 */
 export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
@@ -201,19 +200,11 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
                   <td className="no">{m.margin}</td>
                   <td className="no">{m.year}</td>
                   <td>
-                    {m.first.combiId != null ? (
-                      <Link to={`/combi/${m.first.combiId}`}>{m.first.name}</Link>
-                    ) : (
-                      m.first.name
-                    )}{' '}
+                    <CombiLink id={m.first.combiId}>{m.first.name}</CombiLink>{' '}
                     ({m.first.total})
                   </td>
                   <td>
-                    {m.second.combiId != null ? (
-                      <Link to={`/combi/${m.second.combiId}`}>{m.second.name}</Link>
-                    ) : (
-                      m.second.name
-                    )}{' '}
+                    <CombiLink id={m.second.combiId}>{m.second.name}</CombiLink>{' '}
                     ({m.second.total})
                   </td>
                 </tr>

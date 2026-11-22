@@ -36,9 +36,10 @@ function useHideOnScroll(ref: React.RefObject<HTMLElement | null>) {
 }
 
 const NAV = [
-  { to: '/years', label: '年度別' },
-  { to: '/finals', label: '決勝' },
-  { to: '/stats', label: '記録・統計' },
+  // 末尾の / まで書く(/years/・/finals/ は最新の年へ転送するページ、/stats/ は事前描画したページ)
+  { to: '/years/', label: '年度別' },
+  { to: '/finals/', label: '決勝' },
+  { to: '/stats/', label: '記録・統計' },
 ] as const
 
 /** 全ページ共通の枠(ヘッダー・フッター)。中身は <Outlet /> に入る */

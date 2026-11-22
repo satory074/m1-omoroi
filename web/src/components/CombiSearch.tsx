@@ -16,6 +16,7 @@ import {
   type PanelTab,
 } from '../lib/search'
 import SearchPanel, { type SearchPanelHandle } from './SearchPanel'
+import { combiPath } from '../lib/paths'
 
 const MAX_RESULTS = 20
 /** members.json 到着前に芸人名セクション用に空けておく枠。到着時に一覧が縮んで見えるのを防ぐ */
@@ -224,7 +225,7 @@ export default function CombiSearch() {
 
   const go = (hit: Hit) => {
     if (!index) return
-    navigate(`/combi/${index[hit.i][0]}`)
+    navigate(combiPath(index[hit.i][0]))
     setQuery('')
     setOpen(false)
     setActive(-1)

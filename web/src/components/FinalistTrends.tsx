@@ -161,7 +161,7 @@ function StackedBars({
       <ul className="chart-legend" aria-label="棒の色">
         {series.map((s) => (
           <li key={s.key}>
-            <i style={{ background: t[s.token] }} aria-hidden="true" />
+            <i style={{ background: `var(${s.token})` }} aria-hidden="true" />
             {s.label}
           </li>
         ))}

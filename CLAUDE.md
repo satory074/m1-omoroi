@@ -7,9 +7,15 @@ M-1グランプリのファンサイト。年度×回戦の合格者/敗退者�
 - `scraper/` — Python (**uv必須**)。公式サイト m-1gp.com / Wikipedia / YouTube Data API からデータ収集し `data/` にJSONを生成
 - `data/` — 配信用JSONの正本(コミット対象)。スキーマは `scraper/src/m1scraper/build_json.py` 参照
 - `web/` — Vite + React + TS のSPA。ビルド前に `scripts/copy-data.mjs` が `../data` → `public/data` へコピー
-  - **見た目(2026-11 全面改修中・ブランチ `redesign`)**: 案C「スタジオ」(白地+M-1の赤、舞台色 `--c-stage` の帯は「トップの今年の大会」と「決勝」だけ)、書体は Noto Sans JP の1書体(400/700/900)。ダークモードは作らない(ユーザー決定)
+  - **見た目(2026-11 全面改修。ブランチ `redesign` は main に統合済み)**: 案C「スタジオ」(白地+M-1の赤、舞台色 `--c-stage` の帯は「トップの今年の大会」と「決勝」だけ)、書体は Noto Sans JP の1書体(400/700/900)。ダークモードは作らない(ユーザー決定)
   - **スタイルは `web/src/styles/`**: `main.css` が `@layer tokens, base, layout, components, pages, utilities` の順を固定(後ろの層ほど強いので詳細度の競争は不要)。色・文字サイズ・余白は `tokens/theme.css`・`tokens/scale.css` の変数だけを使う(色・px文字サイズの直書き、読み込んでいない太さは `npm run check` が落とす。グラフなど JS で色が要るときは `lib/tokens.ts` の `useTokens`)。**舞台色の帯は `.on-stage` を付けるだけ**で、中の部品は意味の変数(文字・補助・線・面)の読み替えで明暗が反転する(赤は舞台の上では文字に使えないので強調は金)。改修前の index.css(legacy.css)は 2026-11 の改修で全部移し終えて削除済み
-  - ルート: `/`=トップ(`HomePage`)、`/years`・`/finals` は最新年へ転送、`/finals/:year`・`/stats/*` は遅延読み込み(recharts を最初の JS から外す)。不正な年・ID は `NotFound`(行き止まりにしない)。ページの `<title>` は `lib/useDocumentTitle.ts`
+  - ルート: `/`=トップ(`HomePage`)、`/years`・`/finals` は最新年へ転送、`/finals/:year`・`/stats/*` は遅延読み込み(recharts を最初の JS から外す)。不正な年・ID は `NotFound`(行き止まりにしない)。ページの `<title>`・説明文・JSON-LD の文言は `lib/seo.ts`(画面は `lib/useDocumentTitle.ts` が同じ関数でタブ名を付ける)。サイト内のパスは `lib/paths.ts`(事前描画したページは**末尾 / 付き** `/years/2025/`。付けないと GitHub Pages が 301 で付け直す。コンビ詳細 `/combi/{id}` はまだ事前描画していないので / なし)
+  - **事前描画(2026-11、検索エンジン・AI クローラー向け)**: 以前は深い URL のファイルが無く、全部 HTTP 404 + 空の 404.html を JS が描いていた(検索に出ない・JS を実行しない AI クローラーには中身が見えない)。`npm run build` が `vite build` → `vite build --ssr src/entry-server.tsx --outDir dist-ssr` → `scripts/prerender.mjs` の順に走り、トップ・`/years/{年}/`(22)・`/finals/{年}/`(21)・`/stats/{テーマ}/`(6)の計50ページを `<パス>/index.html`(HTTP 200・本文入り)として書き出す。ほかに `/years/`・`/finals/` は最新の年へ転送するだけの noindex ページ、`sitemap.xml`(50ページ。lastmod はトップと最新の年だけ = `meta.generatedAt`)、`404.html`(**中身が空の殻**・noindex・canonical なし。コンビ詳細など事前描画していない URL はこれを JS が描く。トップの HTML を写すと知らない URL で一瞬トップが出て hydrate も食い違うので殻のままにする)
+    - **ページの一覧・埋め込むデータは `src/entry-server.tsx` の `listPages`**。画面と同じ部品を `createStaticHandler`(遅延読み込みのルートもここで読む)→ `StaticRouterProvider` で描き、react-query に入れたデータを `dehydrate` して `<script id="prerender-data">` に埋め込む。埋め込むのは小さいものだけ(meta・年度の要約・決勝1年分・そのテーマの統計 JSON。最大約70KB)。**年度ファイル(最大1.7MB)・注目度・日程・combi/index.json は埋め込まない**ので、年度ページの HTML は「見出し + 年の並び + 勝ち上がり + 読み込み中」の形。注目度タブは説明文だけ
+    - 年度ページの「{年}年の勝ち上がり」(`components/YearSummary.tsx`、見出しの行に畳んである)と優勝・エントリー数は、`scripts/year-summaries.mjs` が predev / prebuild で年度ファイルから作る数KBの `years/{年}.summary.json`(`useYearSummary`)から描く。年度ファイルを待たずに出せ、HTML にも入る。数え方は `YearPage` の回戦の組数と同じ(PASSING は `rounds.ts` と一致させること)
+    - ブラウザ側(`main.tsx`): 埋め込みデータを react-query に入れ、今の URL の遅延読み込みルートを先に読んでから(読む前だとルーターが何も描かず HTML と食い違う)ルーターを作る。**hydrate するのは `#root` の `data-prerendered` が `location.pathname` と一致し、クエリが無いときだけ**。`?round=`・`?q=`・`?year=` 付きや 404.html からのページは `createRoot` で描き直す。`history.state.key` を振る処理はルーター作成より前のまま。basename は `/m1-omoroi/`(末尾 / を残す。外すとトップへのリンクが `/m1-omoroi` になり 301)
+    - **hydrate の最初の描画は HTML と一字一句同じにすること**(食い違うと React が描き直し、属性の違いは本番では黙って残る)。今日の日付で変わるもの(年度ページの「次は…」)は年度ファイルの後にだけ出す。日付は実行環境の時刻帯に依存させない(トップの「データ更新」は日本時間で計算。CI は UTC で描く)。端末ごとの値は `lib/useHydrated.ts` が true になってから: 決勝の「あなた」の採点(localStorage)、`useTokens` の色(SSR には CSS が無い。凡例の色見本は `var(--c-*)` を直接書く)、**コンビ詳細へのリンク**(`CombiLink` は HTML では文字だけ、引き継いだ直後にリンクになる。404 のページへのリンクを HTML に入れないため。第2段でコンビ詳細を事前描画したらそのページだけリンクにする)。`react-dom/server` はブラウザ用のコードから import しない(最初の JS 130KB 上限)
+    - **不変条件は `scripts/seo-check.mjs`**(basecamp の原本をそのままコピー。直さず原本に報告する)。`npm run seo-check` = `node scripts/seo-check.mjs dist https://satory074.github.io/m1-omoroi/ --require-backlink`。タイトル・説明文の重複、canonical = og:url = 自分の URL、サイトマップと noindex の一致、JSON-LD の作者 `https://satory074.com/#person`、静的 HTML のサイト内リンクが実在するファイルを指すこと(末尾 / 漏れも)、戻りリンクのバー。`deploy.yml` がビルド直後に走らせ、破ったら deploy しない。`prerender.mjs` 自体も「見つからない画面を書き出していない」「バーがある」を確かめて止まる
 
 ## コマンド
 
@@ -28,8 +34,11 @@ uv run m1 build                      # work/* → ../data/* 生成 + 整合性�
 uv run pytest
 
 # フロント (web/ で実行)
-npm run dev / npm run build
+npm run dev / npm run build   # build = vite build + SSR ビルド(dist-ssr)+ 事前描画(scripts/prerender.mjs)
 npm run check   # build の後に: 色トークンのコントラスト比・CSSの直書き/未読み込みの太さ・最初に読むJSの大きさ(gzip 130KB 上限)
+npm run seo-check   # build の後に: 事前描画した HTML の不変条件(deploy.yml でも実行)
+# 本番と同じパス構成で確かめるときは、一時ディレクトリに m1-omoroi → web/dist のリンクを置いてその親を配信する
+#(dev サーバーは事前描画しない。hydrate の確認は build した dist で行う)
 # 開発時はブラウザのコンソールに画面ごとのアクセシビリティ監査が出る(src/dev/audit.ts。手動は __audit())
 ```
 

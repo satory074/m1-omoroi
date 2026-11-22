@@ -1,9 +1,9 @@
-import { Link } from 'react-router-dom'
 
 import { ROUND_LABEL } from '../lib/rounds'
 import type { AgeRecordRow, PeopleStats, ReachRow } from '../lib/types'
 import { RankTable } from './RankTable'
 import HistoryTable from './HistoryTable'
+import CombiLink from './CombiLink'
 
 function ageRows(rows: AgeRecordRow[]) {
   return rows.map((r) => ({
@@ -29,7 +29,7 @@ function ReachTable({ rows, caption }: { rows: ReachRow[]; caption: string }) {
             <tr key={r.id}>
               <td>{ROUND_LABEL[r.bestRound]}</td>
               <td className="sticky-name">
-                <Link to={`/combi/${r.id}`}>{r.name}</Link>
+                <CombiLink id={r.id}>{r.name}</CombiLink>
               </td>
               <td className="no">{r.years.join('・')}</td>
             </tr>
@@ -111,7 +111,7 @@ export default function CareerRecords({ ps }: { ps: PeopleStats }) {
                   {j.combis.map((c, i) => (
                     <span key={c.id} className="winner-item">
                       {i > 0 && '・'}
-                      <Link to={`/combi/${c.id}`}>{c.name}</Link>({c.year})
+                      <CombiLink id={c.id}>{c.name}</CombiLink>({c.year})
                     </span>
                   ))}
                   {j.count > j.combis.length && ' ほか'}

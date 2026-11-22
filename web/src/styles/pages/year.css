@@ -33,6 +33,60 @@
   min-height: var(--tap-comfort);
 }
 
+/* その年の優勝(要約 years/{年}.summary.json から。年度ファイルを待たずに出る) */
+.year-champion {
+  margin: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-bold);
+}
+
+/* 「{年}年の勝ち上がり」(YearSummary.tsx)。普段は見出しの行の中に1行で畳み、
+   開いたら見出しの行のいちばん後ろ(決勝の得点表のリンクの後)に全幅で出す */
+.year-summary summary::before {
+  content: '+';
+}
+
+.year-summary[open] {
+  order: 1;
+  flex-basis: 100%;
+}
+
+.year-summary[open] summary::before {
+  content: '−';
+}
+
+.year-summary-groups {
+  margin: 0 0 var(--space-3);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.year-summary-group dt {
+  font-weight: var(--fw-bold);
+}
+
+.year-summary-group dt small {
+  color: var(--c-text-muted);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+}
+
+.year-summary-group dd {
+  margin: var(--space-1) 0 0;
+}
+
+.year-summary-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 /* 「次は 準々決勝 11/18(水)」(公式日程。今日以降の日程が無くなったら出ない) */
 .year-next {
   display: inline-flex;

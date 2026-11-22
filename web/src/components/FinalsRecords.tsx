@@ -5,6 +5,7 @@ import type { FinalsStats } from '../lib/types'
 import CombiLink from './CombiLink'
 import { RankTable } from './RankTable'
 import HistoryTable from './HistoryTable'
+import { finalsPath } from '../lib/paths'
 
 function percent(n: number, d: number): string {
   return d ? `${Math.round((n / d) * 100)}%` : '—'
@@ -86,7 +87,7 @@ export default function FinalsRecords({ fs }: { fs: FinalsStats }) {
                 {[...ly.rows].reverse().map((r) => (
                   <tr key={`${r.year}-${r.name}`}>
                     <td className="no">
-                      <Link to={`/finals/${r.year}`}>{r.year}</Link>
+                      <Link to={finalsPath(r.year)}>{r.year}</Link>
                     </td>
                     <td className="sticky-name">
                       <CombiLink id={r.combiId}>{r.name}</CombiLink>
@@ -134,7 +135,7 @@ export default function FinalsRecords({ fs }: { fs: FinalsStats }) {
             <tr key={`${r.year}-${r.name}`}>
               <td className="no">{r.rank}</td>
               <td className="no">
-                <Link to={`/finals/${r.year}`}>{r.year}</Link>
+                <Link to={finalsPath(r.year)}>{r.year}</Link>
               </td>
               <td className="sticky-name">
                 <CombiLink id={r.combiId}>{r.name}</CombiLink>
@@ -164,7 +165,7 @@ export default function FinalsRecords({ fs }: { fs: FinalsStats }) {
               <tr key={`${d.year}-${d.name}`}>
                 <td className="no">{d.year}</td>
                 <td className="sticky-name">
-                  {d.combiId != null ? <Link to={`/combi/${d.combiId}`}>{d.name}</Link> : d.name}
+                  <CombiLink id={d.combiId}>{d.name}</CombiLink>
                   {d.recordedOnly && ' ※'}
                 </td>
               </tr>
@@ -202,10 +203,10 @@ export default function FinalsRecords({ fs }: { fs: FinalsStats }) {
                 <tr key={`${d.year}-${d.name}`}>
                   <td className="no">{d.rank}</td>
                   <td className="no">
-                    <Link to={`/finals/${d.year}`}>{d.year}</Link>
+                    <Link to={finalsPath(d.year)}>{d.year}</Link>
                   </td>
                   <td className="sticky-name">
-                    {d.combiId != null ? <Link to={`/combi/${d.combiId}`}>{d.name}</Link> : d.name}
+                    <CombiLink id={d.combiId}>{d.name}</CombiLink>
                   </td>
                   <td className="no">{d.total}</td>
                   <td className="no">{d.deviation.toFixed(1)}</td>

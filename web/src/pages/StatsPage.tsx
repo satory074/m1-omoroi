@@ -29,6 +29,8 @@ import {
   useRankings,
   useStats,
 } from '../lib/api'
+import { statsPath } from '../lib/paths'
+import { STATS_SECTIONS, finalsSpan, type StatsSectionKey } from '../lib/seo'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 /**
@@ -38,16 +40,7 @@ import { useDocumentTitle } from '../lib/useDocumentTitle'
  * タブはページを移るリンクなので ARIA のタブにはせず、1段の ScrollNav にする(スマホで2段に折り返さない)。
  * 見出しの段: h1 記録・統計 > h2 まとまり(決勝の記録 等)> h3 各記録。まとまりの無いタブは h2 が各記録。
  */
-const SECTIONS = [
-  { key: '', label: '大会' },
-  { key: 'combi', label: 'コンビ' },
-  { key: 'finals', label: '決勝' },
-  { key: 'judges', label: '審査員' },
-  { key: 'people', label: '人物' },
-  { key: 'popularity', label: '注目度' },
-] as const
-
-type SectionKey = (typeof SECTIONS)[number]['key']
+// テーマの一覧(タブの名前・<title>・説明文)は lib/seo.ts の STATS_SECTIONS。事前描画もこの一覧でページを作る
 
 /** 読み込み中・失敗・ファイル無し(fetchJsonOrNull が null)を各タブで同じ見せ方にする */
 function Loaded<T>({
@@ -66,8 +59,7 @@ function Loaded<T>({
 /** 決勝の大会数と期間(「全21大会(2001〜2025年)」)。以前は文言に直書きしていて年が変わると古くなった */
 function useFinalsSpan() {
   const { data: meta } = useMeta()
-  const ys = meta?.finalsYears ?? []
-  return ys.length ? `全${ys.length}大会(${ys[0]}〜${ys.at(-1)}年)` : ''
+  return finalsSpan(meta)
 }
 
 function TournamentTab() {
@@ -158,7 +150,7 @@ function PeopleTab() {
   )
 }
 
-const TABS: Record<SectionKey, () => ReactNode> = {
+const TABS: Record<StatsSectionKey, () => ReactNode> = {
   '': TournamentTab,
   combi: CombiTab,
   finals: FinalsTab,
@@ -169,10 +161,10 @@ const TABS: Record<SectionKey, () => ReactNode> = {
 
 export default function StatsPage() {
   const { section = '' } = useParams()
-  const current = SECTIONS.find((s) => s.key === section)
-  useDocumentTitle(current ? `記録・統計 ${current.label}` : null)
+  const current = STATS_SECTIONS.find((s) => s.key === section)
+  useDocumentTitle(current ? current.title : null)
   const bodyRef = useRef<HTMLDivElement>(null)
-  if (!current) return <Navigate to="/stats" replace />
+  if (!current) return <Navigate to={statsPath()} replace />
   const Tab = TABS[current.key]
 
   return (
@@ -181,9 +173,9 @@ export default function StatsPage() {
       <ScrollNav
         label="記録・統計のテーマ"
         variant="tabs"
-        items={SECTIONS.map((s) => ({
+        items={STATS_SECTIONS.map((s) => ({
           key: s.key || 'tournament',
-          to: s.key ? `/stats/${s.key}` : '/stats',
+          to: statsPath(s.key),
           label: s.label,
           current: s.key === current.key,
         }))}

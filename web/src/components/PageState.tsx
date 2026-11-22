@@ -45,13 +45,13 @@ export function NotFound({
           <Link to="/">トップページ</Link>
         </li>
         <li>
-          <Link to="/years">最新の年度別結果</Link>
+          <Link to="/years/">最新の年度別結果</Link>
         </li>
         <li>
-          <Link to="/finals">決勝の得点</Link>
+          <Link to="/finals/">決勝の得点</Link>
         </li>
         <li>
-          <Link to="/stats">記録・統計</Link>
+          <Link to="/stats/">記録・統計</Link>
         </li>
       </ul>
       <p className="not-found-hint">コンビや芸人を探すときは、上の検索欄に名前を入れてください。</p>

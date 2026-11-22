@@ -10,6 +10,7 @@ import { parseYear } from '../lib/params'
 import { competitionRanksOf } from '../lib/rank'
 import type { FinalsFile } from '../lib/types'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
+import { finalsPath, yearPath } from '../lib/paths'
 
 /** 王者と最終決戦の票。いちばん知りたい「誰が勝ったか」を表より先に出す */
 function Champion({ finals }: { finals: FinalsFile }) {
@@ -84,7 +85,7 @@ export default function FinalsPage() {
         .sort((a, b) => b - a)
         .flatMap((y, i, arr): ScrollNavItem[] => [
           ...(i > 0 && arr[i - 1] - y > 1 ? [{ key: `gap-${y}`, separator: '休止' }] : []),
-          { key: String(y), to: `/finals/${y}`, label: y, current: y === year },
+          { key: String(y), to: finalsPath(y), label: y, current: y === year },
         ]),
     [finalsYears, year],
   )
@@ -98,7 +99,7 @@ export default function FinalsPage() {
       <NotFound title={year ? `${year}年の決勝の得点はありません` : 'ページが見つかりません'}>
         {inSeason ? (
           <p>
-            {year}年の決勝はまだ行われていません。<Link to={`/years/${year}`}>{year}年の結果一覧</Link>
+            {year}年の決勝はまだ行われていません。<Link to={yearPath(year)}>{year}年の結果一覧</Link>
             で、いまの勝ち上がりを見られます。
           </p>
         ) : (
@@ -120,7 +121,7 @@ export default function FinalsPage() {
           <h1 id="finals-title" className="page-title">
             M-1グランプリ {finals.year} 決勝
           </h1>
-          <Link className="finals-year-link" to={`/years/${finals.year}?round=final`}>
+          <Link className="finals-year-link" to={yearPath(finals.year, '?round=final')}>
             {finals.year}年の全回戦の結果
           </Link>
         </div>
