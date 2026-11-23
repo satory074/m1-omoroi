@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 
 import { sliceWithTies } from '../lib/rank'
 import { RESULT_DISPLAY, ROUND_LABEL } from '../lib/rounds'
-import type { LastYearEntrants, Rankings, StreakItem } from '../lib/types'
+import type { LastYearEntrants, Rankings } from '../lib/types'
 import BestChip from './BestChip'
 import CombiLink from './CombiLink'
 import HistoryTable from './HistoryTable'
@@ -10,47 +10,6 @@ import { RankTable, type RankRow } from './RankTable'
 import { yearPath } from '../lib/paths'
 
 const SHOWN = 15 // 各ランキングの表示件数(境界の同点はすべて表示)
-
-/** 連続出場: 最上位は「全大会皆勤」の大きな同値グループになるため、組数+全組リストで表示(折り畳まない) */
-function StreakSection({ streaks }: { streaks: StreakItem[] }) {
-  if (streaks.length === 0) return null
-  const maxVal = streaks[0].value
-  const perfect = streaks.filter((s) => s.value === maxVal)
-  const rest = streaks.filter((s) => s.value < maxVal)
-  return (
-    <>
-      <h2 className="section-title">連続出場</h2>
-      <p className="section-note">
-        連続でエントリーした年数（公式コンビ情報の2015年以降。エントリー済みの2026年を含む）。 最長は
-        {perfect[0].start}年から{maxVal}大会連続の{perfect.length}組。
-      </p>
-      <div className="streak-box">
-        <p className="streak-head">
-          {maxVal}大会連続({perfect[0].start}〜{perfect[0].end})の全{perfect.length}組
-        </p>
-        <p className="streak-names">
-          {perfect.map((s, i) => (
-            <span key={s.id}>
-              {i > 0 && '・'}
-              <CombiLink id={s.id}>{s.name}</CombiLink>
-            </span>
-          ))}
-        </p>
-      </div>
-      {rest.length > 0 && (
-        <RankTable
-          items={sliceWithTies(rest, SHOWN, (it) => it.value).map((s) => ({
-            id: s.id,
-            name: s.name,
-            value: s.value,
-            detail: s.value > 1 ? `${s.start}〜${s.end}` : `${s.end}`,
-          }))}
-          unit="年"
-        />
-      )}
-    </>
-  )
-}
 
 /**
  * 最新の年がラストイヤー(出場資格の最後の年)の組と、その年にどこまで進んだか。
@@ -113,18 +72,18 @@ export default function CombiRecords({ data }: { data: Rankings }) {
       items: data.mostQuarterfinals,
     },
     {
+      key: 'mostSemifinals',
+      title: '準決勝 最多進出',
+      unit: '回',
+      note: '準決勝に進んだ回数（勝ち上がりは問わない。2015年以降）',
+      items: data.mostSemifinals,
+    },
+    {
       key: 'mostSemifinalFails',
       title: '準決勝 最多敗退',
       unit: '回',
       note: 'あと一歩の悲運ランキング（2015年以降）',
       items: data.mostSemifinalFails,
-    },
-    {
-      key: 'mostFirstRoundFails',
-      title: '1回戦 最多敗退',
-      unit: '回',
-      note: 'それでも挑み続けた記録（2015年以降）',
-      items: data.mostFirstRoundFails,
     },
   ]
   return (
@@ -139,7 +98,6 @@ export default function CombiRecords({ data }: { data: Rankings }) {
           </section>
         ))}
       </div>
-      <StreakSection streaks={data.longestStreaks} />
     </>
   )
 }

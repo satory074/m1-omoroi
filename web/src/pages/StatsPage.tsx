@@ -13,11 +13,9 @@ import {
   JudgeSplitSection,
   JudgeStandardizedSection,
   JudgesYearlySection,
-  JudgeVoteConsistencySection,
 } from '../components/JudgesRecords'
 import PageToc from '../components/PageToc'
 import { ErrorState, Loading } from '../components/PageState'
-import PopularityRanking from '../components/PopularityRanking'
 import RecordsExplorer from '../components/RecordsExplorer'
 import ScrollNav from '../components/ScrollNav'
 import TournamentStats from '../components/TournamentStats'
@@ -117,7 +115,6 @@ function JudgesTab() {
           <>
             <JudgeCareerSection js={js} />
             <JudgesYearlySection js={js} />
-            <JudgeVoteConsistencySection js={js} />
             <JudgeStandardizedSection js={js} />
             <JudgeLeaveOneOutSection js={js} />
             <JudgeSplitSection js={js} />
@@ -156,7 +153,6 @@ const TABS: Record<StatsSectionKey, () => ReactNode> = {
   finals: FinalsTab,
   judges: JudgesTab,
   people: PeopleTab,
-  popularity: PopularityRanking,
 }
 
 export default function StatsPage() {

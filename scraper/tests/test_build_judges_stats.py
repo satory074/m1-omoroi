@@ -222,24 +222,3 @@ def test_leave_one_out_skips_mismatched_years_and_keeps_ties_apart():
     [tied] = by_year[2018]["changes"]
     assert tied["tie"] and tied["added"] == [] and tied["dropped"] == []
     assert {c["name"] for c in tied["tied"]} == {"A", "B"}
-
-
-def test_vote_consistency_counts_every_vote_once():
-    """各年の 1本目どおり・同点・乗り換え の合計は票数と一致する。"""
-    y = _finals(
-        2019,
-        ["松本", "巨人"],
-        [
-            {"name": "A", "combiId": 1, "scores": [95, 90], "total": 185},
-            {"name": "B", "combiId": 2, "scores": [90, 90], "total": 180},
-            {"name": "C", "combiId": 3, "scores": [80, 70], "total": 150},
-        ],
-        [
-            {"name": "A", "combiId": 1, "voters": []},
-            # 松本は1本目で A を上にしたのに B へ(乗り換え)、巨人は A・B 同点(同点)
-            {"name": "B", "combiId": 2, "voters": ["松本", "巨人"]},
-        ],
-    )
-    [row] = build_judges_stats([y], OV)["voteConsistency"]["years"]
-    assert row["same"] + row["tie"] + row["switched"] == row["votes"] == 2
-    assert (row["same"], row["tie"], row["switched"]) == (0, 1, 1)

@@ -1,9 +1,14 @@
+import { Fragment } from 'react'
+import { Link } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
+import { finalsPath } from '../lib/paths'
 import { useTokens } from '../lib/tokens'
-import type { FinalistsYear } from '../lib/types'
+import type { FinalistsYear, FinalsStatsWinner } from '../lib/types'
 import { hiatusArea, yearsWithHiatus } from './chartHiatus'
 import HistoryTable from './HistoryTable'
+import { fromRoster, useReveal } from '../lib/reveal'
+import { RevealButton, RevealRow } from './RevealCount'
 
 // 色は CSS のトークンから読む。3色の組み合わせ(赤・青・金)は dataviz スキルの検証スクリプトで確認済み
 // (色覚の違いでの区別 ΔE 19.3 以上・白地で 3:1 以上)
@@ -124,7 +129,12 @@ export function FinalistAgeSection({ rows }: { rows: FinalistsYear[] }) {
             {[...rows].reverse().map((r) => (
               <tr key={r.year}>
                 <td className="year">{r.year}</td>
-                <td className="no">{r.n}</td>
+                <td className="no">
+                  {/* その年の決勝進出の組は、決勝の得点表のページに全部並んでいる */}
+                  <Link className="cell-target" to={finalsPath(r.year)} aria-label={`${r.year}年の決勝 ${r.n}組`}>
+                    {r.n}
+                  </Link>
+                </td>
                 <td className="no">
                   {r.meanAge != null ? `${r.meanAge.toFixed(1)}歳` : '—'}
                   {r.ageN > 0 && <small>({r.ageN}人)</small>}
@@ -145,13 +155,13 @@ interface StackSeries {
   token: (typeof TOKENS)[number]
 }
 
-/** 年ごとの組数を積み上げる棒(凡例つき。系列は2〜3個) */
+/** 年ごとの組数を積み上げる棒(凡例つき。系列は2〜3個)。吹き出しには組数と、その組の名前(`{系列}Names`)を出す */
 function StackedBars({
   data,
   series,
   aria,
 }: {
-  data: Record<string, string | number | null>[]
+  data: Record<string, string | number | null | undefined>[]
   series: StackSeries[]
   aria: string
 }) {
@@ -174,9 +184,12 @@ function StackedBars({
             <XAxis dataKey="year" tick={tick} tickLine={false} axisLine={{ stroke: t['--c-chart-grid'] }} interval={2} />
             <YAxis tick={tick} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
             <Tooltip
-              contentStyle={tooltipStyle}
+              contentStyle={{ ...tooltipStyle, maxWidth: 320, whiteSpace: 'normal' }}
               cursor={{ fill: t['--c-surface-2'] }}
-              formatter={(v, name) => [`${v}組`, series.find((s) => s.key === name)?.label ?? name]}
+              formatter={(v, name, item) => {
+                const names = (item.payload as Record<string, unknown> | undefined)?.[`${String(name)}Names`]
+                return [`${v}組${names ? `(${String(names)})` : ''}`, series.find((s) => s.key === name)?.label ?? name]
+              }}
             />
             {series.map((s, i) => (
               <Bar
@@ -210,14 +223,41 @@ const YOSHIMOTO_SERIES: StackSeries[] = [
 ]
 
 /** 決勝の顔ぶれ(関西出身・吉本)の推移(finals_stats.finalistsByYear) */
-export function FinalistMakeupSection({ rows }: { rows: FinalistsYear[] }) {
+export function FinalistMakeupSection({ rows, roster }: { rows: FinalistsYear[]; roster: FinalsStatsWinner[] }) {
+  const reveal = useReveal()
   if (rows.length === 0) return null
   const first = rows[0]
   const last = rows[rows.length - 1]
   const hasUnknownOrigin = rows.some((r) => r.kansai.unknown > 0)
   const hasUnknownAgency = rows.some((r) => r.yoshimoto.unknown > 0)
-  const kansaiData = onYearAxis(rows, (r) => ({ all: r.kansai.all, some: r.kansai.some, none: r.kansai.none }))
-  const yoshiData = onYearAxis(rows, (r) => ({ yes: r.yoshimoto.yes, no: r.yoshimoto.no }))
+  const names = (idx: number[]) => fromRoster(roster, idx).map((c) => c.name).join('・')
+  const kansaiData = onYearAxis(rows, (r) => ({
+    all: r.kansai.all,
+    some: r.kansai.some,
+    none: r.kansai.none,
+    allNames: names(r.kansaiRows.all),
+    someNames: names(r.kansaiRows.some),
+    noneNames: names(r.kansaiRows.none),
+  }))
+  const yoshiData = onYearAxis(rows, (r) => ({
+    yes: r.yoshimoto.yes,
+    no: r.yoshimoto.no,
+    yesNames: names(r.yoshimotoRows.yes),
+    noNames: names(r.yoshimotoRows.no),
+  }))
+  // 表のセル: 列のキー → [見出し, 数, 名簿の添字]
+  const cells = (r: FinalistsYear) => {
+    const out: [string, string, number, number[]][] = [
+      ...KANSAI_SERIES.map((s) => [`k-${s.key}`, s.label, r.kansai[s.key as 'all'], r.kansaiRows[s.key as 'all']] as [string, string, number, number[]]),
+    ]
+    if (hasUnknownOrigin) out.push(['k-unknown', '出身地不明', r.kansai.unknown, r.kansaiRows.unknown])
+    out.push(
+      ...YOSHIMOTO_SERIES.map((s) => [`y-${s.key}`, s.label, r.yoshimoto[s.key as 'yes'], r.yoshimotoRows[s.key as 'yes']] as [string, string, number, number[]]),
+    )
+    if (hasUnknownAgency) out.push(['y-unknown', '所属不明', r.yoshimoto.unknown, r.yoshimotoRows.unknown])
+    return out
+  }
+  const colCount = 2 + cells(rows[0]).length
   return (
     <section className="chart-card">
       <h3 className="section-title">決勝の顔ぶれ(関西出身・吉本)</h3>
@@ -270,19 +310,32 @@ export function FinalistMakeupSection({ rows }: { rows: FinalistsYear[] }) {
             </tr>
           </thead>
           <tbody>
-            {[...rows].reverse().map((r) => (
-              <tr key={r.year}>
-                <td className="year">{r.year}</td>
-                <td className="no">{r.n}</td>
-                <td className="no">{r.kansai.all}</td>
-                <td className="no">{r.kansai.some}</td>
-                <td className="no">{r.kansai.none}</td>
-                {hasUnknownOrigin && <td className="no">{r.kansai.unknown}</td>}
-                <td className="no">{r.yoshimoto.yes}</td>
-                <td className="no">{r.yoshimoto.no}</td>
-                {hasUnknownAgency && <td className="no">{r.yoshimoto.unknown}</td>}
-              </tr>
-            ))}
+            {[...rows].reverse().map((r) => {
+              const row = String(r.year)
+              const cs = cells(r)
+              return (
+                <Fragment key={r.year}>
+                  <tr>
+                    <td className="year">{r.year}</td>
+                    <td className="no">{r.n}</td>
+                    {cs.map(([key, label, n]) => (
+                      <td key={key} className="no">
+                        <RevealButton reveal={reveal} row={row} col={key} label={`${r.year}年の${label}`} count={n} />
+                      </td>
+                    ))}
+                  </tr>
+                  <RevealRow
+                    reveal={reveal}
+                    row={row}
+                    colSpan={colCount}
+                    content={(col) => {
+                      const c = cs.find(([key]) => key === col)
+                      return c ? { title: `${r.year}年の${c[1]}`, items: fromRoster(roster, c[3]) } : null
+                    }}
+                  />
+                </Fragment>
+              )
+            })}
           </tbody>
         </HistoryTable>
       </details>

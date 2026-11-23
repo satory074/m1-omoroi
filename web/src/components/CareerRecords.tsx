@@ -1,9 +1,76 @@
+import { Fragment } from 'react'
+import { Link } from 'react-router-dom'
 
+import { yearPath } from '../lib/paths'
 import { ROUND_LABEL } from '../lib/rounds'
-import type { AgeRecordRow, PeopleStats, ReachRow } from '../lib/types'
+import type { AgeRecordRow, JobStat, PeopleStats, ReachRow } from '../lib/types'
 import { RankTable } from './RankTable'
 import HistoryTable from './HistoryTable'
 import CombiLink from './CombiLink'
+import { useReveal } from '../lib/reveal'
+import { RevealButton, RevealRow } from './RevealCount'
+
+/** 職業別の表で、名前を最初に並べる組数(残りは「ほかN組」を押すと開く) */
+const JOB_SHOWN = 10
+
+/** 職業別の最高到達。年は、その組が最高到達の回戦に進んだ年度一覧のその組の行へ */
+function JobsTable({ jobs }: { jobs: JobStat[] }) {
+  const reveal = useReveal()
+  const yearTo = (j: JobStat, id: number | null, year: number) =>
+    yearPath(year, `?round=${j.bestRound}${id != null ? `&focus=${id}` : ''}`)
+  return (
+    <HistoryTable caption="職業別の最高到達">
+      <thead>
+        <tr>
+          <th scope="col">職業</th>
+          <th scope="col">最高到達</th>
+          <th scope="col">組数</th>
+          <th scope="col">コンビ(到達年)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {jobs.map((j) => {
+          const rest = j.combis.slice(JOB_SHOWN)
+          return (
+            <Fragment key={j.job}>
+              <tr>
+                <td>{j.job}</td>
+                <td>{ROUND_LABEL[j.bestRound]}</td>
+                <td className="no">{j.count}</td>
+                <td className="names-cell">
+                  {j.combis.slice(0, JOB_SHOWN).map((c, i) => (
+                    <span key={c.id} className="winner-item">
+                      {i > 0 && '・'}
+                      <CombiLink id={c.id}>{c.name}</CombiLink>(<Link to={yearTo(j, c.id, c.year)}>{c.year}</Link>)
+                    </span>
+                  ))}
+                  {rest.length > 0 && (
+                    <>
+                      {' '}
+                      <RevealButton reveal={reveal} row={j.job} col="rest" label={`${j.job}のほか`} count={rest.length}>
+                        ほか{rest.length}組
+                      </RevealButton>
+                    </>
+                  )}
+                </td>
+              </tr>
+              <RevealRow
+                reveal={reveal}
+                row={j.job}
+                colSpan={4}
+                content={() => ({
+                  title: `${j.job}のほかの組`,
+                  items: rest.map((c) => ({ name: c.name, combiId: c.id, year: c.year })),
+                  yearTo: (it) => yearTo(j, it.combiId, it.year as number),
+                })}
+              />
+            </Fragment>
+          )
+        })}
+      </tbody>
+    </HistoryTable>
+  )
+}
 
 function ageRows(rows: AgeRecordRow[]) {
   return rows.map((r) => ({
@@ -42,7 +109,6 @@ function ReachTable({ rows, caption }: { rows: ReachRow[]; caption: string }) {
 /** キャリア・人物の記録(最年少最年長・年齢差・アマチュア・職業別・トリオ) */
 export default function CareerRecords({ ps }: { ps: PeopleStats }) {
   const ageGroups = [
-    { key: 'appearance', title: '出場' },
     { key: 'final', title: '決勝進出' },
     { key: 'champion', title: '優勝' },
   ] as const
@@ -50,8 +116,7 @@ export default function CareerRecords({ ps }: { ps: PeopleStats }) {
     <>
       <h3 className="section-title">最年少・最年長の記録</h3>
       <p className="section-note">
-        公式コンビ情報の生年月日(自己申告)から算出。出場は「大会年 −
-        生年」の近似(年末時点の満年齢)、決勝進出・優勝は決勝開催日時点の満年齢。同一人物は極値1件に集約、上位10+同点。
+        公式コンビ情報の生年月日(自己申告)から算出。決勝開催日時点の満年齢。同一人物は極値1件に集約、上位10+同点。
         {ps.ageExcluded > 0 && ` 明らかに不自然な年齢の${ps.ageExcluded}名は除外。`}
         生年月日が未登録のメンバー(2001〜2010の多く)は対象外。
       </p>
@@ -92,34 +157,7 @@ export default function CareerRecords({ ps }: { ps: PeopleStats }) {
       <p className="section-note">
         メンバーの職業(公式コンビ情報、2015年以降のみ)ごとの最高到達。コンビは各メンバーの職業すべてに数える。
       </p>
-      <HistoryTable caption="職業別の最高到達">
-          <thead>
-            <tr>
-              <th scope="col">職業</th>
-              <th scope="col">最高到達</th>
-              <th scope="col">組数</th>
-              <th scope="col">コンビ(到達年)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ps.jobs.map((j) => (
-              <tr key={j.job}>
-                <td>{j.job}</td>
-                <td>{ROUND_LABEL[j.bestRound]}</td>
-                <td className="no">{j.count}</td>
-                <td className="names-cell">
-                  {j.combis.map((c, i) => (
-                    <span key={c.id} className="winner-item">
-                      {i > 0 && '・'}
-                      <CombiLink id={c.id}>{c.name}</CombiLink>({c.year})
-                    </span>
-                  ))}
-                  {j.count > j.combis.length && ' ほか'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </HistoryTable>
+      <JobsTable jobs={ps.jobs} />
 
       <h3 className="section-title">トリオの記録</h3>
       <p className="section-note">

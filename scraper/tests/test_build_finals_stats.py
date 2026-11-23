@@ -36,23 +36,23 @@ def test_build_rankings_top_includes_boundary_ties():
     assert quarters[0]["value"] == 2 and quarters[-1]["value"] == 1
 
 
-def test_build_rankings_longest_streaks():
+def test_build_rankings_semifinals_counted_regardless_of_result():
+    """準決勝の進出は合否を問わない(通過・敗退・出場予定・敗者復活へ回った組も1回)。敗退 ≤ 進出 ≤ 準々決勝"""
     records = [
-        {
-            "id": 1,
-            "name": "A",
-            "history": {
-                y: {"results": {"first": "fail"}}
-                for y in ("2015", "2016", "2017", "2019", "2020")
-            },
-        },
-        {"id": 2, "name": "B", "history": {"2018": {"results": {"first": "pass"}}}},
+        {"id": 1, "name": "A", "history": {
+            "2019": {"results": {"quarterfinal": "pass", "semifinal": "fail"}},
+            "2020": {"results": {"quarterfinal": "pass", "semifinal": "fail", "playoff": "pass", "final": "fail"}},
+            "2021": {"results": {"quarterfinal": "pass", "semifinal": "pass", "final": "champion"}},
+            "2026": {"results": {"quarterfinal": "pass", "semifinal": "scheduled"}},
+        }},
+        {"id": 2, "name": "B", "history": {"2021": {"results": {"quarterfinal": "fail"}}}},
     ]
     r = build_rankings(records)
-    streaks = {x["name"]: x for x in r["longestStreaks"]}
-    # 2018欠場で途切れる → 最長は2015〜2017の3年
-    assert streaks["A"] == {"id": 1, "name": "A", "value": 3, "start": 2015, "end": 2017}
-    assert streaks["B"] == {"id": 2, "name": "B", "value": 1, "start": 2018, "end": 2018}
+    semis = {x["name"]: x["value"] for x in r["mostSemifinals"]}
+    assert semis == {"A": 4}  # 準決勝に出ていない B は載らない
+    fails = {x["name"]: x["value"] for x in r["mostSemifinalFails"]}
+    quarters = {x["name"]: x["value"] for x in r["mostQuarterfinals"]}
+    assert all(fails.get(n, 0) <= v <= quarters[n] for n, v in semis.items())
 
 
 def _finals(year, first, final, judges=None):
@@ -66,6 +66,11 @@ def _finals(year, first, final, judges=None):
 
 def _stats(all_finals, records=None, champions=None):
     return build_finals_stats(all_finals, records or [], champions or {"champions": []})
+
+
+def _names(s, rows):
+    """roster の添字 → (年, 名前)。押すと出る名前の一覧が、数えた組そのものかを見る"""
+    return [(s["roster"][i]["year"], s["roster"][i]["name"]) for i in rows]
 
 
 def test_order_stats_denominator_skips_unknown_order_years():
@@ -93,6 +98,11 @@ def test_order_stats_denominator_skips_unknown_order_years():
     ]
     assert s["firstRoundOrderStats"][0]["winners"] == [{"year": 2020, "name": "C", "combiId": 3}]
     assert [(r["order"], r["appearances"], r["wins"]) for r in s["finalOrderStats"]] == [(1, 1, 1)]
+    # 名前の一覧は数えた行そのもの(出番の分からない2005年の A・B は入らない)
+    one, two = s["firstRoundOrderStats"]
+    assert _names(s, one["rows"]) == _names(s, one["finalRoundRows"]) == [(2020, "C")]
+    assert _names(s, two["rows"]) == [(2020, "D")] and two["finalRoundRows"] == []
+    assert _names(s, s["finalOrderStats"][0]["rows"]) == [(2020, "C")]
 
 
 def test_champion_first_round_rank_distribution():
@@ -248,8 +258,14 @@ def test_revival_stats_split_and_winners():
     s = _stats([y2001, y2007])
     rs = s["revivalStats"]
     assert rs["sinceYear"] == 2002
-    assert rs["revival"] == {"appearances": 1, "finalists": 1, "wins": 1}
-    assert rs["straight"] == {"appearances": 2, "finalists": 1, "wins": 0}
+    counts = lambda b: {k: b[k] for k in ("appearances", "finalists", "wins")}
+    assert counts(rs["revival"]) == {"appearances": 1, "finalists": 1, "wins": 1}
+    assert counts(rs["straight"]) == {"appearances": 2, "finalists": 1, "wins": 0}
+    # 名前の一覧: 制度前の2001年は入らない
+    rv, st = rs["revival"], rs["straight"]
+    assert _names(s, rv["rows"]) == _names(s, rv["finalRoundRows"]) == _names(s, rv["winRows"]) == [(2007, "サンド")]
+    assert _names(s, st["rows"]) == [(2007, "トータル"), (2007, "キング")]
+    assert _names(s, st["finalRoundRows"]) == [(2007, "トータル")] and st["winRows"] == []
     assert rs["winners"] == [{"year": 2007, "name": "サンド", "combiId": 2}]
 
 
@@ -266,52 +282,6 @@ def test_champion_nth_final_distribution():
     s = _stats(years)
     assert [(r["n"], r["count"]) for r in s["championNthFinal"]] == [(1, 2), (3, 1)]
     assert s["championNthFinal"][1]["winners"] == [{"year": 2017, "name": "w2017", "combiId": 2017}]
-
-
-def test_debut_finalists_flags_and_exclusions():
-    y2001 = _finals(  # 第1回は全組初出場のため対象外
-        2001, [{"name": "初代", "combiId": 1, "total": 800, "rank": 1, "finalAppearance": 1}], []
-    )
-    y2004 = _finals(
-        2004,
-        [
-            # 記録上の初出場だが結成2003 → 2003年に1回戦敗退の記録が残らない可能性 → recordedOnly
-            {"name": "南キャン", "combiId": 5, "total": 700, "rank": 1, "finalAppearance": 1},
-        ],
-        [],
-    )
-    y2015 = _finals(
-        2015,
-        [
-            # 結成2012(大会休止期間)→ 出場しえた大会がすべて記録に残る2015年以降 → 確定初出場
-            {"name": "メイプル", "combiId": 6, "total": 650, "rank": 1, "finalAppearance": 1},
-            # 2度目の決勝 → 対象外
-            {"name": "ベテラン", "combiId": 7, "total": 640, "rank": 2, "finalAppearance": 2},
-            # 初決勝だが初出場ではない(2015年より前にエントリー歴) → 対象外
-            {"name": "苦労人", "combiId": 8, "total": 630, "rank": 3, "finalAppearance": 1},
-        ],
-        [],
-    )
-    records = [
-        {"id": 1, "name": "初代", "formed": 1992, "history": {"2001": {"results": {"final": "pass"}}}},
-        {"id": 5, "name": "南キャン", "formed": 2003, "history": {"2004": {"results": {"final": "fail"}}}},
-        {"id": 6, "name": "メイプル", "formed": 2012, "history": {"2015": {"results": {"final": "fail"}}}},
-        {"id": 7, "name": "ベテラン", "formed": 2001, "history": {"2015": {"results": {"final": "fail"}}}},
-        {
-            "id": 8,
-            "name": "苦労人",
-            "formed": 2010,
-            "history": {
-                "2010": {"results": {"third": "fail"}},  # アーカイブ統合済みの過去エントリー
-                "2015": {"results": {"final": "fail"}},
-            },
-        },
-    ]
-    s = _stats([y2001, y2004, y2015], records)
-    assert s["debutFinalists"] == [
-        {"year": 2004, "name": "南キャン", "combiId": 5, "recordedOnly": True},
-        {"year": 2015, "name": "メイプル", "combiId": 6, "recordedOnly": False},
-    ]
 
 
 def test_name_length_stats():
@@ -331,8 +301,14 @@ def test_name_length_stats():
     ]
     s = _stats([y], records)
     rows = {r["length"]: r for r in s["nameLengthStats"]}
-    assert rows[2] == {"length": 2, "entrants": 2, "finalists": 1, "champions": 1}
-    assert rows[5] == {"length": 5, "entrants": 2, "finalists": 1, "champions": 0}
+    assert rows[2] == {
+        "length": 2, "entrants": 2, "finalists": 1, "champions": 1,
+        "finalCombis": [{"name": "和牛", "combiId": 1}], "championCombis": [{"name": "和牛", "combiId": 1}],
+    }
+    assert rows[5] == {
+        "length": 5, "entrants": 2, "finalists": 1, "champions": 0,
+        "finalCombis": [{"name": "オズワルド", "combiId": 2}], "championCombis": [],
+    }
 
 
 def test_agency_normalization_and_excluded_count():
@@ -353,7 +329,10 @@ def test_agency_normalization_and_excluded_count():
     ]
     s = _stats([y], records)
     rows = {r["agency"]: r for r in s["agencyFinals"]}
-    assert rows["吉本興業"] == {"agency": "吉本興業", "value": 2, "combis": 2}
+    assert rows["吉本興業"] == {
+        "agency": "吉本興業", "value": 2, "combis": 2,
+        "names": [{"name": "A", "combiId": 1, "n": 1}, {"name": "B", "combiId": 2, "n": 1}],
+    }
     assert rows["アマチュア"]["value"] == 1
     assert s["agencyFinalsExcluded"] == 1
 
@@ -379,12 +358,13 @@ def test_formation_years_spans_and_unknown():
     champions = {"champions": [{"year": 2018, "name": "霜降り明星", "formed": 2013, "id": 9}]}
     s = _stats([], records, champions)
     f = s["formationYears"]
-    assert f["final"] == [{"years": 10, "count": 1}]
+    # 決勝の得点表がまだ無い年の決勝進出も、名簿に足して名前を出す
+    assert [(r["years"], r["count"], _names(s, r["rows"])) for r in f["final"]] == [(10, 1, [(2020, "A")])]
     assert f["semifinal"] == [{"years": 5, "count": 1}, {"years": 10, "count": 1}]
     assert f["quarterfinal"] == [{"years": 5, "count": 1}, {"years": 10, "count": 1}]
     assert f["unknownFormed"] == {"quarterfinal": 0, "semifinal": 1, "final": 0}
     assert f["champion"] == [
-        {"years": 5, "count": 1, "combis": [{"year": 2018, "name": "霜降り明星"}]}
+        {"years": 5, "count": 1, "combis": [{"year": 2018, "name": "霜降り明星", "combiId": 9}]}
     ]
 
 
@@ -482,26 +462,6 @@ def test_last_year_entrants_are_formed_limit_years_ago():
     assert ly["combis"][0]["round"] == "quarterfinal" and ly["combis"][0]["result"] == "scheduled"
 
 
-def test_seed_split_skips_rounds_still_scheduled():
-    def entry(first, qf):
-        return {"results": {"first": first, "quarterfinal": qf}}
-
-    year_files = {
-        2024: {"source": "db", "entries": [
-            entry("seed_pass", "pass"), entry("seed_pass", "fail"),
-            entry("pass", "pass"), entry("pass", "fail"), entry("pass", "absent"),
-        ]},
-        # 結果が出そろっていない年は丸ごと数えない
-        2026: {"source": "db", "entries": [entry("seed_pass", "pass"), entry("pass", "scheduled")]},
-    }
-    split = build_stats(year_files)["seedSplit"]
-    qf = next(r for r in split["rounds"] if r["round"] == "quarterfinal")
-    assert qf["seed"] == {"appeared": 2, "passed": 1}
-    assert qf["climbed"] == {"appeared": 2, "passed": 1}  # 欠場は数えない
-    assert all(b["passed"] <= b["appeared"] for r in split["rounds"] for b in (r["seed"], r["climbed"]))
-    assert [y["year"] for y in split["byYear"]] == [2024]
-
-
 def test_semifinals_before_first_final_is_at_least_one():
     """決勝に進んだ組は、その年までに準決勝の記録が必ず1回以上ある(敗者復活の組も)。後の年は数えない。"""
     finals = [_finals(y, [], []) for y in (2002, 2003, 2004, 2005, 2007, 2016)]
@@ -550,23 +510,3 @@ def test_formation_reach_counts_later_rounds_and_is_monotone():
     for r in fr["rows"]:
         R = r["reached"]
         assert R["final"] <= R["semifinal"] <= R["quarterfinal"] <= R["third"] <= r["entries"]
-
-
-def test_next_year_pairs_only_consecutive_finished_tournaments():
-    """続けて開かれた終わった大会どうしだけを比べる(2010→2015 の休止・進行中の年はまたがない)。"""
-    def entry(cid, **results):
-        return {"id": cid, "results": results}
-
-    champ = entry(999, final="champion")
-    year_files = {
-        2010: {"source": "a", "entries": [entry(1, first="pass", second="fail"), champ]},
-        2015: {"source": "db", "entries": [entry(1, first="fail"), entry(2, first="pass", second="fail"), champ]},
-        2016: {"source": "db", "entries": [entry(2, first="fail"), champ]},
-        2017: {"source": "db", "entries": [entry(2, first="pass", second="scheduled")]},
-    }
-    ny = build_stats(year_files)["nextYear"]
-    assert (ny["fromYear"], ny["toYear"]) == (2015, 2016)
-    by_from = {r["from"]: r["to"] for r in ny["rows"]}
-    # 2015年に2回戦の組(id 2)が2016年は1回戦、王者 999 は決勝→決勝。id 1 は2016年に出ていない
-    assert by_from == {2: [1, 0, 0, 0, 0, 0], 6: [0, 0, 0, 0, 0, 1]}
-    assert ny["notNextYear"] == 1

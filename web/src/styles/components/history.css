@@ -173,24 +173,6 @@
   color: var(--c-text-muted);
 }
 
-/* 連続出場(皆勤)の全組。折り畳まずに並べる */
-.streak-box {
-  margin-bottom: var(--space-5);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-m);
-}
-
-.streak-head {
-  margin: 0;
-  font-weight: var(--fw-bold);
-}
-
-.streak-names {
-  margin: var(--space-2) 0 0;
-  line-height: 2;
-}
-
 /* 表のセルに単独で置くリンク(年度一覧へ飛ぶ回戦など)。行が詰まっていても押しやすい高さにする(WCAG 2.5.8 の 24px) */
 .history td .cell-target {
   display: inline-block;

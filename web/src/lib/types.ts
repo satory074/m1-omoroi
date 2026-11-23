@@ -177,21 +177,12 @@ export interface RankingItem {
   years?: number[]
 }
 
-/** 連続出場: value=連続年数、start〜end がその区間 */
-export interface StreakItem {
-  id: number
-  name: string
-  value: number
-  start: number
-  end: number
-}
-
 /** 集計は公式コンビDBの2015年以降(決勝の全期間版は FinalsStats 側) */
 export interface Rankings {
   mostSemifinalFails: RankingItem[]
+  /** 準決勝に進んだ回数(合否は問わない) */
+  mostSemifinals: RankingItem[]
   mostQuarterfinals: RankingItem[]
-  mostFirstRoundFails: RankingItem[]
-  longestStreaks: StreakItem[]
   /** 最新の年がラストイヤー(結成 year − limit 年)の組。year のデータが無ければ null */
   lastYearEntrants: LastYearEntrants | null
 }
@@ -224,9 +215,7 @@ export interface YearStats {
 
 export interface Stats {
   byYear: YearStats[]
-  seedSplit: SeedSplit
   formationReach: FormationReach
-  nextYear: NextYear
 }
 
 /** 結成年数(大会年 − 結成年)別の到達数。reached は「その回戦かそれより先」まで進んだ延べ組数 */
@@ -234,6 +223,8 @@ export interface FormationReachRow {
   years: number
   entries: number
   reached: { third: number; quarterfinal: number; semifinal: number; final: number }
+  /** 準決勝以降・決勝まで進んだ組(数と同じ件数。3回戦・準々決勝は延べ数千組あるので持たない) */
+  names: { semifinal: FinalsStatsWinner[]; final: FinalsStatsWinner[] }
 }
 
 export interface FormationReach {
@@ -245,26 +236,9 @@ export interface FormationReach {
   excluded: { scheduled: number; noResult: number; unknownFormed: number; outOfRange: number }
 }
 
-/** 前年の最高到達(from: 1..6 = 1回戦〜決勝)→ 翌年の最高到達の組数(to[0..5])。両年とも出場した組だけ */
-export interface NextYear {
-  fromYear: number | null
-  toYear: number | null
-  rows: { from: number; total: number; to: number[] }[]
-  /** 翌年に出場しなかった組(表に入れない) */
-  notNextYear: number
-}
-
 export interface PassCount {
   appeared: number
   passed: number
-}
-
-/** 準々決勝・準決勝の通過率を、シード組(その年の1回戦が seed_pass)と1回戦からの勝ち上がり組に分けたもの */
-export interface SeedSplit {
-  fromYear: number | null
-  toYear: number | null
-  rounds: { round: RoundKey; seed: PassCount; climbed: PassCount }[]
-  byYear: ({ year: number } & Partial<Record<RoundKey, { seed: PassCount; climbed: PassCount }>>)[]
 }
 
 export interface ChampionMember {
@@ -349,6 +323,9 @@ export interface FinalsStatsWinner {
   combiId: number | null
 }
 
+/** 名簿(roster)の添字の配列。決勝の行を、集計ごとに名前を繰り返さずに指す(数字を押すと出る一覧) */
+export type RosterRows = number[]
+
 /** 決勝1本目の出番順別成績(分母は出番順が判明している年のみ) */
 export interface OrderStat {
   order: number
@@ -358,6 +335,10 @@ export interface OrderStat {
   winners: FinalsStatsWinner[]
   /** 1本目の年内偏差値の平均(ファーストラウンドのみ) */
   meanDeviation?: number
+  /** 出場した組 */
+  rows: RosterRows
+  /** 最終決戦へ進んだ組(ファーストラウンドのみ) */
+  finalRoundRows?: RosterRows
 }
 
 export interface ChampionRankStat {
@@ -369,7 +350,10 @@ export interface ChampionRankStat {
 export interface FormationYearStat {
   years: number
   count: number
-  combis?: { year: number; name: string }[]
+  /** 優勝の系列だけ */
+  combis?: FinalsStatsWinner[]
+  /** 決勝の系列だけ */
+  rows?: RosterRows
 }
 
 export interface DeviationScore {
@@ -402,12 +386,17 @@ export interface AgencyFinals {
   agency: string
   value: number
   combis: number
+  /** その事務所の組と決勝進出の回数(回数の多い順) */
+  names: { name: string; combiId: number | null; n: number }[]
 }
 
 interface RevivalBucket {
   appearances: number
   finalists: number
   wins: number
+  rows: RosterRows
+  finalRoundRows: RosterRows
+  winRows: RosterRows
 }
 
 /** 敗者復活組 vs ストレート組の成績(制度のある2002年以降が分母) */
@@ -424,14 +413,6 @@ export interface ChampionNthFinal {
   n: number
   count: number
   winners: FinalsStatsWinner[]
-}
-
-/** 初出場(初エントリー年)で決勝進出。recordedOnly=記録に残る範囲での判定(2001〜2010に出場しえた組) */
-export interface DebutFinalist {
-  year: number
-  name: string
-  combiId: number | null
-  recordedOnly: boolean
 }
 
 /** 各年の1本目1位と2位の点差 */
@@ -457,6 +438,10 @@ export interface JudgeCareer {
   /** 最終決戦の投票数(votersが記録されている年のみ)と、うち優勝者への投票 */
   votes: number
   champVotes: number
+  /** 行内最高点/最低点を付けた組・優勝者へ入れた票の組 */
+  topRows: RosterRows
+  lowRows: RosterRows
+  champVoteRows: RosterRows
 }
 
 /** その審査員がその年に最高点/最低点をつけた組(同点は全件、出番順) */
@@ -480,6 +465,9 @@ export interface JudgeYearRow {
   /** max/min を付けた組(同点は全件) */
   maxCombis: JudgePickCombi[]
   minCombis: JudgePickCombi[]
+  /** 行内の最高点/最低点を付けた組(top/low と同じ件数) */
+  topRows: RosterRows
+  lowRows: RosterRows
 }
 
 export interface JudgesYear {
@@ -495,11 +483,15 @@ export interface FinalVoteYear {
   champion: string
   championCombiId: number | null
   votes: number[]
+  /** votes と同じ並びの組 */
+  names: JudgePickCombi[]
   unanimous: boolean
   margin: number
 }
 
 export interface JudgesStats {
+  /** 決勝1本目の全行(年の順)。*Rows の添字が指す */
+  roster: FinalsStatsWinner[]
   career: JudgeCareer[]
   byYear: JudgesYear[]
   finalVotes: FinalVoteYear[]
@@ -513,10 +505,8 @@ export interface JudgesStats {
   leaveOneOut: { skipped: number[]; rows: LeaveOneOutYear[] }
   /** 審査員の評価が割れた/揃った組(割れ具合の大きい順10件・小さい順5件+境界の同点) */
   splitScores: { mean: number | null; count: number; highest: SplitScore[]; lowest: SplitScore[] }
-  /** 最終決戦の票が1本目の自分の採点どおりだったか */
-  voteConsistency: { years: VoteConsistencyYear[]; total: Omit<VoteConsistencyYear, 'year' | 'n'> }
   /** トップバッター(出番1番)への点 − その審査員のその年の平均点(全員。回数の多い順) */
-  firstPerformer: { name: string; n: number; meanDiff: number }[]
+  firstPerformer: { name: string; n: number; meanDiff: number; rows: RosterRows }[]
 }
 
 export interface LeaveOneOutChange {
@@ -552,21 +542,6 @@ export interface SplitScore {
   maxJudges: string[]
   minScore: number
   minJudges: string[]
-}
-
-export interface VoteConsistencyYear {
-  year: number
-  /** 最終決戦の組数 */
-  n: number
-  votes: number
-  /** 1本目の自分の採点で単独1位の組に投票 */
-  same: number
-  /** 1本目の自分の採点で最終決戦の組の1位が同点 */
-  tie: number
-  /** 1本目の自分の採点で1位でなかった組に投票 */
-  switched: number
-  /** 1本目を見ずに選んだ場合の乗り換えの期待値(1位が単独の票だけ) */
-  expectedSwitch: number
 }
 
 export interface StandardizedYear {
@@ -628,8 +603,6 @@ export interface JobStat {
 
 export interface PeopleStats {
   ageRecords: {
-    /** 出場: エントリー年−生年の近似(年末時点の満年齢) */
-    appearance: { youngest: AgeRecordRow[]; oldest: AgeRecordRow[] }
     /** 決勝・優勝: 決勝開催日時点の厳密な満年齢 */
     final: { youngest: AgeRecordRow[]; oldest: AgeRecordRow[] }
     champion: { youngest: AgeRecordRow[]; oldest: AgeRecordRow[] }
@@ -643,6 +616,8 @@ export interface PeopleStats {
 }
 
 export interface FinalsStats {
+  /** 決勝1本目の全行(年の順)。*Rows・rows の添字が指す */
+  roster: FinalsStatsWinner[]
   firstRoundOrderStats: OrderStat[]
   finalOrderStats: OrderStat[]
   championFirstRoundRank: ChampionRankStat[]
@@ -669,16 +644,22 @@ export interface FinalsStats {
     dist: { n: number; attempts: number; count: number; combis: FinalsStatsWinner[] }[]
   }
   revivalStats: RevivalStats
-  debutFinalists: DebutFinalist[]
   firstRoundMargins: FirstRoundMargin[]
   /** コンビ名の文字数(NFKC・空白除去)別のエントリー/決勝進出/優勝組数 */
-  nameLengthStats: { length: number; entrants: number; finalists: number; champions: number }[]
+  nameLengthStats: {
+    length: number
+    entrants: number
+    finalists: number
+    champions: number
+    finalCombis: JudgePickCombi[]
+    championCombis: JudgePickCombi[]
+  }[]
   agencyFinals: AgencyFinals[]
   agencyFinalsExcluded: number
   /** 決勝の連続進出(大会連続。休止の2011〜2014は飛ばして数える)。2大会以上 */
   finalStreaks: FinalStreak[]
   /** 隣り合う大会どうしで、前の大会の決勝進出者が次の大会も決勝に来た数 */
-  repeatFinalists: { pairs: number; back: number }
+  repeatFinalists: { pairs: number; back: number; rows: RosterRows }
   lastYearFinalists: {
     rows: LastYearFinalist[]
     /** 比べる相手: 決勝進出の延べ組数と優勝数(全体) */
@@ -736,4 +717,6 @@ export interface FinalistsYear {
   kansai: { all: number; some: number; none: number; unknown: number }
   /** 吉本(公式DBの現在の所属) */
   yoshimoto: { yes: number; no: number; unknown: number }
+  kansaiRows: { all: RosterRows; some: RosterRows; none: RosterRows; unknown: RosterRows }
+  yoshimotoRows: { yes: RosterRows; no: RosterRows; unknown: RosterRows }
 }

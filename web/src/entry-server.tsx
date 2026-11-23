@@ -123,14 +123,13 @@ export function listPages(read: ReadData): Page[] {
     )
   }
 
-  // 記録・統計はそのテーマの JSON だけ。注目度は名前の索引(約770KB gz)が要るので埋め込まない
+  // 記録・統計はそのテーマの JSON だけ
   const statsData: Record<string, { key: Key; file: string } | null> = {
     '': QUERY.stats,
     combi: QUERY.rankings,
     finals: QUERY.finalsStats,
     judges: QUERY.judgesStats,
     people: QUERY.peopleStats,
-    popularity: null,
   }
   const span = finalsSpan(meta)
   for (const s of STATS_SECTIONS) {

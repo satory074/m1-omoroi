@@ -60,23 +60,27 @@ def test_champion_members_from_overrides_when_no_record():
     assert champ[0]["age"] == 31 and champ[0]["member"] == "剛"
 
 
-def test_appearance_age_and_sanity_exclusion():
+def test_final_age_sanity_exclusion_and_one_row_per_person():
+    """10〜90歳の外(冗談の登録)は記録に入れず ageExcluded に数える。同じ人は複数年でも1件"""
     records = [
         _rec(
             1,
-            "学生コンビ",
-            [{"name": "若手", "birth": "2005年04月01日"}, {"name": "冗談", "birth": "1900年01月01日"}],
-            {"2019": {"results": {"first": "fail"}}, "2024": {"results": {"first": "fail"}}},
+            "常連",
+            [{"name": "若手", "birth": "1995年04月01日"}, {"name": "冗談", "birth": "1900年01月01日"}],
+            {"2019": {"results": {"final": "fail"}}, "2020": {"results": {"final": "fail"}}},
         )
     ]
-    s = build_people_stats(records, [], {}, {})
-    young = s["ageRecords"]["appearance"]["youngest"]
-    # 若手: 初出場2019年時点 14歳(年末基準)。人物単位で1件に集約
-    assert young[0] == {"age": 14, "member": "若手", "combi": "学生コンビ", "combiId": 1, "year": 2019}
-    assert len([r for r in young if r["member"] == "若手"]) == 1
-    # 1900年生まれ(2019年時点119歳)はサニティ範囲外で除外
-    assert all(r["member"] != "冗談" for r in young)
-    assert s["ageExcluded"] >= 1
+    finals = [
+        {"year": y, "judges": [], "firstRound": [{"name": "常連", "combiId": 1, "total": 600, "rank": 1}], "finalRound": []}
+        for y in (2019, 2020)
+    ]
+    s = build_people_stats(records, finals, {}, {2019: (2019, 12, 22), 2020: (2020, 12, 20)})
+    young = s["ageRecords"]["final"]["youngest"]
+    assert [r["member"] for r in young].count("若手") == 1
+    assert young[0] == {"age": 24, "member": "若手", "combi": "常連", "combiId": 1, "year": 2019}
+    # 1900年生まれ(決勝時点で119歳)は除外し、年ごとに数える
+    assert all(r["member"] != "冗談" for r in young + s["ageRecords"]["final"]["oldest"])
+    assert s["ageExcluded"] == 2
 
 
 def test_age_gap_only_quarterfinal_and_above():

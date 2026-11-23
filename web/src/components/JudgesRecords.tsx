@@ -1,10 +1,12 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
-import type { JudgePickCombi, JudgesStats, LeaveOneOutChange, SingleScore, SplitScore } from '../lib/types'
+import type { FinalsStatsWinner, JudgePickCombi, JudgesStats, LeaveOneOutChange, SingleScore, SplitScore } from '../lib/types'
 import { useUrlParam } from '../lib/useUrlParam'
 import CombiLink from './CombiLink'
 import HistoryTable from './HistoryTable'
+import { fromRoster, useReveal } from '../lib/reveal'
+import { RevealButton, RevealRow } from './RevealCount'
 import ScrollNav, { type ScrollNavItem } from './ScrollNav'
 import { finalsPath } from '../lib/paths'
 
@@ -25,6 +27,7 @@ function compressYears(years: number[]): string {
 
 /** 審査員の通算記録(記録・統計の「審査員」タブ) */
 export function JudgeCareerSection({ js }: { js: JudgesStats }) {
+  const reveal = useReveal()
   return (
     <>
       <h2 className="section-title">審査員の通算記録</h2>
@@ -33,6 +36,7 @@ export function JudgeCareerSection({ js }: { js: JudgesStats }) {
         点差 = 自分の点からその組への審査員平均点を引いた値の平均で、マイナスほど辛口・プラスほど甘口。
         最高点/最低点はその組に対して審査員の中で最高/最低の点を付けた回数(同点は全員に計上)。
         見る目 = 最終決戦で優勝コンビに投票した回数/投票機会。2001年の会場票(大阪・札幌・福岡)は含まない。
+        最高点・最低点・見る目の数字を押すと、その組が出ます。
       </p>
       <HistoryTable caption="審査員の通算記録">
           <thead>
@@ -48,18 +52,45 @@ export function JudgeCareerSection({ js }: { js: JudgesStats }) {
           </thead>
           <tbody>
             {js.career.map((c) => (
-              <tr key={c.name}>
-                <td className="sticky-name">{c.name}</td>
-                <td className="no">
-                  {c.yearCount}年
-                  <span className="cell-note">{compressYears(c.years)}</span>
-                </td>
-                <td className="no">{c.scored}組</td>
-                <td className="no">{c.avgDiff != null ? (c.avgDiff > 0 ? `+${c.avgDiff.toFixed(2)}` : c.avgDiff.toFixed(2)) : '—'}</td>
-                <td className="no">{c.topCount}</td>
-                <td className="no">{c.lowCount}</td>
-                <td className="no">{c.votes > 0 ? `${c.champVotes}/${c.votes}` : '—'}</td>
-              </tr>
+              <Fragment key={c.name}>
+                <tr>
+                  <td className="sticky-name">{c.name}</td>
+                  <td className="no">
+                    {c.yearCount}年
+                    <span className="cell-note">{compressYears(c.years)}</span>
+                  </td>
+                  <td className="no">{c.scored}組</td>
+                  <td className="no">{c.avgDiff != null ? (c.avgDiff > 0 ? `+${c.avgDiff.toFixed(2)}` : c.avgDiff.toFixed(2)) : '—'}</td>
+                  <td className="no">
+                    <RevealButton reveal={reveal} row={c.name} col="top" label={`${c.name}が最高点を付けた`} count={c.topCount} unit="回" />
+                  </td>
+                  <td className="no">
+                    <RevealButton reveal={reveal} row={c.name} col="low" label={`${c.name}が最低点を付けた`} count={c.lowCount} unit="回" />
+                  </td>
+                  <td className="no">
+                    {c.votes > 0 ? (
+                      <>
+                        <RevealButton reveal={reveal} row={c.name} col="champ" label={`${c.name}が優勝者に入れた`} count={c.champVotes} unit="票" />
+                        /{c.votes}
+                      </>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                </tr>
+                <RevealRow
+                  reveal={reveal}
+                  row={c.name}
+                  colSpan={7}
+                  content={(col) =>
+                    col === 'top'
+                      ? { title: `${c.name}が審査員の中で最高点を付けた組`, items: fromRoster(js.roster, c.topRows), unit: '回' }
+                      : col === 'low'
+                        ? { title: `${c.name}が審査員の中で最低点を付けた組`, items: fromRoster(js.roster, c.lowRows), unit: '回' }
+                        : { title: `${c.name}が最終決戦で投票した王者`, items: fromRoster(js.roster, c.champVoteRows), unit: '票' }
+                  }
+                />
+              </Fragment>
             ))}
           </tbody>
         </HistoryTable>
@@ -108,6 +139,9 @@ export function JudgesYearlySection({ js }: { js: JudgesStats }) {
   const venueNote = js.venueColumns[String(year)]
   // その年の王者IDは finalVotes から引く(全年 championCombiId が入っている)
   const championId = js.finalVotes.find((v) => v.year === year)?.championCombiId ?? null
+  const reveal = useReveal()
+  // 名前の一覧に年は要らない(その年の表なので)
+  const names = (rows: number[]) => fromRoster(js.roster, rows).map(({ name, combiId }) => ({ name, combiId }))
   return (
     <>
       <h2 className="section-title">審査員の年別採点傾向</h2>
@@ -139,19 +173,39 @@ export function JudgesYearlySection({ js }: { js: JudgesStats }) {
               {[...yearRow.judges]
                 .sort((a, b) => b.mean - a.mean)
                 .map((j) => (
-                  <tr key={j.name}>
-                    <td className="sticky-name">{j.canonical}</td>
-                    <td className="no">{j.mean.toFixed(1)}</td>
-                    <td className="no">{j.diff > 0 ? `+${j.diff.toFixed(1)}` : j.diff.toFixed(1)}</td>
-                    <td className="no">
-                      {j.min}〜{j.max}
-                    </td>
-                    <td className="no">{j.sd.toFixed(2)}</td>
-                    <td className="no">{j.top}回</td>
-                    <td className="no">{j.low}回</td>
-                    <PickCell score={j.max} combis={j.maxCombis} championId={championId} />
-                    <PickCell score={j.min} combis={j.minCombis} championId={championId} />
-                  </tr>
+                  <Fragment key={j.name}>
+                    <tr>
+                      <td className="sticky-name">{j.canonical}</td>
+                      <td className="no">{j.mean.toFixed(1)}</td>
+                      <td className="no">{j.diff > 0 ? `+${j.diff.toFixed(1)}` : j.diff.toFixed(1)}</td>
+                      <td className="no">
+                        {j.min}〜{j.max}
+                      </td>
+                      <td className="no">{j.sd.toFixed(2)}</td>
+                      <td className="no">
+                        <RevealButton reveal={reveal} row={`${year}:${j.name}`} col="top" label={`${year}年に${j.canonical}が最高点を付けた`} count={j.top} unit="回">
+                          {j.top}回
+                        </RevealButton>
+                      </td>
+                      <td className="no">
+                        <RevealButton reveal={reveal} row={`${year}:${j.name}`} col="low" label={`${year}年に${j.canonical}が最低点を付けた`} count={j.low} unit="回">
+                          {j.low}回
+                        </RevealButton>
+                      </td>
+                      <PickCell score={j.max} combis={j.maxCombis} championId={championId} />
+                      <PickCell score={j.min} combis={j.minCombis} championId={championId} />
+                    </tr>
+                    <RevealRow
+                      reveal={reveal}
+                      row={`${year}:${j.name}`}
+                      colSpan={9}
+                      content={(col) => ({
+                        title: `${year}年に${j.canonical}が審査員の中で${col === 'top' ? '最高点' : '最低点'}を付けた組`,
+                        items: names(col === 'top' ? j.topRows : j.lowRows),
+                        unit: '回',
+                      })}
+                    />
+                  </Fragment>
                 ))}
             </tbody>
           </HistoryTable>
@@ -161,6 +215,7 @@ export function JudgesYearlySection({ js }: { js: JudgesStats }) {
       <h2 className="section-title">最終決戦の得票(満場一致と接戦)</h2>
       <p className="section-note">
         最終決戦の得票の割れ方。「満場一致」は全票を集めての優勝、票差1は最接戦。2020年は3組に票が割れた唯一の年。
+        得票は多い順に、その組の名前と票数です。
       </p>
       <HistoryTable caption="最終決戦の得票(満場一致と接戦)">
           <thead>
@@ -179,7 +234,14 @@ export function JudgesYearlySection({ js }: { js: JudgesStats }) {
                   <CombiLink id={r.championCombiId}>{r.champion}</CombiLink>
                   {r.unanimous && <span className="chip chip-champion">満場一致</span>}
                 </td>
-                <td className="no">{r.votes.join(' - ')}</td>
+                <td className="names-cell">
+                  {r.votes.map((v, i) => (
+                    <span key={i} className="winner-item">
+                      {i > 0 && '・'}
+                      {r.names[i] ? <CombiLink id={r.names[i].combiId}>{r.names[i].name}</CombiLink> : '?'} {v}票
+                    </span>
+                  ))}
+                </td>
                 <td className="no">{r.margin}</td>
               </tr>
             ))}
@@ -259,91 +321,6 @@ export function JudgeStandardizedSection({ js }: { js: JudgesStats }) {
         </tbody>
       </HistoryTable>
       <p className="legend">太字の組は、標準化すると最終決戦に入る組。2001年は会場票(大阪・札幌・福岡)も合計に入っていたので、標準化にも含めています。</p>
-    </>
-  )
-}
-
-function percent(part: number, whole: number): string {
-  return whole ? `${Math.round((part / whole) * 100)}%` : '—'
-}
-
-/**
- * 最終決戦の1票ずつを、投票した審査員の1本目の採点と比べる。
- * 比べる目安は「1本目を全く見ずに選んだ場合」(N組なら乗り換えは (N−1)/N)と「1本目どおりにしか入れない場合」(0%)
- */
-export function JudgeVoteConsistencySection({ js }: { js: JudgesStats }) {
-  const { years, total } = js.voteConsistency
-  if (years.length === 0) return null
-  const decided = total.same + total.switched
-  return (
-    <>
-      <h2 className="section-title">最終決戦の票は1本目の採点どおりか</h2>
-      <p className="section-note">
-        最終決戦の1票ずつについて、投票した審査員が1本目(ファーストラウンド)で最終決戦の組に付けた点を見ました。
-        自分の採点で1位だった組に入れた票が「1本目どおり」、それ以外の組に入れた票が「乗り換え」です。
-        自分の採点で1位が同点だった票は「同点」として分けます。
-        全{total.votes}票のうち、1位が同点でない{decided}票では、乗り換えが
-        <strong>
-          {total.switched}票({percent(total.switched, decided)})
-        </strong>
-        でした。
-      </p>
-      <p className="section-note">
-        比べる目安: 1本目の点を全く見ずに最終決戦の組から選んだとすると、乗り換えは約{percent(total.expectedSwitch, decided)}
-        (3組なら3票に2票)。1本目どおりにしか入れないなら0%です。
-      </p>
-      <HistoryTable caption={`最終決戦の票と1本目の採点(${years[0].year}〜${years[years.length - 1].year}年の合計)`}>
-        <thead>
-          <tr>
-            <th scope="col">票</th>
-            <th scope="col">1本目どおり</th>
-            <th scope="col">同点</th>
-            <th scope="col">乗り換え</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td className="no">{total.votes}</td>
-            <td className="no">{total.same}</td>
-            <td className="no">{total.tie}</td>
-            <td className="no">
-              <strong>
-                {total.switched}({percent(total.switched, decided)})
-              </strong>
-            </td>
-          </tr>
-        </tbody>
-      </HistoryTable>
-      <p className="legend">乗り換えの割合は、1位が同点の票を除いた{decided}票に対するもの。2001年は最終決戦が2組、それ以外は3組。2001年の会場票は投票していません。</p>
-      <details className="note">
-        <summary>
-          <span className="note-label">年ごとに見る</span>
-        </summary>
-        <HistoryTable caption="最終決戦の票と1本目の採点(年ごと)">
-          <thead>
-            <tr>
-              <th scope="col">年</th>
-              <th scope="col">票</th>
-              <th scope="col">1本目どおり</th>
-              <th scope="col">同点</th>
-              <th scope="col">乗り換え</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[...years].reverse().map((r) => (
-              <tr key={r.year}>
-                <td className="no">
-                  <Link to={finalsPath(r.year)}>{r.year}</Link>
-                </td>
-                <td className="no">{r.votes}</td>
-                <td className="no">{r.same}</td>
-                <td className="no">{r.tie}</td>
-                <td className="no">{r.switched}</td>
-              </tr>
-            ))}
-          </tbody>
-        </HistoryTable>
-      </details>
     </>
   )
 }
@@ -521,7 +498,16 @@ export function JudgeSplitSection({ js }: { js: JudgesStats }) {
 // これ未満の回数は1組の出来で決まってしまうので、本文の集計に入れず参考として分ける
 const FIRST_PERFORMER_MIN = 5
 
-function FirstPerformerTable({ caption, rows }: { caption: string; rows: JudgesStats['firstPerformer'] }) {
+function FirstPerformerTable({
+  caption,
+  rows,
+  roster,
+}: {
+  caption: string
+  rows: JudgesStats['firstPerformer']
+  roster: FinalsStatsWinner[]
+}) {
+  const reveal = useReveal()
   return (
     <HistoryTable caption={caption}>
       <thead>
@@ -535,14 +521,26 @@ function FirstPerformerTable({ caption, rows }: { caption: string; rows: JudgesS
       </thead>
       <tbody>
         {rows.map((r) => (
-          <tr key={r.name}>
-            <td className="sticky-name">{r.name}</td>
-            <td className="no">{r.n}回</td>
-            <td className="no">
-              {r.meanDiff > 0 ? '+' : ''}
-              {r.meanDiff.toFixed(1)}点
-            </td>
-          </tr>
+          <Fragment key={r.name}>
+            <tr>
+              <td className="sticky-name">{r.name}</td>
+              <td className="no">
+                <RevealButton reveal={reveal} row={r.name} col="n" label={`${r.name}が採点したトップバッター`} count={r.n} unit="回">
+                  {r.n}回
+                </RevealButton>
+              </td>
+              <td className="no">
+                {r.meanDiff > 0 ? '+' : ''}
+                {r.meanDiff.toFixed(1)}点
+              </td>
+            </tr>
+            <RevealRow
+              reveal={reveal}
+              row={r.name}
+              colSpan={3}
+              content={() => ({ title: `${r.name}が採点したトップバッター`, items: fromRoster(roster, r.rows), unit: '回' })}
+            />
+          </Fragment>
         ))}
       </tbody>
     </HistoryTable>
@@ -568,13 +566,13 @@ export function JudgeFirstPerformerSection({ js }: { js: JudgesStats }) {
         トップバッターの組が本当に弱かった年もあります。
       </p>
       <h3 className="chart-small-title">{FIRST_PERFORMER_MIN}回以上</h3>
-      <FirstPerformerTable caption={`トップバッターへの採点(${FIRST_PERFORMER_MIN}回以上)`} rows={main} />
+      <FirstPerformerTable caption={`トップバッターへの採点(${FIRST_PERFORMER_MIN}回以上)`} rows={main} roster={js.roster} />
       {few.length > 0 && (
         <details className="note">
           <summary>
             <span className="note-label">{FIRST_PERFORMER_MIN - 1}回以下の{few.length}人(参考)</span>
           </summary>
-          <FirstPerformerTable caption={`トップバッターへの採点(${FIRST_PERFORMER_MIN - 1}回以下・参考)`} rows={few} />
+          <FirstPerformerTable caption={`トップバッターへの採点(${FIRST_PERFORMER_MIN - 1}回以下・参考)`} rows={few} roster={js.roster} />
         </details>
       )}
     </>

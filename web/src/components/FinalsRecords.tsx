@@ -5,6 +5,8 @@ import type { FinalsStats } from '../lib/types'
 import CombiLink from './CombiLink'
 import { RankTable } from './RankTable'
 import HistoryTable from './HistoryTable'
+import { fromRoster, useReveal } from '../lib/reveal'
+import { RevealBlock, RevealButton } from './RevealCount'
 import { finalsPath } from '../lib/paths'
 
 function percent(n: number, d: number): string {
@@ -15,6 +17,7 @@ const SHOWN = 15 // 各ランキングの表示件数(境界の同点はすべ�
 
 /** 記録・統計「決勝」タブの前半: コンビを順位付けする決勝の記録(finals_stats.json)。後半の傾向は FinalsTrends */
 export default function FinalsRecords({ fs }: { fs: FinalsStats }) {
+  const repeatReveal = useReveal()
   return (
     <>
       <div className="rank-grid">
@@ -53,8 +56,25 @@ export default function FinalsRecords({ fs }: { fs: FinalsStats }) {
           <p className="legend">
             「継続中」は最新の決勝({fs.finalStreaks.find((s) => s.ongoing)?.end ?? '—'}年)まで続いている組。
             前の大会の決勝進出者が次の大会でも決勝に来たのは、延べ{fs.repeatFinalists.pairs}組中
-            {fs.repeatFinalists.back}組({percent(fs.repeatFinalists.back, fs.repeatFinalists.pairs)})です。
+            <RevealButton
+              reveal={repeatReveal}
+              row="back"
+              col="back"
+              label="前の大会に続けて決勝"
+              count={fs.repeatFinalists.back}
+            >
+              {fs.repeatFinalists.back}組
+            </RevealButton>
+            ({percent(fs.repeatFinalists.back, fs.repeatFinalists.pairs)})です。
           </p>
+          <RevealBlock
+            reveal={repeatReveal}
+            row="back"
+            content={() => ({
+              title: '前の大会に続けて決勝に来た組(年は2回目以降の大会)',
+              items: fromRoster(fs.roster, fs.repeatFinalists.rows),
+            })}
+          />
         </section>
       </div>
       <p className="section-note">各ランキング上位{SHOWN}組(同点は全組表示)。</p>
@@ -147,31 +167,6 @@ export default function FinalsRecords({ fs }: { fs: FinalsStats }) {
           ))}
         </tbody>
       </HistoryTable>
-
-      <h3 className="section-title">初出場で決勝進出</h3>
-      <p className="section-note">
-        初エントリーの年にいきなり決勝へ進んだコンビ。第1回(2001年)は全組が初出場のため対象外。
-        ※印は2001〜2010に1回戦敗退などの記録が残らないため「記録に残る範囲での初出場」。
-      </p>
-      <HistoryTable caption="初出場で決勝進出">
-          <thead>
-            <tr>
-              <th scope="col">年</th>
-              <th scope="col" className="sticky-name">コンビ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {fs.debutFinalists.map((d) => (
-              <tr key={`${d.year}-${d.name}`}>
-                <td className="no">{d.year}</td>
-                <td className="sticky-name">
-                  <CombiLink id={d.combiId}>{d.name}</CombiLink>
-                  {d.recordedOnly && ' ※'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </HistoryTable>
 
       <h3 className="section-title">歴代スコアランキング(得点偏差値)</h3>
       <p className="section-note">
