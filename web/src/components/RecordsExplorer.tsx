@@ -27,8 +27,6 @@ interface TierRanking {
   id: number | null
   name: string
   count: number
-  /** 優勝タブのみ: 優勝年リスト */
-  years?: number[]
 }
 
 interface Tier {
@@ -36,7 +34,8 @@ interface Tier {
   label: string
   combiCount: number
   rows: TierRow[]
-  ranking: TierRanking[]
+  /** 到達回数ランキング。優勝タブには無い(優勝回数ランキングは出さない) */
+  ranking: TierRanking[] | null
   yearLabel: string
   spanLabel: string
   countLabel: string
@@ -50,23 +49,13 @@ function toChampionTier(champs: Champion[]): Tier {
     year: c.year,
     members: c.members,
   }))
-  const grouped = new Map<string | number, TierRanking>()
-  for (const c of champs) {
-    const key = c.id ?? c.name
-    const entry = grouped.get(key) ?? { id: c.id, name: c.name, count: 0, years: [] }
-    entry.count++
-    entry.years!.push(c.year)
-    grouped.set(key, entry)
-  }
-  const ranking = [...grouped.values()].sort(
-    (a, b) => b.count - a.count || a.name.localeCompare(b.name, 'ja'),
-  )
   return {
     key: 'champion',
     label: '優勝',
-    combiCount: ranking.length,
+    // 連覇は1組に数える
+    combiCount: new Set(champs.map((c) => c.id ?? c.name)).size,
     rows,
-    ranking,
+    ranking: null,
     yearLabel: '優勝年',
     spanLabel: '結成→優勝',
     countLabel: '優勝回数',
@@ -129,7 +118,7 @@ function buildPrefRows(tier: Tier, champs: Champion[]): PrefRow[] {
 
 /** 「歴代王者の記録」と「準々決勝以上の記録」を1つに統合した記録セクション。
  *  優勝(champions.json)/決勝/準決勝/準々決勝(advancers.json)のタブ切替で
- *  都道府県別マップ・結成年別・年齢別・回数ランキングを表示する。
+ *  都道府県別マップ・結成年別・年齢別と、到達タブでは到達回数ランキングを表示する。
  *  どちらのデータも無い環境では何も描画しない。 */
 export default function RecordsExplorer() {
   const champions = useChampions()
@@ -188,8 +177,8 @@ export default function RecordsExplorer() {
   const maxAge = ageAll.length ? ageAll[ageAll.length - 1].age : null
   const ageRows = sliceWithTies(ageAll, ROW_CAP, (r) => r.age)
 
-  // 回数ランキング(多い順)
-  const rankingRows = sliceWithTies(tier.ranking, ROW_CAP, (r) => r.count)
+  // 到達回数ランキング(多い順)。優勝タブには無い
+  const rankingRows = tier.ranking ? sliceWithTies(tier.ranking, ROW_CAP, (r) => r.count) : []
   const rankingRanks = competitionRanks(rankingRows, (r) => r.count)
 
   const combiCell = (id: number | null, name: string) =>
@@ -305,38 +294,35 @@ export default function RecordsExplorer() {
         {ageAll.length} 人のうち若い順に上位 {ageRows.length} 人を表示(同点は全員表示)
       </p>
 
-      <h3 className="section-title">{tier.countLabel}ランキング</h3>
-      <p className="section-note">
-        {isChampion
-          ? '優勝した回数(2001年からの全期間)。同点は全組表示'
-          : `${tier.label}に到達した年数(2001年からの全期間)。最高到達が${tier.label}の組のみ＝さらに上へ進んだ組は上位ラウンドで集計。同点は全組表示`}
-      </p>
-      <HistoryTable caption={`${tier.countLabel}ランキング`}>
-          <thead>
-            <tr>
-              <th scope="col">順位</th>
-              <th scope="col" className="sticky-name">コンビ</th>
-              <th scope="col">{tier.countLabel}</th>
-              {isChampion && <th scope="col">優勝年</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {rankingRows.map((r, i) => (
-              <tr key={r.id ?? r.name}>
-                <td className="no">{rankingRanks[i]}</td>
-                <td className="sticky-name">
-                  {combiCell(r.id, r.name)}
-                </td>
-                <td className="no total">{r.count}回</td>
-                {isChampion && <td className="no">{r.years?.join('・')}</td>}
+      {tier.ranking && (
+        <>
+          <h3 className="section-title">{tier.countLabel}ランキング</h3>
+          <p className="section-note">
+            {tier.label}に到達した年数(2001年からの全期間)。最高到達が{tier.label}の組のみ＝さらに上へ進んだ組は上位ラウンドで集計。同点は全組表示
+          </p>
+          <HistoryTable caption={`${tier.countLabel}ランキング`}>
+            <thead>
+              <tr>
+                <th scope="col">順位</th>
+                <th scope="col" className="sticky-name">コンビ</th>
+                <th scope="col">{tier.countLabel}</th>
               </tr>
-            ))}
-          </tbody>
-        </HistoryTable>
-      <p className="legend">
-        {isChampion ? `歴代王者 全${tier.combiCount}組` : `最高到達が${tier.label}のコンビ 全${tier.combiCount}組`}
-        のうち上位 {rankingRows.length} 組を表示
-      </p>
+            </thead>
+            <tbody>
+              {rankingRows.map((r, i) => (
+                <tr key={r.id ?? r.name}>
+                  <td className="no">{rankingRanks[i]}</td>
+                  <td className="sticky-name">{combiCell(r.id, r.name)}</td>
+                  <td className="no total">{r.count}回</td>
+                </tr>
+              ))}
+            </tbody>
+          </HistoryTable>
+          <p className="legend">
+            最高到達が{tier.label}のコンビ 全{tier.combiCount}組のうち上位 {rankingRows.length} 組を表示
+          </p>
+        </>
+      )}
     </>
   )
 }

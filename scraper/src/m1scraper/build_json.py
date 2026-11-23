@@ -211,8 +211,6 @@ def build_rankings(records: list[dict]) -> dict:
     names = {r["id"]: r["name"] for r in records}
     semifinal_fails: dict[int, int] = defaultdict(int)
     quarterfinal_up: dict[int, int] = defaultdict(int)
-    first_fails: dict[int, int] = defaultdict(int)
-    streaks = []
 
     for rec in records:
         for entry in rec["history"].values():
@@ -221,25 +219,10 @@ def build_rankings(records: list[dict]) -> dict:
                 semifinal_fails[rec["id"]] += 1
             if "quarterfinal" in res:
                 quarterfinal_up[rec["id"]] += 1
-            if res.get("first") in FAILED:
-                first_fails[rec["id"]] += 1
-        years = sorted(int(y) for y in rec["history"])
-        if years:
-            length, start, end = _longest_streak(years)
-            streaks.append(
-                {"id": rec["id"], "name": rec["name"], "value": length, "start": start, "end": end}
-            )
-
-    # 連続出場は最上位が「全大会皆勤」の大きな同値グループになる(2026年時点で87組)ため、
-    # 通算出場回数ランキングは上位が皆勤組と完全に一致してしまい独立の意味を持たない。
-    # 連続出場のみ出力し、フロントは皆勤グループを組数+全組リストで表示する。
-    streaks.sort(key=lambda r: (-r["value"], r["name"]))
 
     return {
         "mostSemifinalFails": top(semifinal_fails, names),
         "mostQuarterfinals": top(quarterfinal_up, names),
-        "mostFirstRoundFails": top(first_fails, names),
-        "longestStreaks": _top_with_ties(streaks, 30),
         "lastYearEntrants": _last_year_entrants(records),
     }
 
@@ -279,54 +262,6 @@ def _last_year_entrants(records: list[dict]) -> dict | None:
         )
     combis.sort(key=lambda c: (-(MAIN_ROUNDS.index(c["round"]) + 1 if c["round"] else 0), c["name"]))
     return {"year": latest, "limit": limit, "formed": formed_target, "combis": combis}
-
-
-# シード組と勝ち上がり組の比較で数える結果(出場予定・欠場・不明は数えない)
-_DECIDED = PASSING | {"fail", "fail_inferred"}
-SEED_SPLIT_ROUNDS = ("quarterfinal", "semifinal")
-
-
-def _seed_split(year_files: dict[int, dict]) -> dict:
-    """準々決勝・準決勝の通過率を「シード組」と「1回戦からの勝ち上がり組」に分ける(2015年以降)。
-
-    シード = その年の results.first が seed_pass(公式DBはシードの印を1回戦にしか付けない)。
-    シードは前年の実績で与えられるので、差は「実績のある組とそうでない組の差」であって
-    シードという制度の有利さではない(フロントで明記する)。その回戦に scheduled が1件でも残る年は
-    結果が出そろっていないので丸ごと外す(進行中のシーズンが途中まで混ざらないように)。
-    """
-    def bucket():
-        return {"appeared": 0, "passed": 0}
-
-    totals = {rk: {"seed": bucket(), "climbed": bucket()} for rk in SEED_SPLIT_ROUNDS}
-    by_year = []
-    for year, yf in sorted(year_files.items()):
-        if year < 2015:
-            continue
-        row: dict = {"year": year}
-        for rk in SEED_SPLIT_ROUNDS:
-            entries = [e for e in yf["entries"] if rk in e["results"]]
-            if not entries or any(e["results"][rk] == "scheduled" for e in entries):
-                continue
-            split = {"seed": bucket(), "climbed": bucket()}
-            for e in entries:
-                value = e["results"][rk]
-                if value not in _DECIDED:
-                    continue
-                side = "seed" if e["results"].get("first") == "seed_pass" else "climbed"
-                split[side]["appeared"] += 1
-                split[side]["passed"] += value in PASSING
-            row[rk] = split
-            for side in ("seed", "climbed"):
-                for k in ("appeared", "passed"):
-                    totals[rk][side][k] += split[side][k]
-        if len(row) > 1:
-            by_year.append(row)
-    return {
-        "fromYear": by_year[0]["year"] if by_year else None,
-        "toYear": by_year[-1]["year"] if by_year else None,
-        "rounds": [{"round": rk, **totals[rk]} for rk in SEED_SPLIT_ROUNDS],
-        "byYear": by_year,
-    }
 
 
 def _season_done(yf: dict) -> bool:
@@ -399,47 +334,6 @@ def _formation_reach(year_files: dict[int, dict]) -> dict:
     }
 
 
-def _next_year(year_files: dict[int, dict]) -> dict:
-    """前年の最高到達 → 翌年の最高到達 の組数(2015年以降・続けて開かれた終わった大会どうし)。
-
-    同じ id が両年とも出場した組だけ数える(出場の判定は _played_level)。翌年に出場しなかった組は
-    ラストイヤーで資格が切れた組も混ざるので表に入れず、件数だけ返す。2010→2015 の休止はまたがない。
-    """
-    done = {y: yf for y, yf in year_files.items() if y >= 2015 and _season_done(yf)}
-
-    def levels(yf: dict) -> dict[int, int]:
-        out = {}
-        for e in yf["entries"]:
-            if e.get("id") is None:
-                continue
-            lv = _played_level(e["results"])
-            if lv is not None:
-                out[e["id"]] = max(out.get(e["id"], 0), lv)
-        return out
-
-    by_year = {y: levels(yf) for y, yf in done.items()}
-    n = len(MAIN_ROUNDS)
-    table = {lv: [0] * n for lv in range(1, n + 1)}
-    not_next = 0
-    pairs = []
-    for y in sorted(by_year):
-        if y + 1 not in by_year:
-            continue
-        pairs.append(y)
-        nxt = by_year[y + 1]
-        for cid, lv in by_year[y].items():
-            if cid in nxt:
-                table[lv][nxt[cid] - 1] += 1
-            else:
-                not_next += 1
-    return {
-        "fromYear": pairs[0] if pairs else None,
-        "toYear": pairs[-1] + 1 if pairs else None,
-        "rows": [{"from": lv, "total": sum(to), "to": to} for lv, to in table.items() if sum(to)],
-        "notNextYear": not_next,
-    }
-
-
 def build_stats(year_files: dict[int, dict]) -> dict:
     by_year = []
     for year, yf in sorted(year_files.items()):
@@ -458,20 +352,13 @@ def build_stats(year_files: dict[int, dict]) -> dict:
             }
         )
     reach = _formation_reach(year_files)
-    nxt = _next_year(year_files)
     print(
         f"[build] 結成年数別の到達率: {reach['fromYear']}〜{reach['toYear']}年 "
         f"{sum(r['entries'] for r in reach['rows'])}件 / 除外 {reach['excluded']} / 進行中 {reach['excludedYears']}"
     )
-    print(
-        f"[build] 前年→翌年: {nxt['fromYear']}〜{nxt['toYear']}年 "
-        f"{sum(r['total'] for r in nxt['rows'])}組 / 翌年出場なし {nxt['notNextYear']}"
-    )
     return {
         "byYear": by_year,
-        "seedSplit": _seed_split(year_files),
         "formationReach": reach,
-        "nextYear": nxt,
     }
 
 
@@ -1137,36 +1024,6 @@ def build_finals_stats(
     # 無冠の帝王: 複数回決勝に進みながら優勝なし(1回のみの組は多すぎるので対象外)
     uncrowned = [s for s in fa_ranked if s["wins"] == 0 and s["value"] >= 2]
 
-    # --- B11: 初出場で決勝進出 ---
-    # 第1回(2001年)は全組が初出場のため対象外。records は merge_archive_history 後なので
-    # 2001〜2010の出場も(記録に残る範囲で)history に含まれる。1回戦敗退が記録に残らない
-    # 2001〜2010に出場しえた組(結成が2010年以前)は recordedOnly=true で注記する。
-    debut = []
-    for finals in finals_sorted:
-        year = finals["year"]
-        if year == 2001:  # 第1回は全組が初出場
-            continue
-        for row in finals.get("firstRound", []):
-            if row.get("finalAppearance") != 1:
-                continue
-            rec = by_id.get(row.get("combiId"))
-            if rec is None or not rec.get("history"):
-                continue
-            if min(int(y) for y in rec["history"]) != year:
-                continue
-            formed = rec.get("formed")
-            eligible_from = formed if formed is not None else 2001
-            # 出場しえた過去大会(結成年以降)に記録不完全な2001〜2010が含まれるか
-            recorded_only = max(eligible_from, 2001) <= min(2010, year - 1)
-            debut.append(
-                {
-                    "year": year,
-                    "name": row["name"],
-                    "combiId": row.get("combiId"),
-                    "recordedOnly": recorded_only,
-                }
-            )
-
     # --- B7: 事務所別 延べ決勝進出(belongの現行表記で集計) ---
     agency: dict[str, dict] = defaultdict(lambda: {"value": 0, "ids": set()})
     agency_excluded = 0
@@ -1447,7 +1304,6 @@ def build_finals_stats(
             "revival": revival_bucket,
             "straight": straight_bucket,
         },
-        "debutFinalists": debut,
         "firstRoundMargins": margins,
         "nameLengthStats": name_length_rows,
         "agencyFinals": agency_rows,
@@ -1531,8 +1387,7 @@ def build_people_stats(
 ) -> dict:
     """人物・キャリア統計(data/people_stats.json)を集計する。
 
-    年齢は公式コンビDBの生年月日(自己申告・和式表記)から。出場時年齢は
-    「エントリー年 − 生年」(年末時点の満年齢と同義の近似)、決勝・優勝時は
+    年齢は公式コンビDBの生年月日(自己申告・和式表記)から。決勝・優勝時の年齢は
     overrides/finals_dates.json の開催日基準で誕生日込みの厳密な満年齢。
     10〜90歳のサニティ範囲外(冗談登録など)は除外し ageExcluded で件数を報告。
     最年少/最年長は人物単位で極値1件に集約(同一人物が複数年で並ばないように)。
@@ -1553,35 +1408,6 @@ def build_people_stats(
         cur = store.get(key)
         if cur is None or (row["age"] < cur["age"] if smaller else row["age"] > cur["age"]):
             store[key] = row
-
-    # --- 出場時の最年少/最年長(人物の極値は初出場年と最終出場年だけ見れば十分) ---
-    app_min: dict = {}
-    app_max: dict = {}
-    for rec in records:
-        years = sorted(int(y) for y in rec.get("history", {}))
-        if not years:
-            continue
-        for m in rec.get("members", []):
-            b = _parse_birth(m.get("birth"))
-            if b is None:
-                continue
-            key = (m.get("name"), m.get("birth"))
-            for year, store, smaller in ((years[0], app_min, True), (years[-1], app_max, False)):
-                age = year - b[0]
-                if not sane(age, (key, year)):
-                    continue
-                keep(
-                    store,
-                    key,
-                    {
-                        "age": age,
-                        "member": m.get("name"),
-                        "combi": rec["name"],
-                        "combiId": rec["id"],
-                        "year": year,
-                    },
-                    smaller,
-                )
 
     # --- 決勝進出時・優勝時の最年少/最年長(開催日基準の厳密な満年齢) ---
     fin_min: dict = {}
@@ -1734,7 +1560,6 @@ def build_people_stats(
 
     return {
         "ageRecords": {
-            "appearance": {"youngest": _tops(app_min, True), "oldest": _tops(app_max, False)},
             "final": {"youngest": _tops(fin_min, True), "oldest": _tops(fin_max, False)},
             "champion": {"youngest": _tops(ch_min, True), "oldest": _tops(ch_max, False)},
         },
@@ -1802,7 +1627,6 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
     loo_rows: list[dict] = []
     loo_skipped: list[int] = []
     split_rows: list[dict] = []
-    vote_years: list[dict] = []
     first_perf: dict[str, list[float]] = defaultdict(list)
 
     for finals in sorted(all_finals, key=lambda f: f["year"]):
@@ -1912,47 +1736,7 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
         if opener is not None:
             for i, canon in full_cols:
                 first_perf[canon].append(opener["scores"][i] - col_stats[i][0])
-        # --- F: 最終決戦の票は、投票した審査員の1本目の採点どおりか ---
         final_round = finals.get("finalRound", [])
-        if final_round and all("voters" in r for r in final_round):
-            advanced_rows = []
-            for fr in final_round:
-                match = _finalist_matcher([fr])
-                hit = next((r for r in first_rows if match(r)), None)
-                if hit is None:
-                    problems.append(f"{year}: 最終決戦の {fr['name']} が1本目の表に見つからない(票の照合から外す)")
-                    break
-                advanced_rows.append((fr, hit))
-            else:
-                judges_raw = finals.get("judges", [])
-                n_final = len(final_round)
-                tally = {"same": 0, "tie": 0, "switched": 0}
-                for fr, _ in advanced_rows:
-                    for v in fr["voters"]:
-                        if v not in judges_raw:
-                            problems.append(f"{year}: 投票者 {v} が審査員の表に無い(票の照合から外す)")
-                            continue
-                        j = judges_raw.index(v)
-                        scores = [(hit["scores"][j], other is fr) for other, hit in advanced_rows]
-                        top = max(sc for sc, _ in scores)
-                        tops = [mine for sc, mine in scores if sc == top]
-                        if len(tops) > 1:
-                            tally["tie"] += 1
-                        elif tops[0]:
-                            tally["same"] += 1
-                        else:
-                            tally["switched"] += 1
-                decided = tally["same"] + tally["switched"]
-                vote_years.append(
-                    {
-                        "year": year,
-                        "n": n_final,
-                        "votes": sum(tally.values()),
-                        **tally,
-                        # 1本目を見ずに最終決戦のN組から選んだ場合の「乗り換え」の期待値(1位が単独の票だけ)
-                        "expectedSwitch": round(decided * (n_final - 1) / n_final, 2),
-                    }
-                )
         if year_judges:
             by_year_rows.append(
                 {
@@ -2007,8 +1791,6 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
     lowest = sorted(single_scores, key=lambda s: (s["score"], s["year"], s["judge"]))
     split_hi = sorted(split_rows, key=lambda r: (-r["spread"], r["year"], r["name"]))
     split_lo = sorted(split_rows, key=lambda r: (r["spread"], r["year"], r["name"]))
-    vote_total = {k: sum(r[k] for r in vote_years) for k in ("votes", "same", "tie", "switched")}
-    vote_total["expectedSwitch"] = round(sum(r["expectedSwitch"] for r in vote_years), 2)
     # 全員を載せる(回数の少ない人は1組の出来で決まるので、フロントは5回以上とそれ以外で表を分ける)。
     # 並びは回数の多い順 → 平均との差の順
     first_perf_rows = sorted(
@@ -2024,10 +1806,6 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
         f"[build] 審査員を1人外す: {len(loo_rows)}大会 / 顔ぶれが変わる {len(flip_years)}大会 {flip_years} "
         f"/ 同点 {tie_cols}列 / 外した年 {loo_skipped}"
     )
-    print(
-        f"[build] 最終決戦の票: {vote_total['votes']}票 / 1本目どおり {vote_total['same']} "
-        f"/ 同点 {vote_total['tie']} / 乗り換え {vote_total['switched']}(目安 {vote_total['expectedSwitch']})"
-    )
     return {
         "career": career_rows,
         "byYear": by_year_rows,
@@ -2042,7 +1820,6 @@ def build_judges_stats(all_finals: list[dict], judges_ov: dict | None = None) ->
             "highest": _top_with_ties(split_hi, 10, key=lambda r: r["spread"]),
             "lowest": _top_with_ties(split_lo, 5, key=lambda r: r["spread"]),
         },
-        "voteConsistency": {"years": vote_years, "total": vote_total},
         "firstPerformer": first_perf_rows,
         # 5件+境界の同点。10件にすると98点の組が20件並んで読めなくなる
         "scoreExtremes": {

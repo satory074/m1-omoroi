@@ -12,30 +12,18 @@ import {
 
 import { Link } from 'react-router-dom'
 
-import { BEST_ROUND_KEYS, ROUND_LABEL, ROUND_ORDER } from '../lib/rounds'
+import { ROUND_LABEL, ROUND_ORDER } from '../lib/rounds'
 import { useTokens } from '../lib/tokens'
-import type { FormationReach, NextYear, PassCount, SeedSplit, Stats, YearStats } from '../lib/types'
+import type { FormationReach, PassCount, Stats } from '../lib/types'
 import { hiatusArea, yearsWithHiatus } from './chartHiatus'
 import HistoryTable from './HistoryTable'
 import { yearPath } from '../lib/paths'
 
-// 回戦の色。dataviz スキルの検証スクリプトで確認済み(色覚の違いでの区別 ΔE 19.3 以上・白地で 3:1 以上)。
-// 以前の橙(#d99f23)は白地で 2.35:1 しかなかった。色は CSS のトークンから読む(styles/tokens/theme.css)
-const SERIES = [
-  { key: 'first', label: '1回戦', token: '--c-chart-1' },
-  { key: 'second', label: '2回戦', token: '--c-chart-2' },
-  { key: 'third', label: '3回戦', token: '--c-chart-3' },
-] as const
+// 線・棒の色は CSS のトークンから読む(styles/tokens/theme.css)。dataviz スキルの検証スクリプトで確認済み
+// (色覚の違いでの区別 ΔE 19.3 以上・白地で 3:1 以上)
 const TOKENS = ['--c-chart-1', '--c-chart-2', '--c-chart-3', '--c-chart-grid', '--c-chart-axis', '--c-bg', '--c-border', '--c-surface-2'] as const
 
-function passRate(y: YearStats, rk: (typeof SERIES)[number]['key']): number | null {
-  const r = y.byRound[rk]
-  // 合格者しか記録が残っていない年(通過=出場)は通過率を計算できない
-  if (!r || r.appeared <= r.passed) return null
-  return Math.round((r.passed / r.appeared) * 1000) / 10
-}
-
-/** 記録・統計「大会」タブ: エントリー数・通過率の推移と年度別の出場/通過数(stats.json) */
+/** 記録・統計「大会」タブ: エントリー数の推移・年度別の出場/通過数・結成年数別の勝ち上がり率(stats.json) */
 export default function TournamentStats({ data }: { data: Stats }) {
   const t = useTokens(TOKENS)
   const tick = { fontSize: 12, fill: t['--c-chart-axis'] }
@@ -52,32 +40,6 @@ export default function TournamentStats({ data }: { data: Stats }) {
   const years = yearsWithHiatus(byYear.map((y) => y.year))
   const yearOf = new Map(byYear.map((y) => [y.year, y]))
   const entriesData = years.map((yr) => ({ year: String(yr), entries: yearOf.get(yr)?.entries ?? null }))
-  const rateData = years.map((yr) => {
-    const y = yearOf.get(yr)
-    return {
-      year: String(yr),
-      first: y ? passRate(y, 'first') : null,
-      second: y ? passRate(y, 'second') : null,
-      third: y ? passRate(y, 'third') : null,
-    }
-  })
-  const rateRows = byYear.filter((y) => SERIES.some((s) => passRate(y, s.key) != null)).reverse()
-
-  const lastIndex = (key: (typeof SERIES)[number]['key']) => {
-    for (let i = rateData.length - 1; i >= 0; i--) if (rateData[i][key] != null) return i
-    return -1
-  }
-  // 線の終わりに回戦名を直接書く(凡例と色だけに頼らない)。文字は文字色、線の色は横の短い線で示す
-  const endLabel =
-    (name: string, targetIndex: number) =>
-    (props: { x?: number | string; y?: number | string; index?: number }) => {
-      if (props.index !== targetIndex || props.x == null || props.y == null) return <g />
-      return (
-        <text x={Number(props.x) + 8} y={Number(props.y) + 4} fill={t['--c-chart-axis']} fontSize={12} fontWeight={700}>
-          {name}
-        </text>
-      )
-    }
   const hiatus = hiatusArea(t['--c-surface-2'], t['--c-chart-axis'])
 
   return (
@@ -109,77 +71,6 @@ export default function TournamentStats({ data }: { data: Stats }) {
         </div>
       </section>
 
-      <section className="chart-card">
-        <h2 className="section-title">回戦別 通過率の推移</h2>
-        <ul className="chart-legend" aria-label="線の色">
-          {SERIES.map((s) => (
-            <li key={s.key}>
-              <i style={{ background: `var(${s.token})` }} aria-hidden="true" />
-              {s.label}
-            </li>
-          ))}
-        </ul>
-        <div role="img" aria-label="回戦別の通過率の推移の折れ線グラフ。数値は下の「表で見る」にあります">
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={rateData} margin={{ top: 8, right: 64, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke={t['--c-chart-grid']} vertical={false} />
-              {hiatus}
-              <XAxis dataKey="year" tick={tick} tickLine={false} axisLine={{ stroke: t['--c-chart-grid'] }} interval={2} />
-              <YAxis tick={tick} tickLine={false} axisLine={false} width={44} unit="%" />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                formatter={(v, name) => [`${v}%`, SERIES.find((s) => s.key === name)?.label ?? name]}
-              />
-              {SERIES.map((s) => (
-                <Line
-                  key={s.key}
-                  dataKey={s.key}
-                  stroke={t[s.token]}
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                  // 休止の年は線をつながない(つなぐと、開かれていない年にも値があるように見える)
-                  connectNulls={false}
-                  label={endLabel(s.label, lastIndex(s.key))}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-        <p className="legend">通過率 = 通過数 ÷ 出場数。合格者しか記録がない年は除きます。</p>
-        <details className="note">
-          <summary>
-            <span className="note-label">表で見る</span>
-          </summary>
-          <HistoryTable caption="回戦別の通過率(%)">
-            <thead>
-              <tr>
-                <th scope="col">年</th>
-                {SERIES.map((s) => (
-                  <th key={s.key} scope="col" className="num">
-                    {s.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rateRows.map((y) => (
-                <tr key={y.year}>
-                  <td className="year">{y.year}</td>
-                  {SERIES.map((s) => {
-                    const r = passRate(y, s.key)
-                    return (
-                      <td key={s.key} className="no">
-                        {r != null ? `${r.toFixed(1)}%` : '—'}
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </HistoryTable>
-        </details>
-      </section>
       <h2 className="section-title">年度別の出場・通過数</h2>
       <HistoryTable caption="年度別の出場・通過数" className="stats-table">
           <thead>
@@ -214,9 +105,7 @@ export default function TournamentStats({ data }: { data: Stats }) {
         </HistoryTable>
       <p className="legend">各セルは「通過数/出場数」</p>
 
-      <SeedSplitSection split={data.seedSplit} />
       <FormationReachSection reach={data.formationReach} />
-      <NextYearSection next={data.nextYear} />
     </>
   )
 }
@@ -233,82 +122,7 @@ function countCell(c: PassCount, key?: string) {
   )
 }
 
-/**
- * 準々決勝・準決勝の通過率を、シード組(その年の1回戦が免除=シード通過)と1回戦からの勝ち上がり組に分けて比べる。
- * シードは前年の実績で与えられるので、差は「実績のある組とそうでない組の差」で、シードという制度の有利さではない。
- */
-function SeedSplitSection({ split }: { split: SeedSplit }) {
-  if (!split.fromYear) return null
-  const span = `${split.fromYear}〜${split.toYear}年`
-  return (
-    <>
-      <h2 className="section-title">シード組と勝ち上がり組の通過率</h2>
-      <p className="section-note">
-        準々決勝・準決勝を、1回戦を免除された組(シード)と1回戦から勝ち上がった組に分けて、通過した割合を比べたものです({span}の合計)。
-        シードは前の年の成績に応じて与えられるので、この差は「実績のある組とそうでない組の差」です。シードだから有利、という意味ではありません。
-        結果が出そろっていない年は含めません。
-      </p>
-      <HistoryTable caption={`シード組と勝ち上がり組の通過率(${span})`}>
-        <thead>
-          <tr>
-            <th scope="col">回戦</th>
-            <th scope="col">シード組</th>
-            <th scope="col">1回戦から</th>
-          </tr>
-        </thead>
-        <tbody>
-          {split.rounds.map((r) => (
-            <tr key={r.round}>
-              <td>{ROUND_LABEL[r.round]}</td>
-              {countCell(r.seed)}
-              {countCell(r.climbed)}
-            </tr>
-          ))}
-        </tbody>
-      </HistoryTable>
-      <p className="legend">通過率(通過数/出場数)。欠場・出場予定は数えません。</p>
-      <details className="note">
-        <summary>
-          <span className="note-label">年ごとに見る</span>
-        </summary>
-        <HistoryTable caption="シード組と勝ち上がり組の通過率(年ごと)">
-          <thead>
-            <tr>
-              <th scope="col">年</th>
-              {split.rounds.map((r) => (
-                <th key={`${r.round}-s`} scope="col">
-                  {ROUND_LABEL[r.round]} シード
-                </th>
-              ))}
-              {split.rounds.map((r) => (
-                <th key={`${r.round}-c`} scope="col">
-                  {ROUND_LABEL[r.round]} 1回戦から
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[...split.byYear].reverse().map((y) => (
-              <tr key={y.year}>
-                <td className="year">{y.year}</td>
-                {split.rounds.map((r) => {
-                  const c = y[r.round]
-                  return c ? countCell(c.seed, `${r.round}-s`) : <td key={`${r.round}-s`} className="no">—</td>
-                })}
-                {split.rounds.map((r) => {
-                  const c = y[r.round]
-                  return c ? countCell(c.climbed, `${r.round}-c`) : <td key={`${r.round}-c`} className="no">—</td>
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </HistoryTable>
-      </details>
-    </>
-  )
-}
-
-// 結成年数別の到達率の線。3回戦は上の「回戦別 通過率の推移」の3回戦と同じ色にそろえる
+// 結成年数別の到達率の線
 const REACH_SERIES = [
   { key: 'third', label: '3回戦以降', short: '3回戦', token: '--c-chart-3' },
   { key: 'quarterfinal', label: '準々決勝以降', short: '準々決勝', token: '--c-chart-2' },
@@ -431,65 +245,5 @@ function FormationReachSection({ reach }: { reach: FormationReach }) {
         </HistoryTable>
       </details>
     </section>
-  )
-}
-
-/** 前年の最高到達 → 翌年の最高到達(両年とも出場した組)。比べる目安として全体の行を足す */
-function NextYearSection({ next }: { next: NextYear }) {
-  if (!next.fromYear || next.rows.length === 0) return null
-  const cols = BEST_ROUND_KEYS
-  const all = {
-    from: 0,
-    total: next.rows.reduce((sum, r) => sum + r.total, 0),
-    to: cols.map((_, i) => next.rows.reduce((sum, r) => sum + r.to[i], 0)),
-  }
-  const cell = (n: number, d: number, key: string) => (
-    <td key={key} className="no">
-      {d ? `${Math.round((n / d) * 100)}%` : '—'} <small>({n.toLocaleString('ja-JP')})</small>
-    </td>
-  )
-  return (
-    <>
-      <h2 className="section-title">前年の成績から見た翌年</h2>
-      <p className="section-note">
-        前の年にどこまで進んだか(行)と、次の年にどこまで進んだか(列)。割合は、その行の組のうち次の年にその回戦まで進んだ組の割合です
-        ({next.fromYear}〜{next.toYear}年の、続けて開かれた大会どうし。延べ{all.total.toLocaleString('ja-JP')}組)。
-        比べる目安として、前の年の成績を問わない「全体」の行も載せます。
-      </p>
-      <HistoryTable caption={`前年の最高到達と翌年の最高到達(${next.fromYear}〜${next.toYear}年)`}>
-        <thead>
-          <tr>
-            <th scope="col" className="sticky-name">
-              前年
-            </th>
-            <th scope="col">組数</th>
-            {cols.map((rk) => (
-              <th key={rk} scope="col">
-                翌年 {ROUND_LABEL[rk]}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {next.rows.map((r) => (
-            <tr key={r.from}>
-              <td className="sticky-name">{ROUND_LABEL[cols[r.from - 1]]}</td>
-              <td className="no">{r.total.toLocaleString('ja-JP')}</td>
-              {r.to.map((n, i) => cell(n, r.total, cols[i]))}
-            </tr>
-          ))}
-          <tr>
-            <td className="sticky-name">全体</td>
-            <td className="no">{all.total.toLocaleString('ja-JP')}</td>
-            {all.to.map((n, i) => cell(n, all.total, cols[i]))}
-          </tr>
-        </tbody>
-      </HistoryTable>
-      <p className="legend">
-        両年とも出場した組だけを数えます(次の年に出場しなかった{next.notNextYear.toLocaleString('ja-JP')}組は除く。ラストイヤーで資格が切れた組も含まれます)。
-        前の年の成績に応じて1回戦・2回戦が免除される(シード)ので、前の年に勝ち上がった組が次の年に1回戦で止まることはほとんどありません。
-        休止の2010年→2015年はまたぎません。
-      </p>
-    </>
   )
 }

@@ -42,7 +42,6 @@ function ReachTable({ rows, caption }: { rows: ReachRow[]; caption: string }) {
 /** キャリア・人物の記録(最年少最年長・年齢差・アマチュア・職業別・トリオ) */
 export default function CareerRecords({ ps }: { ps: PeopleStats }) {
   const ageGroups = [
-    { key: 'appearance', title: '出場' },
     { key: 'final', title: '決勝進出' },
     { key: 'champion', title: '優勝' },
   ] as const
@@ -50,8 +49,7 @@ export default function CareerRecords({ ps }: { ps: PeopleStats }) {
     <>
       <h3 className="section-title">最年少・最年長の記録</h3>
       <p className="section-note">
-        公式コンビ情報の生年月日(自己申告)から算出。出場は「大会年 −
-        生年」の近似(年末時点の満年齢)、決勝進出・優勝は決勝開催日時点の満年齢。同一人物は極値1件に集約、上位10+同点。
+        公式コンビ情報の生年月日(自己申告)から算出。決勝開催日時点の満年齢。同一人物は極値1件に集約、上位10+同点。
         {ps.ageExcluded > 0 && ` 明らかに不自然な年齢の${ps.ageExcluded}名は除外。`}
         生年月日が未登録のメンバー(2001〜2010の多く)は対象外。
       </p>

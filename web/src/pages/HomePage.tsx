@@ -22,12 +22,11 @@ function stepsOf(stats: YearStats | undefined) {
 }
 
 const STATS_LINKS = [
-  { to: statsPath(), name: '大会', desc: 'エントリー数と、回戦ごとの通過率の推移' },
-  { to: statsPath('combi'), name: 'コンビ', desc: '準々決勝の最多進出、連続出場などの通算記録' },
+  { to: statsPath(), name: '大会', desc: 'エントリー数の推移と、結成年数別の勝ち上がり率' },
+  { to: statsPath('combi'), name: 'コンビ', desc: '準々決勝・準決勝の最多進出などの通算記録' },
   { to: statsPath('finals'), name: '決勝', desc: '最多進出・出番順の有利不利・得点偏差値' },
   { to: statsPath('judges'), name: '審査員', desc: '辛口・甘口と、年ごとの採点の傾向' },
   { to: statsPath('people'), name: '人物', desc: '最年少・最年長の記録と出身地の地図' },
-  { to: statsPath('popularity'), name: '注目度', desc: 'YouTube の再生数で見る人気ランキング' },
 ] as const
 
 /** データ更新日を日本時間で。getDate() などは実行環境の時刻帯で変わり、事前描画(CI は UTC)と
