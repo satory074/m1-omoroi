@@ -10,6 +10,7 @@ import type {
   FinalsStats,
   JudgesStats,
   MetaFile,
+  TverLikes,
   OfficialVideos,
   PeopleStats,
   Popularity,
@@ -103,6 +104,16 @@ export function usePopularity(enabled = true) {
     queryKey: ['popularity'],
     queryFn: () => fetchJsonOrNull<Popularity>('popularity.json'),
     enabled,
+    ...STATIC,
+  })
+}
+
+/** TVer の準々決勝敗退組の動画のいいね数(数KB)。投票期間中は CI が毎時作り直す。
+ *  ファイルが無いときは null で、年度ページの並べ替えに「TVer いいね順」を出さないだけになる */
+export function useTverLikes() {
+  return useQuery({
+    queryKey: ['tver-likes'],
+    queryFn: () => fetchJsonOrNull<TverLikes>('tver_likes.json'),
     ...STATIC,
   })
 }

@@ -2344,6 +2344,18 @@ def build():
         for rk, venues in round_files.items():
             _write(DATA_DIR / "schedule" / f"{rk}.json", venues)
 
+    # TVer の準々決勝敗退組の動画のいいね数(ワイルドカード争いの参考値。投票数ではない)。
+    # work は update-tver-likes.yml が投票期間中に毎時足していく履歴(tver_likes.py)
+    tv_path = WORK_DIR / "tver_likes.json"
+    if tv_path.exists():
+        from .tver_likes import build_tver_likes
+        from .tver_likes import print_report as print_tver_report
+
+        tver, tv_report = build_tver_likes(json.loads(tv_path.read_text(encoding="utf-8")), year_files)
+        print_tver_report(tv_report)
+        if tver is not None:
+            _write(DATA_DIR / "tver_likes.json", tver)
+
     finals_dir = WORK_DIR / "finals"
     finals_years = []
     all_finals = []

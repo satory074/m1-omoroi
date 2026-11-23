@@ -10,7 +10,7 @@ on:
   # 自動更新ワークフローは github-actions[bot](GITHUB_TOKEN)で push するため
   # push イベントでは deploy が発火しない(GitHubの再帰防止)。完了を購読して補う
   workflow_run:
-    workflows: ["Update popularity", "Update season data"]
+    workflows: ["Update popularity", "Update season data", "Update TVer likes"]
     types: [completed]
   workflow_dispatch:
 

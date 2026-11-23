@@ -1,0 +1,56 @@
+# TVer の準々決勝敗退組の動画の「いいね」数(ワイルドカード争いの参考値。審査は LINE 投票で、この数は投票数ではない)。
+# 投票期間中だけ毎時取り、締切後に1回取って最終値にする(期間は scraper/overrides/tver_likes.json。
+# 期間の外・最終値の取得後はスクリプトが何もせずに終わる)。
+# data/ へのコミットで deploy.yml が発火し(workflow_run)、サイトにも自動反映される。
+# 1回に TVer へ103件(シリーズのページ1件 + 各組の動画)を1秒に1件以下で取る。
+# **毎年、下の cron の日付をその年の投票期間(UTC)に合わせること**(期間の外の実行でも deploy が1回走るため絞っている)。
+# TVer や事務局から連絡があればこのワークフローを無効化し、data/tver_likes.json を消す。
+name: Update TVer likes
+
+on:
+  schedule:
+    # 2026年: 投票 11/22 12:00〜11/29 23:59 JST = 11/22 03:00〜11/29 14:59 UTC。11/30 は締切後の最終値の取得(と再試行)
+    # 毎時0分は GitHub の予定実行が混んで大きく遅れるので半端な分にする
+    - cron: '17 * 22-30 11 *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-tver-likes
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Fetch TVer likes
+        working-directory: scraper
+        run: |
+          uv sync
+          uv run m1 fetch-tver-likes
+          # 期間の外・最終値の取得後は work が変わらないので、build もコミットもしない
+          if [ -z "$(git status --porcelain -- work/tver_likes.json)" ]; then
+            echo "TVer の取得なし"
+            exit 0
+          fi
+          uv run m1 build
+      - name: Commit data changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scraper/work/tver_likes.json data/tver_likes.json 2>/dev/null || true
+          # build は data/ の他のファイルも作り直すが、ここで反映するのは TVer の分だけ。
+          # 未stageの再生成物が残ると後続の git pull --rebase が失敗するため破棄する
+          git checkout -- .
+          if git diff --cached --quiet; then
+            echo "変更なし"
+          else
+            git commit -m "TVer いいね数 自動更新 ($(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'))"
+            git pull --rebase origin main
+            git push
+          fi
