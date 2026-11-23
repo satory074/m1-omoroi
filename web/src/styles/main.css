@@ -18,6 +18,7 @@
 @import './components/scrollnav.css' layer(components);
 @import './components/table.css' layer(components);
 @import './components/history.css' layer(components);
+@import './components/reveal.css' layer(components);
 @import './components/search.css' layer(components);
 @import './components/youtube.css' layer(components);
 @import './components/likes.css' layer(components);

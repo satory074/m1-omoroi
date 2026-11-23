@@ -68,6 +68,11 @@ def _stats(all_finals, records=None, champions=None):
     return build_finals_stats(all_finals, records or [], champions or {"champions": []})
 
 
+def _names(s, rows):
+    """roster の添字 → (年, 名前)。押すと出る名前の一覧が、数えた組そのものかを見る"""
+    return [(s["roster"][i]["year"], s["roster"][i]["name"]) for i in rows]
+
+
 def test_order_stats_denominator_skips_unknown_order_years():
     y1 = _finals(
         2005,
@@ -93,6 +98,11 @@ def test_order_stats_denominator_skips_unknown_order_years():
     ]
     assert s["firstRoundOrderStats"][0]["winners"] == [{"year": 2020, "name": "C", "combiId": 3}]
     assert [(r["order"], r["appearances"], r["wins"]) for r in s["finalOrderStats"]] == [(1, 1, 1)]
+    # 名前の一覧は数えた行そのもの(出番の分からない2005年の A・B は入らない)
+    one, two = s["firstRoundOrderStats"]
+    assert _names(s, one["rows"]) == _names(s, one["finalRoundRows"]) == [(2020, "C")]
+    assert _names(s, two["rows"]) == [(2020, "D")] and two["finalRoundRows"] == []
+    assert _names(s, s["finalOrderStats"][0]["rows"]) == [(2020, "C")]
 
 
 def test_champion_first_round_rank_distribution():
@@ -248,8 +258,14 @@ def test_revival_stats_split_and_winners():
     s = _stats([y2001, y2007])
     rs = s["revivalStats"]
     assert rs["sinceYear"] == 2002
-    assert rs["revival"] == {"appearances": 1, "finalists": 1, "wins": 1}
-    assert rs["straight"] == {"appearances": 2, "finalists": 1, "wins": 0}
+    counts = lambda b: {k: b[k] for k in ("appearances", "finalists", "wins")}
+    assert counts(rs["revival"]) == {"appearances": 1, "finalists": 1, "wins": 1}
+    assert counts(rs["straight"]) == {"appearances": 2, "finalists": 1, "wins": 0}
+    # 名前の一覧: 制度前の2001年は入らない
+    rv, st = rs["revival"], rs["straight"]
+    assert _names(s, rv["rows"]) == _names(s, rv["finalRoundRows"]) == _names(s, rv["winRows"]) == [(2007, "サンド")]
+    assert _names(s, st["rows"]) == [(2007, "トータル"), (2007, "キング")]
+    assert _names(s, st["finalRoundRows"]) == [(2007, "トータル")] and st["winRows"] == []
     assert rs["winners"] == [{"year": 2007, "name": "サンド", "combiId": 2}]
 
 
@@ -285,8 +301,14 @@ def test_name_length_stats():
     ]
     s = _stats([y], records)
     rows = {r["length"]: r for r in s["nameLengthStats"]}
-    assert rows[2] == {"length": 2, "entrants": 2, "finalists": 1, "champions": 1}
-    assert rows[5] == {"length": 5, "entrants": 2, "finalists": 1, "champions": 0}
+    assert rows[2] == {
+        "length": 2, "entrants": 2, "finalists": 1, "champions": 1,
+        "finalCombis": [{"name": "和牛", "combiId": 1}], "championCombis": [{"name": "和牛", "combiId": 1}],
+    }
+    assert rows[5] == {
+        "length": 5, "entrants": 2, "finalists": 1, "champions": 0,
+        "finalCombis": [{"name": "オズワルド", "combiId": 2}], "championCombis": [],
+    }
 
 
 def test_agency_normalization_and_excluded_count():
@@ -307,7 +329,10 @@ def test_agency_normalization_and_excluded_count():
     ]
     s = _stats([y], records)
     rows = {r["agency"]: r for r in s["agencyFinals"]}
-    assert rows["吉本興業"] == {"agency": "吉本興業", "value": 2, "combis": 2}
+    assert rows["吉本興業"] == {
+        "agency": "吉本興業", "value": 2, "combis": 2,
+        "names": [{"name": "A", "combiId": 1, "n": 1}, {"name": "B", "combiId": 2, "n": 1}],
+    }
     assert rows["アマチュア"]["value"] == 1
     assert s["agencyFinalsExcluded"] == 1
 
@@ -333,12 +358,13 @@ def test_formation_years_spans_and_unknown():
     champions = {"champions": [{"year": 2018, "name": "霜降り明星", "formed": 2013, "id": 9}]}
     s = _stats([], records, champions)
     f = s["formationYears"]
-    assert f["final"] == [{"years": 10, "count": 1}]
+    # 決勝の得点表がまだ無い年の決勝進出も、名簿に足して名前を出す
+    assert [(r["years"], r["count"], _names(s, r["rows"])) for r in f["final"]] == [(10, 1, [(2020, "A")])]
     assert f["semifinal"] == [{"years": 5, "count": 1}, {"years": 10, "count": 1}]
     assert f["quarterfinal"] == [{"years": 5, "count": 1}, {"years": 10, "count": 1}]
     assert f["unknownFormed"] == {"quarterfinal": 0, "semifinal": 1, "final": 0}
     assert f["champion"] == [
-        {"years": 5, "count": 1, "combis": [{"year": 2018, "name": "霜降り明星"}]}
+        {"years": 5, "count": 1, "combis": [{"year": 2018, "name": "霜降り明星", "combiId": 9}]}
     ]
 
 

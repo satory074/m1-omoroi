@@ -1,9 +1,76 @@
+import { Fragment } from 'react'
+import { Link } from 'react-router-dom'
 
+import { yearPath } from '../lib/paths'
 import { ROUND_LABEL } from '../lib/rounds'
-import type { AgeRecordRow, PeopleStats, ReachRow } from '../lib/types'
+import type { AgeRecordRow, JobStat, PeopleStats, ReachRow } from '../lib/types'
 import { RankTable } from './RankTable'
 import HistoryTable from './HistoryTable'
 import CombiLink from './CombiLink'
+import { useReveal } from '../lib/reveal'
+import { RevealButton, RevealRow } from './RevealCount'
+
+/** 職業別の表で、名前を最初に並べる組数(残りは「ほかN組」を押すと開く) */
+const JOB_SHOWN = 10
+
+/** 職業別の最高到達。年は、その組が最高到達の回戦に進んだ年度一覧のその組の行へ */
+function JobsTable({ jobs }: { jobs: JobStat[] }) {
+  const reveal = useReveal()
+  const yearTo = (j: JobStat, id: number | null, year: number) =>
+    yearPath(year, `?round=${j.bestRound}${id != null ? `&focus=${id}` : ''}`)
+  return (
+    <HistoryTable caption="職業別の最高到達">
+      <thead>
+        <tr>
+          <th scope="col">職業</th>
+          <th scope="col">最高到達</th>
+          <th scope="col">組数</th>
+          <th scope="col">コンビ(到達年)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {jobs.map((j) => {
+          const rest = j.combis.slice(JOB_SHOWN)
+          return (
+            <Fragment key={j.job}>
+              <tr>
+                <td>{j.job}</td>
+                <td>{ROUND_LABEL[j.bestRound]}</td>
+                <td className="no">{j.count}</td>
+                <td className="names-cell">
+                  {j.combis.slice(0, JOB_SHOWN).map((c, i) => (
+                    <span key={c.id} className="winner-item">
+                      {i > 0 && '・'}
+                      <CombiLink id={c.id}>{c.name}</CombiLink>(<Link to={yearTo(j, c.id, c.year)}>{c.year}</Link>)
+                    </span>
+                  ))}
+                  {rest.length > 0 && (
+                    <>
+                      {' '}
+                      <RevealButton reveal={reveal} row={j.job} col="rest" label={`${j.job}のほか`} count={rest.length}>
+                        ほか{rest.length}組
+                      </RevealButton>
+                    </>
+                  )}
+                </td>
+              </tr>
+              <RevealRow
+                reveal={reveal}
+                row={j.job}
+                colSpan={4}
+                content={() => ({
+                  title: `${j.job}のほかの組`,
+                  items: rest.map((c) => ({ name: c.name, combiId: c.id, year: c.year })),
+                  yearTo: (it) => yearTo(j, it.combiId, it.year as number),
+                })}
+              />
+            </Fragment>
+          )
+        })}
+      </tbody>
+    </HistoryTable>
+  )
+}
 
 function ageRows(rows: AgeRecordRow[]) {
   return rows.map((r) => ({
@@ -90,34 +157,7 @@ export default function CareerRecords({ ps }: { ps: PeopleStats }) {
       <p className="section-note">
         メンバーの職業(公式コンビ情報、2015年以降のみ)ごとの最高到達。コンビは各メンバーの職業すべてに数える。
       </p>
-      <HistoryTable caption="職業別の最高到達">
-          <thead>
-            <tr>
-              <th scope="col">職業</th>
-              <th scope="col">最高到達</th>
-              <th scope="col">組数</th>
-              <th scope="col">コンビ(到達年)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ps.jobs.map((j) => (
-              <tr key={j.job}>
-                <td>{j.job}</td>
-                <td>{ROUND_LABEL[j.bestRound]}</td>
-                <td className="no">{j.count}</td>
-                <td className="names-cell">
-                  {j.combis.map((c, i) => (
-                    <span key={c.id} className="winner-item">
-                      {i > 0 && '・'}
-                      <CombiLink id={c.id}>{c.name}</CombiLink>({c.year})
-                    </span>
-                  ))}
-                  {j.count > j.combis.length && ' ほか'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </HistoryTable>
+      <JobsTable jobs={ps.jobs} />
 
       <h3 className="section-title">トリオの記録</h3>
       <p className="section-note">

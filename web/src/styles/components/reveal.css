@@ -1,0 +1,76 @@
+/* ============ 数字を押すと名前の一覧が開く(RevealCount.tsx) ============
+   記録・統計の「数字だけ」の記録。数字(.reveal-btn)を押すと、その行のすぐ下に1行(.reveal-row)が開く。
+   表は狭い画面で横にスクロールするので、開いた中身は見えている幅に収め、左端に貼り付ける
+   (.history-wrap を幅の基準にして 100cqi = 枠の幅) */
+.history-wrap {
+  container-type: inline-size;
+}
+
+/* 押せる数字。文字はリンクと同じ色・点線の下線で「押せる」ことを示し、押せる範囲は 24px 以上(WCAG 2.5.8) */
+.reveal-btn {
+  display: inline-block;
+  min-inline-size: var(--tap-min);
+  min-block-size: var(--tap-min);
+  padding: 0 var(--space-1);
+  border: 0;
+  border-radius: var(--radius-s);
+  background: none;
+  color: var(--c-link);
+  font: inherit;
+  text-align: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.reveal-btn:hover {
+  background: var(--c-surface-2);
+  color: var(--c-link-hover);
+}
+
+.reveal-btn[aria-expanded='true'] {
+  background: var(--c-accent-tint);
+  color: var(--c-text);
+  font-weight: var(--fw-bold);
+  text-decoration-style: solid;
+}
+
+.history td.reveal-cell {
+  padding: 0;
+  background: var(--c-surface-2);
+  white-space: normal;
+}
+
+.reveal-panel {
+  position: sticky;
+  left: 0;
+  box-sizing: border-box;
+  max-inline-size: 100cqi;
+  padding: var(--space-3);
+}
+
+.reveal-head {
+  margin: 0 0 var(--space-1);
+  color: var(--c-text-muted);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-bold);
+}
+
+.reveal-names {
+  margin: 0;
+  line-height: 2;
+}
+
+/* 名前の途中では折らず、名前の間で折る(「・」は行頭禁則なので inline-block にする) */
+.reveal-names .winner-item {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* 表の外(文中の数字)で開く箱 */
+.reveal-block {
+  margin: var(--space-2) 0 var(--space-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-m);
+  background: var(--c-surface-2);
+}

@@ -1,32 +1,53 @@
+import { Fragment } from 'react'
+
 import { competitionRanks } from '../lib/rank'
 import type { FinalsStats } from '../lib/types'
 import { FinalistAgeSection, FinalistMakeupSection } from './FinalistTrends'
 import { WinnersCell } from './RankTable'
 import HistoryTable from './HistoryTable'
 import CombiLink from './CombiLink'
+import { fromRoster, useReveal, type RevealItem } from '../lib/reveal'
+import { RevealButton, RevealRow } from './RevealCount'
 
 /** 決勝の傾向(分布・傾向系): 出番順別/王者の1本目順位/結成年数別/年齢と結成年数の推移/事務所別/顔ぶれの推移。記録・統計の「決勝」タブが表示 */
 export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
   const unknown = fs.formationYears.unknownFormed
   const hasUnknown = unknown.final + unknown.semifinal + unknown.quarterfinal > 0
+  const roster = fs.roster
+  // 数字を押すと行の下に名前が開く。表ごとに開くのは1つ
+  const orderReveal = useReveal()
+  const finalOrderReveal = useReveal()
+  const revivalReveal = useReveal()
+  const formationReveal = useReveal()
+  const nameLengthReveal = useReveal()
+  const agencyReveal = useReveal()
 
-  // 結成年数別: 0〜15年は個別行、16年以上はまとめる(結成年の誤登録等に備える)
+  // 結成年数別: 0〜15年は個別行、16年以上はまとめる(結成年の誤登録等に備える)。
+  // 優勝・決勝は名前も持つ(準決勝・準々決勝は延べ数百〜千組あるので数だけ)
   const formationRows = (() => {
     const series = ['champion', 'final', 'semifinal', 'quarterfinal'] as const
     const maps = series.map(
-      (s) => new Map(fs.formationYears[s].map((r) => [r.years, r.count])),
+      (s) => new Map(fs.formationYears[s].map((r) => [r.years, r])),
     )
+    const namesOf = (r: (typeof fs.formationYears.final)[number] | undefined): RevealItem[] =>
+      r ? (r.combis ?? fromRoster(roster, r.rows)) : []
     const maxYears = Math.max(0, ...maps.flatMap((m) => [...m.keys()]))
-    const rows: { label: string; counts: number[] }[] = []
+    const rows: { label: string; counts: number[]; champions: RevealItem[]; finalists: RevealItem[] }[] = []
     for (let y = 0; y <= Math.min(maxYears, 15); y++) {
-      rows.push({ label: `結成${y}年`, counts: maps.map((m) => m.get(y) ?? 0) })
+      rows.push({
+        label: `結成${y}年`,
+        counts: maps.map((m) => m.get(y)?.count ?? 0),
+        champions: namesOf(maps[0].get(y)),
+        finalists: namesOf(maps[1].get(y)),
+      })
     }
     if (maxYears > 15) {
+      const over = (m: (typeof maps)[number]) => [...m.entries()].filter(([y]) => y > 15).map(([, r]) => r)
       rows.push({
         label: '結成16年以上',
-        counts: maps.map((m) =>
-          [...m.entries()].filter(([y]) => y > 15).reduce((sum, [, c]) => sum + c, 0),
-        ),
+        counts: maps.map((m) => over(m).reduce((sum, r) => sum + r.count, 0)),
+        champions: over(maps[0]).flatMap(namesOf),
+        finalists: over(maps[1]).flatMap(namesOf),
       })
     }
     return rows
@@ -53,16 +74,38 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
           </thead>
           <tbody>
             {fs.firstRoundOrderStats.map((r) => (
-              <tr key={r.order}>
-                <td className="no">{r.order}</td>
-                <td className="no">{r.appearances}</td>
-                <td className="no">{r.finalists}</td>
-                <td className="no">{r.wins}</td>
-                <td className="no">{r.meanDeviation != null ? r.meanDeviation.toFixed(1) : '—'}</td>
-                <td className="names-cell">
-                  <WinnersCell winners={r.winners} />
-                </td>
-              </tr>
+              <Fragment key={r.order}>
+                <tr>
+                  <td className="no">{r.order}</td>
+                  <td className="no">
+                    <RevealButton reveal={orderReveal} row={String(r.order)} col="appear" label={`${r.order}番の出場`} count={r.appearances} />
+                  </td>
+                  <td className="no">
+                    <RevealButton
+                      reveal={orderReveal}
+                      row={String(r.order)}
+                      col="final"
+                      label={`${r.order}番から最終決戦`}
+                      count={r.finalists ?? 0}
+                    />
+                  </td>
+                  <td className="no">{r.wins}</td>
+                  <td className="no">{r.meanDeviation != null ? r.meanDeviation.toFixed(1) : '—'}</td>
+                  <td className="names-cell">
+                    <WinnersCell winners={r.winners} />
+                  </td>
+                </tr>
+                <RevealRow
+                  reveal={orderReveal}
+                  row={String(r.order)}
+                  colSpan={6}
+                  content={(col) =>
+                    col === 'appear'
+                      ? { title: `${r.order}番の出場`, items: fromRoster(roster, r.rows) }
+                      : { title: `${r.order}番から最終決戦`, items: fromRoster(roster, r.finalRoundRows) }
+                  }
+                />
+              </Fragment>
             ))}
           </tbody>
         </HistoryTable>
@@ -82,14 +125,30 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
           </thead>
           <tbody>
             {fs.finalOrderStats.map((r) => (
-              <tr key={r.order}>
-                <td className="no">{r.order}番手</td>
-                <td className="no">{r.appearances}</td>
-                <td className="no">{r.wins}</td>
-                <td className="names-cell">
-                  <WinnersCell winners={r.winners} />
-                </td>
-              </tr>
+              <Fragment key={r.order}>
+                <tr>
+                  <td className="no">{r.order}番手</td>
+                  <td className="no">
+                    <RevealButton
+                      reveal={finalOrderReveal}
+                      row={String(r.order)}
+                      col="appear"
+                      label={`最終決戦の${r.order}番手`}
+                      count={r.appearances}
+                    />
+                  </td>
+                  <td className="no">{r.wins}</td>
+                  <td className="names-cell">
+                    <WinnersCell winners={r.winners} />
+                  </td>
+                </tr>
+                <RevealRow
+                  reveal={finalOrderReveal}
+                  row={String(r.order)}
+                  colSpan={4}
+                  content={() => ({ title: `最終決戦の${r.order}番手`, items: fromRoster(roster, r.rows) })}
+                />
+              </Fragment>
             ))}
           </tbody>
         </HistoryTable>
@@ -115,18 +174,34 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
                 ['ストレート組', fs.revivalStats.straight],
               ] as const
             ).map(([label, b]) => (
-              <tr key={label}>
-                <td>{label}</td>
-                <td className="no">{b.appearances}</td>
-                <td className="no">
-                  {b.finalists}
-                  {b.appearances > 0 && ` (${Math.round((b.finalists / b.appearances) * 100)}%)`}
-                </td>
-                <td className="no">
-                  {b.wins}
-                  {b.appearances > 0 && ` (${Math.round((b.wins / b.appearances) * 100)}%)`}
-                </td>
-              </tr>
+              <Fragment key={label}>
+                <tr>
+                  <td>{label}</td>
+                  <td className="no">
+                    <RevealButton reveal={revivalReveal} row={label} col="appear" label={`${label}の決勝出場`} count={b.appearances} />
+                  </td>
+                  <td className="no">
+                    <RevealButton reveal={revivalReveal} row={label} col="final" label={`${label}の最終決戦進出`} count={b.finalists} />
+                    {b.appearances > 0 && ` (${Math.round((b.finalists / b.appearances) * 100)}%)`}
+                  </td>
+                  <td className="no">
+                    <RevealButton reveal={revivalReveal} row={label} col="win" label={`${label}の優勝`} count={b.wins} />
+                    {b.appearances > 0 && ` (${Math.round((b.wins / b.appearances) * 100)}%)`}
+                  </td>
+                </tr>
+                <RevealRow
+                  reveal={revivalReveal}
+                  row={label}
+                  colSpan={4}
+                  content={(col) =>
+                    col === 'appear'
+                      ? { title: `${label}の決勝出場`, items: fromRoster(roster, b.rows) }
+                      : col === 'final'
+                        ? { title: `${label}の最終決戦進出`, items: fromRoster(roster, b.finalRoundRows) }
+                        : { title: `${label}の優勝`, items: fromRoster(roster, b.winRows) }
+                  }
+                />
+              </Fragment>
             ))}
           </tbody>
         </HistoryTable>
@@ -215,6 +290,7 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
       <h3 className="section-title">結成年数別の到達数</h3>
       <p className="section-note">
         結成N年 = 大会年 − 結成年(出場資格と同じ数え方)。決勝/準決勝/準々決勝は延べ(コンビ×年)で、上位ラウンド進出年は下位ラウンドにも数える。
+        優勝・決勝の数字を押すとその組が出ます(準決勝・準々決勝は延べ数百〜千組あるので数だけ)。
         {hasUnknown &&
           ` 結成年不明の延べ${unknown.final + unknown.semifinal + unknown.quarterfinal}件(決勝${unknown.final}・準決勝${unknown.semifinal}・準々決勝${unknown.quarterfinal})は除外。`}
       </p>
@@ -230,14 +306,38 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
           </thead>
           <tbody>
             {formationRows.map((row) => (
-              <tr key={row.label}>
-                <td>{row.label}</td>
-                {row.counts.map((c, i) => (
-                  <td key={i} className="no">
-                    {c > 0 ? c : ''}
-                  </td>
-                ))}
-              </tr>
+              <Fragment key={row.label}>
+                <tr>
+                  <td>{row.label}</td>
+                  {row.counts.map((c, i) => (
+                    <td key={i} className="no">
+                      {c === 0 ? (
+                        ''
+                      ) : i === 0 || i === 1 ? (
+                        <RevealButton
+                          reveal={formationReveal}
+                          row={row.label}
+                          col={i === 0 ? 'champion' : 'final'}
+                          label={`${row.label}で${i === 0 ? '優勝' : '決勝'}`}
+                          count={c}
+                        />
+                      ) : (
+                        c
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                <RevealRow
+                  reveal={formationReveal}
+                  row={row.label}
+                  colSpan={5}
+                  content={(col) =>
+                    col === 'champion'
+                      ? { title: `${row.label}で優勝`, items: row.champions }
+                      : { title: `${row.label}で決勝`, items: row.finalists }
+                  }
+                />
+              </Fragment>
             ))}
           </tbody>
         </HistoryTable>
@@ -261,7 +361,15 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
           </thead>
           <tbody>
             {(() => {
-              const rows: { label: string; entrants: number; finalists: number; champions: number }[] = []
+              type Row = {
+                label: string
+                entrants: number
+                finalists: number
+                champions: number
+                finalCombis: RevealItem[]
+                championCombis: RevealItem[]
+              }
+              const rows: Row[] = []
               for (const r of fs.nameLengthStats) {
                 if (r.length <= 9) {
                   rows.push({ label: `${r.length}文字`, ...r })
@@ -271,21 +379,43 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
                     last.entrants += r.entrants
                     last.finalists += r.finalists
                     last.champions += r.champions
+                    last.finalCombis = [...last.finalCombis, ...r.finalCombis]
+                    last.championCombis = [...last.championCombis, ...r.championCombis]
                   } else {
-                    rows.push({ label: '10文字以上', entrants: r.entrants, finalists: r.finalists, champions: r.champions })
+                    rows.push({ ...r, label: '10文字以上' })
                   }
                 }
               }
               return rows.map((r) => (
-                <tr key={r.label}>
-                  <td>{r.label}</td>
-                  <td className="no">{r.entrants.toLocaleString('ja-JP')}</td>
-                  <td className="no">{r.finalists > 0 ? r.finalists : ''}</td>
-                  <td className="no">{r.champions > 0 ? r.champions : ''}</td>
-                  <td className="no">
-                    {r.finalists > 0 ? `${((r.finalists / r.entrants) * 100).toFixed(2)}%` : ''}
-                  </td>
-                </tr>
+                <Fragment key={r.label}>
+                  <tr>
+                    <td>{r.label}</td>
+                    <td className="no">{r.entrants.toLocaleString('ja-JP')}</td>
+                    <td className="no">
+                      {r.finalists > 0 && (
+                        <RevealButton reveal={nameLengthReveal} row={r.label} col="final" label={`${r.label}で決勝進出`} count={r.finalists} />
+                      )}
+                    </td>
+                    <td className="no">
+                      {r.champions > 0 && (
+                        <RevealButton reveal={nameLengthReveal} row={r.label} col="champion" label={`${r.label}で優勝`} count={r.champions} />
+                      )}
+                    </td>
+                    <td className="no">
+                      {r.finalists > 0 ? `${((r.finalists / r.entrants) * 100).toFixed(2)}%` : ''}
+                    </td>
+                  </tr>
+                  <RevealRow
+                    reveal={nameLengthReveal}
+                    row={r.label}
+                    colSpan={5}
+                    content={(col) =>
+                      col === 'final'
+                        ? { title: `${r.label}で決勝進出`, items: r.finalCombis }
+                        : { title: `${r.label}で優勝`, items: r.championCombis }
+                    }
+                  />
+                </Fragment>
               ))
             })()}
           </tbody>
@@ -309,18 +439,31 @@ export default function FinalsTrends({ fs }: { fs: FinalsStats }) {
             {(() => {
               const ranks = competitionRanks(fs.agencyFinals, (x) => x.value)
               return fs.agencyFinals.map((a, i) => (
-                <tr key={a.agency}>
-                  <td className="no">{ranks[i]}</td>
-                  <td>{a.agency}</td>
-                  <td className="no">{a.value}</td>
-                  <td className="no">{a.combis}</td>
-                </tr>
+                <Fragment key={a.agency}>
+                  <tr>
+                    <td className="no">{ranks[i]}</td>
+                    <td>{a.agency}</td>
+                    <td className="no">{a.value}</td>
+                    <td className="no">
+                      <RevealButton reveal={agencyReveal} row={a.agency} col="combis" label={`${a.agency}の決勝進出`} count={a.combis} />
+                    </td>
+                  </tr>
+                  <RevealRow
+                    reveal={agencyReveal}
+                    row={a.agency}
+                    colSpan={4}
+                    content={() => ({
+                      title: `${a.agency}の決勝進出`,
+                      items: a.names.map((c) => ({ name: c.name, combiId: c.combiId, note: `${c.n}回` })),
+                    })}
+                  />
+                </Fragment>
               ))
             })()}
           </tbody>
         </HistoryTable>
 
-      <FinalistMakeupSection rows={fs.finalistsByYear} />
+      <FinalistMakeupSection rows={fs.finalistsByYear} roster={roster} />
     </>
   )
 }

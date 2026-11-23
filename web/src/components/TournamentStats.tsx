@@ -10,6 +10,7 @@ import {
   YAxis,
 } from 'recharts'
 
+import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
 
 import { ROUND_LABEL, ROUND_ORDER } from '../lib/rounds'
@@ -17,7 +18,9 @@ import { useTokens } from '../lib/tokens'
 import type { FormationReach, PassCount, Stats } from '../lib/types'
 import { hiatusArea, yearsWithHiatus } from './chartHiatus'
 import HistoryTable from './HistoryTable'
-import { yearPath } from '../lib/paths'
+import { useReveal, type RevealItem } from '../lib/reveal'
+import { RevealButton, RevealRow } from './RevealCount'
+import { finalsPath, yearPath } from '../lib/paths'
 
 // 線・棒の色は CSS のトークンから読む(styles/tokens/theme.css)。dataviz スキルの検証スクリプトで確認済み
 // (色覚の違いでの区別 ΔE 19.3 以上・白地で 3:1 以上)
@@ -93,9 +96,16 @@ export default function TournamentStats({ data }: { data: Stats }) {
                   const r = y.byRound[rk]
                   return (
                     <td key={rk} className="no">
-                      {r
-                        ? `${r.passed.toLocaleString('ja-JP')}/${r.appeared.toLocaleString('ja-JP')}`
-                        : ''}
+                      {r && (
+                        // 組の名前は年度一覧のその回戦に全部並んでいるので、そこへ飛ぶ
+                        <Link
+                          className="cell-target"
+                          to={yearPath(y.year, `?round=${rk}`)}
+                          aria-label={`${y.year}年 ${ROUND_LABEL[rk]} 通過${r.passed}組/出場${r.appeared}組`}
+                        >
+                          {r.passed.toLocaleString('ja-JP')}/{r.appeared.toLocaleString('ja-JP')}
+                        </Link>
+                      )}
                     </td>
                   )
                 })}
@@ -103,7 +113,7 @@ export default function TournamentStats({ data }: { data: Stats }) {
             ))}
           </tbody>
         </HistoryTable>
-      <p className="legend">各セルは「通過数/出場数」</p>
+      <p className="legend">各セルは「通過数/出場数」。押すと、その年のその回戦の一覧を開きます。</p>
 
       <FormationReachSection reach={data.formationReach} />
     </>
@@ -135,6 +145,7 @@ const REACH_SERIES = [
  */
 function FormationReachSection({ reach }: { reach: FormationReach }) {
   const t = useTokens(TOKENS)
+  const reveal = useReveal()
   if (!reach.fromYear || reach.rows.length === 0) return null
   const tick = { fontSize: 12, fill: t['--c-chart-axis'] }
   const tooltipStyle = {
@@ -175,7 +186,7 @@ function FormationReachSection({ reach }: { reach: FormationReach }) {
       </p>
       <p className="section-note">
         年数が長いほど高くなりますが、勝ち上がれない組は解散して分母から消えていくので、「続けると強くなる」という年数そのものの効果とは言えません。
-        結成年は公式サイトのコンビ情報の登録値です。
+        結成年は公式サイトのコンビ情報の登録値です。下の「表で見る」で準決勝以降・決勝の組数を押すと、その組が出ます。
       </p>
       <ul className="chart-legend" aria-label="線の色">
         {REACH_SERIES.map((s) => (
@@ -233,14 +244,52 @@ function FormationReachSection({ reach }: { reach: FormationReach }) {
             </tr>
           </thead>
           <tbody>
-            {reach.rows.map((r) => (
-              <tr key={r.years}>
-                <td className="no">{r.years}年</td>
-                <td className="no">{r.entries.toLocaleString('ja-JP')}</td>
-                {REACH_SERIES.map((s) => countCell({ appeared: r.entries, passed: r.reached[s.key] }, s.key))}
-                {countCell({ appeared: r.entries, passed: r.reached.final }, 'final')}
-              </tr>
-            ))}
+            {reach.rows.map((r) => {
+              const row = String(r.years)
+              // 準決勝以降・決勝は数を押すと名前が開く(3回戦・準々決勝は延べ数千組あるので数だけ)
+              const named = (key: 'semifinal' | 'final', label: string) => (
+                <td key={key} className="no">
+                  {rate({ appeared: r.entries, passed: r.reached[key] })}{' '}
+                  <small>
+                    (
+                    <RevealButton reveal={reveal} row={row} col={key} label={`結成${r.years}年で${label}`} count={r.reached[key]} />
+                    /{r.entries})
+                  </small>
+                </td>
+              )
+              return (
+                <Fragment key={r.years}>
+                  <tr>
+                    <td className="no">{r.years}年</td>
+                    <td className="no">{r.entries.toLocaleString('ja-JP')}</td>
+                    {REACH_SERIES.map((s) =>
+                      s.key === 'semifinal'
+                        ? named('semifinal', s.label)
+                        : countCell({ appeared: r.entries, passed: r.reached[s.key] }, s.key),
+                    )}
+                    {named('final', '決勝')}
+                  </tr>
+                  <RevealRow
+                    reveal={reveal}
+                    row={row}
+                    colSpan={REACH_SERIES.length + 3}
+                    content={(col) => {
+                      const key = col === 'final' ? 'final' : 'semifinal'
+                      const items: RevealItem[] = r.names[key]
+                      return {
+                        title: `結成${r.years}年で${key === 'final' ? '決勝' : '準決勝以降'}`,
+                        items,
+                        // 準決勝はその年の年度一覧のその組の行へ、決勝は決勝の得点表へ
+                        yearTo: (it) =>
+                          key === 'final'
+                            ? finalsPath(it.year as number)
+                            : yearPath(it.year as number, `?round=semifinal${it.combiId != null ? `&focus=${it.combiId}` : ''}`),
+                      }
+                    }}
+                  />
+                </Fragment>
+              )
+            })}
           </tbody>
         </HistoryTable>
       </details>
