@@ -36,6 +36,25 @@ def test_build_rankings_top_includes_boundary_ties():
     assert quarters[0]["value"] == 2 and quarters[-1]["value"] == 1
 
 
+def test_build_rankings_semifinals_counted_regardless_of_result():
+    """準決勝の進出は合否を問わない(通過・敗退・出場予定・敗者復活へ回った組も1回)。敗退 ≤ 進出 ≤ 準々決勝"""
+    records = [
+        {"id": 1, "name": "A", "history": {
+            "2019": {"results": {"quarterfinal": "pass", "semifinal": "fail"}},
+            "2020": {"results": {"quarterfinal": "pass", "semifinal": "fail", "playoff": "pass", "final": "fail"}},
+            "2021": {"results": {"quarterfinal": "pass", "semifinal": "pass", "final": "champion"}},
+            "2026": {"results": {"quarterfinal": "pass", "semifinal": "scheduled"}},
+        }},
+        {"id": 2, "name": "B", "history": {"2021": {"results": {"quarterfinal": "fail"}}}},
+    ]
+    r = build_rankings(records)
+    semis = {x["name"]: x["value"] for x in r["mostSemifinals"]}
+    assert semis == {"A": 4}  # 準決勝に出ていない B は載らない
+    fails = {x["name"]: x["value"] for x in r["mostSemifinalFails"]}
+    quarters = {x["name"]: x["value"] for x in r["mostQuarterfinals"]}
+    assert all(fails.get(n, 0) <= v <= quarters[n] for n, v in semis.items())
+
+
 def _finals(year, first, final, judges=None):
     return {
         "year": year,

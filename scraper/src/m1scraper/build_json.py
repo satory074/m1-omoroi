@@ -210,6 +210,7 @@ def build_rankings(records: list[dict]) -> dict:
 
     names = {r["id"]: r["name"] for r in records}
     semifinal_fails: dict[int, int] = defaultdict(int)
+    semifinal_up: dict[int, int] = defaultdict(int)
     quarterfinal_up: dict[int, int] = defaultdict(int)
 
     for rec in records:
@@ -217,11 +218,23 @@ def build_rankings(records: list[dict]) -> dict:
             res = entry["results"]
             if res.get("semifinal") in FAILED:
                 semifinal_fails[rec["id"]] += 1
+            # 進出は「その年の results にキーがある」(合否は問わない。build_advancers と同じ基準)
+            if "semifinal" in res:
+                semifinal_up[rec["id"]] += 1
             if "quarterfinal" in res:
                 quarterfinal_up[rec["id"]] += 1
 
+    # 2015年以降は毎年準々決勝があり、準決勝へのシードも無い: 準決勝敗退 ≤ 準決勝進出 ≤ 準々決勝進出
+    for cid in semifinal_up.keys() | semifinal_fails.keys():
+        if not semifinal_fails[cid] <= semifinal_up[cid] <= quarterfinal_up[cid]:
+            print(
+                f"[build] rankings整合性警告: {names[cid]}({cid}) 準決勝敗退 {semifinal_fails[cid]} / "
+                f"準決勝 {semifinal_up[cid]} / 準々決勝 {quarterfinal_up[cid]}"
+            )
+
     return {
         "mostSemifinalFails": top(semifinal_fails, names),
+        "mostSemifinals": top(semifinal_up, names),
         "mostQuarterfinals": top(quarterfinal_up, names),
         "lastYearEntrants": _last_year_entrants(records),
     }

@@ -180,6 +180,8 @@ export interface RankingItem {
 /** 集計は公式コンビDBの2015年以降(決勝の全期間版は FinalsStats 側) */
 export interface Rankings {
   mostSemifinalFails: RankingItem[]
+  /** 準決勝に進んだ回数(合否は問わない) */
+  mostSemifinals: RankingItem[]
   mostQuarterfinals: RankingItem[]
   /** 最新の年がラストイヤー(結成 year − limit 年)の組。year のデータが無ければ null */
   lastYearEntrants: LastYearEntrants | null

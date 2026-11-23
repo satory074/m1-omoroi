@@ -72,6 +72,13 @@ export default function CombiRecords({ data }: { data: Rankings }) {
       items: data.mostQuarterfinals,
     },
     {
+      key: 'mostSemifinals',
+      title: '準決勝 最多進出',
+      unit: '回',
+      note: '準決勝に進んだ回数（勝ち上がりは問わない。2015年以降）',
+      items: data.mostSemifinals,
+    },
+    {
       key: 'mostSemifinalFails',
       title: '準決勝 最多敗退',
       unit: '回',
