@@ -1,0 +1,11 @@
+{
+  "_note": "TVer の「いいね」数(ワイルドカード争いの参考値)を取る期間と場所。年ごとに1件。start〜deadline の間だけ毎時取り、deadline 後に1回取って最終値にする。series = TVer のシリーズID(tver.jp/series/{ID})、section = その中の節の見出しの先頭(各組の動画が並ぶ節)、byEpisode = {エピソードID: コンビID}(題名で紐付かないときの手直し)。出典: 期間は https://www.m-1gp.com/wildcard/",
+  "2026": {
+    "start": "2026-11-22T12:00+09:00",
+    "deadline": "2026-11-29T23:59+09:00",
+    "series": "sryg1lm5fy",
+    "section": "準々決勝",
+    "round": "quarterfinal",
+    "byEpisode": {}
+  }
+}

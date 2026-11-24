@@ -181,6 +181,12 @@ def cmd_fetch_schedule(args):
     fetch_schedule()
 
 
+def cmd_fetch_tver_likes(args):
+    from .tver_likes import fetch_tver_likes
+
+    fetch_tver_likes()
+
+
 def cmd_build(args):
     from .build_json import build
 
@@ -242,6 +248,12 @@ def main():
         help="M-1公式サイトの1回戦〜決勝の日程(会場・日時・出番順の出場者)を取得 → work/schedule.json",
     )
     p.set_defaults(func=cmd_fetch_schedule)
+
+    p = sub.add_parser(
+        "fetch-tver-likes",
+        help="TVer の準々決勝敗退組の動画のいいね数を取得(投票期間中だけ) → work/tver_likes.json",
+    )
+    p.set_defaults(func=cmd_fetch_tver_likes)
 
     p = sub.add_parser("build", help="work/* から data/* を生成")
     p.set_defaults(func=cmd_build)

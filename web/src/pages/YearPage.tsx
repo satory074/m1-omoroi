@@ -21,6 +21,7 @@ import {
   usePopularity,
   useSchedule,
   useScheduleRound,
+  useTverLikes,
   useYear,
   useYearSummary,
 } from '../lib/api'
@@ -45,6 +46,15 @@ import {
   todayJst,
 } from '../lib/schedule'
 import { clearRow, loadRow, saveRow } from '../lib/scrollMemory'
+import {
+  WILDCARD_URL,
+  formatTverAt,
+  hasTverFor,
+  tverClosed,
+  tverEpisodeUrl,
+  tverGrowthLabel,
+  tverItem,
+} from '../lib/tver'
 import type {
   OfficialPlaylist,
   OfficialVideos,
@@ -52,6 +62,8 @@ import type {
   ResultKey,
   RoundKey,
   ScheduleVenue,
+  TverItem,
+  TverLikes,
   YearEntry,
 } from '../lib/types'
 import { yearTitle } from '../lib/seo'
@@ -60,7 +72,7 @@ import { useUrlParam } from '../lib/useUrlParam'
 import { finalsPath, yearPath } from '../lib/paths'
 
 const RESULT_FILTERS = ['all', 'pass', 'fail'] as const
-const SORTS = ['hits', 'no', 'kana', 'order'] as const
+const SORTS = ['hits', 'no', 'kana', 'order', 'tver'] as const
 const LIKED = ['0', '1'] as const
 type ResultFilter = (typeof RESULT_FILTERS)[number]
 type SortKey = (typeof SORTS)[number]
@@ -72,6 +84,7 @@ const SORT_LABEL: Record<SortKey, string> = {
   no: 'エントリーNo.順',
   kana: '五十音順',
   order: '出番順',
+  tver: 'TVer いいね順',
 }
 
 /** 日程の会場の行(開演・MC)を出すのは会場がこの数までの回戦。1回戦(74会場)・2回戦(15会場)は
@@ -193,6 +206,9 @@ function Row({
   year,
   round,
   hits,
+  tver,
+  showTver,
+  closed,
   official,
   slot,
   focused,
@@ -201,6 +217,12 @@ function Row({
   year: number
   round: RoundKey
   hits: number | undefined
+  /** TVer のいいね数(その年・その回戦の動画がある組だけ) */
+  tver: TverItem | undefined
+  /** 数字の列を注目度の代わりに TVer のいいね数にする(TVer いいね順のとき) */
+  showTver: boolean
+  /** 投票の締切後(伸びを出さない) */
+  closed: boolean
   official: OfficialVideos | null | undefined
   /** その回戦の出番(公式日程に載っている組だけ) */
   slot: Slot | null
@@ -229,11 +251,38 @@ function Row({
       </span>
       <span className="yr-meta">
         <span className="yr-no">{e.no != null ? `No.${e.no}` : ''}</span>
-        <span className="yr-hits">{hits != null ? formatHits(hits) : ''}</span>
+        {showTver ? (
+          <span className="yr-hits yr-tver">
+            {tver && (
+              <>
+                {tver.n.toLocaleString('ja-JP')}
+                {!closed && tverGrowthLabel(tver) && (
+                  <span className="yr-tver-d">
+                    <span className="sr-only">24時間で</span>
+                    {tverGrowthLabel(tver)}
+                  </span>
+                )}
+              </>
+            )}
+          </span>
+        ) : (
+          <span className="yr-hits">{hits != null ? formatHits(hits) : ''}</span>
+        )}
       </span>
       <span className={`yr-result result-${res}`}>
         <span aria-hidden="true">{disp.sym}</span> {disp.label || e.raw?.[round] || '不明'}
         <VideoLinks links={combiVideos(official, year, e.id, round)} name={e.name} />
+        {tver && (
+          <a
+            className="tver-link"
+            href={tverEpisodeUrl(tver.ep)}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${e.name}の${ROUND_LABEL[round]}の動画を TVer で開く`}
+          >
+            TVer
+          </a>
+        )}
       </span>
       <span className="yr-like">
         {/* いいねはコンビIDで覚えるので、IDの紐付かないアーカイブの行(2001〜2010の一部)には付けない */}
@@ -245,6 +294,32 @@ function Row({
         )}
       </span>
     </>
+  )
+}
+
+/** TVer いいね順のときの注記。数字が審査の票数ではないこと・出典・時点を一覧の上に出す */
+function TverNote({ tver }: { tver: TverLikes }) {
+  const closed = tverClosed(tver)
+  // 取り始めて24時間は伸びが無いので、無いうちは「小さい数字」の説明を出さない
+  const growth = !closed && Object.values(tver.items).some((it) => it.d != null)
+  return (
+    <p className="tver-note">
+      {closed
+        ? `TVer のいいね数(締切後 ${formatTverAt(tver.at)} に取得した最終値)。`
+        : `TVer のいいね数(${formatTverAt(tver.at)} 時点。投票期間中は1時間ごとに更新${growth ? '、小さい数字は24時間の伸び' : ''})。`}
+      ワイルドカードは M-1 の LINE の投票で決まり、<strong>この数は投票数ではありません</strong>。出典:{' '}
+      {tver.series ? (
+        <a href={tver.series} target="_blank" rel="noopener noreferrer">
+          TVer
+        </a>
+      ) : (
+        'TVer'
+      )}
+      ・
+      <a href={WILDCARD_URL} target="_blank" rel="noopener noreferrer">
+        ワイルドカード(公式)
+      </a>
+    </p>
   )
 }
 
@@ -261,6 +336,8 @@ function YearBoard({
   year,
   round,
   popularity,
+  tver,
+  showTver,
   official,
   slots,
   venueId,
@@ -275,6 +352,10 @@ function YearBoard({
   year: number
   round: RoundKey
   popularity: Popularity | null | undefined
+  /** その年・その回戦の TVer のいいね数(無ければ null) */
+  tver: TverLikes | null
+  /** 数字の列を TVer のいいね数にする */
+  showTver: boolean
   official: OfficialVideos | null | undefined
   /** その回戦の出番(今シーズンだけ) */
   slots: SlotIndex
@@ -316,6 +397,8 @@ function YearBoard({
       window.removeEventListener('resize', measure)
     }
   }, [headRef, empty])
+
+  const closed = tver ? tverClosed(tver) : false
 
   const virtualizer = useWindowVirtualizer({
     count: rows.length,
@@ -387,7 +470,7 @@ function YearBoard({
           <span>No.</span>
           <span>コンビ</span>
           <span>結果</span>
-          <span>注目度</span>
+          <span>{showTver ? 'TVer いいね' : '注目度'}</span>
           <span>いいね</span>
         </div>
       </div>
@@ -421,6 +504,9 @@ function YearBoard({
                   year={year}
                   round={round}
                   hits={e.id != null ? popularity?.hits[String(e.id)]?.n : undefined}
+                  tver={tverItem(tver, e.id)}
+                  showTver={showTver}
+                  closed={closed}
                   official={official}
                   slot={slotFor(slots, e.id, venueId)}
                   focused={focused}
@@ -447,6 +533,7 @@ export default function YearPage() {
   const { data: summary } = useYearSummary(known ? parsedYear : null)
   const { data: popularity } = usePopularity()
   const { data: official } = useOfficialVideos()
+  const { data: tverLikes } = useTverLikes()
   // 公式日程(準々決勝以降)。持っているのはシーズン中の1年分だけ(schedule.year)
   const { data: schedule, isPending: schedulePending } = useSchedule()
   const likes = useLikes()
@@ -496,8 +583,15 @@ export default function YearPage() {
   const slotsLoading = wantSlots && slotsPending
   const venueId = hasSlots && venueParam && venues.some((v) => v.id === venueParam) ? venueParam : null
   const venueOrder = useMemo(() => new Map(venues.map((v, i) => [v.id, i])), [venues])
-  // 出番の無い回戦(過去の年など)で ?sort=order が来たら注目度順。出番の到着を待つ間はそのまま
-  const sortKey: SortKey = sort === 'order' && !hasSlots && !slotsLoading ? 'hits' : sort
+  // TVer のいいね数(ワイルドカード争いの参考値)。持っているのは投票のあった年の準々決勝だけ
+  const tver = !showAbsent && hasTverFor(tverLikes, year, round) ? tverLikes : null
+  // 出番の無い回戦(過去の年など)で ?sort=order が来たら注目度順。出番の到着を待つ間はそのまま。
+  // TVer のいいね数の無い年・回戦の ?sort=tver も同じ(届くまではそのまま)
+  const sortKey: SortKey =
+    (sort === 'order' && !hasSlots && !slotsLoading) || (sort === 'tver' && !tver && tverLikes !== undefined)
+      ? 'hits'
+      : sort
+  const showTver = sortKey === 'tver' && tver !== null
 
   // 「いいねだけ」の間に外したいいねは、絞り込みを切り替えるまで行を残す(押し間違えても押し直せるように)
   const likeSig = `${year}|${round}|${liked}`
@@ -575,6 +669,17 @@ export default function YearPage() {
         if (pb != null) return 1
         return kanaCmp(a, b)
       })
+    } else if (sortKey === 'tver') {
+      // 数の無い組(通過組・動画の無い組)は後ろに五十音順(注目度順と同じ)
+      const nOf = (e: YearEntry) => tverItem(tver, e.id)?.n
+      sorted.sort((a, b) => {
+        const na = nOf(a)
+        const nb = nOf(b)
+        if (na != null && nb != null) return nb - na
+        if (na != null) return -1
+        if (nb != null) return 1
+        return kanaCmp(a, b)
+      })
     } else if (sortKey === 'hits') {
       const hitOf = (e: YearEntry) => (e.id != null ? popularity?.hits[String(e.id)]?.n : undefined)
       sorted.sort((a, b) => {
@@ -589,7 +694,7 @@ export default function YearPage() {
       sorted.sort((a, b) => (a.no ?? Number.MAX_SAFE_INTEGER) - (b.no ?? Number.MAX_SAFE_INTEGER))
     }
     return sorted
-  }, [yearFile, round, resultFilter, sortKey, popularity, slots, venueId, venueOrder, likedNow, kept, year])
+  }, [yearFile, round, resultFilter, sortKey, popularity, tver, slots, venueId, venueOrder, likedNow, kept, year])
 
   // 「資格がありながら未エントリー」の判定用。その年エントリーした全組のID
   const enteredIds = useMemo(() => {
@@ -608,7 +713,9 @@ export default function YearPage() {
   // 戻るボタンの位置を正しくするため、注目度順は注目度データが届いてから、出番順・会場の絞り込みは
   // 出番が届いてから並びを確定とみなす
   const ready =
-    (sortKey !== 'hits' || popularity !== undefined) && (!(sort === 'order' || venueParam) || !slotsLoading)
+    (sortKey !== 'hits' || popularity !== undefined) &&
+    (sortKey !== 'tver' || tverLikes !== undefined) &&
+    (!(sort === 'order' || venueParam) || !slotsLoading)
 
   // 年の並び。年を移っても回戦・絞り込み・並び順は引き継ぐ(その年に無い回戦なら1回戦を出す)
   const yearItems = useMemo<ScrollNavItem[]>(() => {
@@ -794,7 +901,9 @@ export default function YearPage() {
               <label className="select">
                 <span className="sr-only">並び順</span>
                 <select value={sortKey} onChange={(e) => setSort(e.target.value as SortKey)}>
-                  {SORTS.filter((s) => s !== 'order' || hasSlots || sortKey === 'order').map((s) => (
+                  {SORTS.filter(
+                    (s) => (s !== 'order' || hasSlots || sortKey === 'order') && (s !== 'tver' || tver || sortKey === 'tver'),
+                  ).map((s) => (
                     <option key={s} value={s}>
                       {SORT_LABEL[s]}
                     </option>
@@ -824,6 +933,7 @@ export default function YearPage() {
               </button>
               {hasSlots && <VenueSelect venues={venues} value={venueId} today={today} onChange={setVenue} />}
             </div>
+            {showTver && tver && <TverNote tver={tver} />}
             {/* 動画データの到着前から高さを確保して、一覧の位置がずれないようにする */}
             <div className="round-videos-slot">
               {official !== undefined && (
@@ -852,6 +962,8 @@ export default function YearPage() {
             year={year}
             round={round}
             popularity={popularity}
+            tver={tver}
+            showTver={showTver}
             official={official}
             slots={slots}
             venueId={venueId}

@@ -376,6 +376,52 @@ a.yr-link:hover {
   color: var(--c-text-muted);
 }
 
+/* TVer のいいね数(TVer いいね順のときに注目度の列へ入る)。下の小さい数字は24時間の伸び */
+.yr-tver {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--c-text);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+}
+
+.yr-tver-d {
+  font-size: var(--fs-1);
+  font-weight: var(--fw-regular);
+  color: var(--c-text-muted);
+}
+
+/* TVer の動画へのリンク。YouTube の ▶ と見分けがつくよう文字で書く(TVer のロゴは使わない) */
+.tver-link {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-1);
+  margin: -2px 0;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-s);
+  font-size: var(--fs-1);
+  font-weight: var(--fw-bold);
+  color: var(--c-link);
+  text-decoration: none;
+}
+
+.tver-link:hover,
+.tver-link:focus-visible {
+  border-color: var(--c-border-strong);
+  color: var(--c-link-hover);
+}
+
+/* TVer いいね順のときの注記(数字が投票数ではないこと・出典・時点) */
+.tver-note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-2);
+  color: var(--c-text-muted);
+}
+
 .yr-result {
   grid-area: result;
   display: inline-flex;
@@ -503,6 +549,23 @@ a.yr-link:hover {
   }
   .yr-hits:not(:empty)::before {
     content: '再生 ';
+  }
+  /* 狭い画面では「TVer いいね 7,753 +1,234」を語の途中で折らず、まとまりごとに次の行へ送る */
+  .yr-meta {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+  .yr-tver {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: var(--space-1);
+    white-space: nowrap;
+  }
+  .yr-hits.yr-tver:not(:empty)::before {
+    content: 'TVer いいね ';
+    font-weight: var(--fw-regular);
+    color: var(--c-text-muted);
   }
   .yr-result {
     font-size: var(--fs-2);

@@ -104,6 +104,35 @@ export interface Popularity {
   hits: Record<string, { n: number; at: string; v?: number; m?: number }>
 }
 
+/** TVer の動画1本のいいね数(tver_likes.json の items)。d・h は投票期間中だけ */
+export interface TverItem {
+  /** いいね数 */
+  n: number
+  /** TVer のエピソードID(tver.jp/episodes/{ep}) */
+  ep: string
+  /** 24時間の伸び(最新 − 24時間以上前で一番新しい標本) */
+  d?: number
+  /** その伸びの実際の時間幅(時間)。CI が遅れて間が空くと24からずれる */
+  h?: number
+}
+
+/** TVer の準々決勝敗退組の動画のいいね数(scraper/src/m1scraper/tver_likes.py)。
+ *  ワイルドカード争いの参考値で、審査(LINE の投票)の票数ではない */
+export interface TverLikes {
+  year: number
+  round: RoundKey
+  /** 最後に取得した時刻(日本時間の ISO 8601。例 2026-11-23T11:55+09:00) */
+  at: string
+  /** 投票の締切(ISO 8601) */
+  deadline: string | null
+  /** 締切後に取った最終値か */
+  final: boolean
+  /** TVer のシリーズのページ */
+  series: string | null
+  /** コンビID → いいね数 */
+  items: Record<string, TverItem>
+}
+
 /** M-1公式YouTubeの動画1本へのリンク(official_videos.json の combis 側) */
 export interface OfficialVideoLink {
   /** YouTube の動画ID */

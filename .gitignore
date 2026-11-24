@@ -13,6 +13,7 @@ scraper/work/*
 !scraper/work/popularity.json
 !scraper/work/official_videos.json
 !scraper/work/schedule.json
+!scraper/work/tver_likes.json
 
 # Node
 web/node_modules/
