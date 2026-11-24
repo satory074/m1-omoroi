@@ -1,10 +1,12 @@
 # TVer の準々決勝敗退組の動画の「いいね」数(ワイルドカード争いの参考値。審査は LINE 投票で、この数は投票数ではない)。
 # 投票期間中だけ毎時取り、締切後に1回取って最終値にする(期間は scraper/overrides/tver_likes.json。
 # 期間の外・最終値の取得後はスクリプトが何もせずに終わる)。
+# 毎時の起動は時計 tver-likes-clock.yml が workflow_dispatch で行う。下の cron は予備
+# (このリポジトリの予定実行は7〜12時間遅れる)で、来たときに時計が止まっていれば起動し直す。
 # data/ へのコミットで deploy.yml が発火し(workflow_run)、サイトにも自動反映される。
 # 1回に TVer へ103件(シリーズのページ1件 + 各組の動画)を1秒に1件以下で取る。
 # **毎年、下の cron の日付をその年の投票期間(UTC)に合わせること**(期間の外の実行でも deploy が1回走るため絞っている)。
-# TVer や事務局から連絡があればこのワークフローを無効化し、data/tver_likes.json を消す。
+# TVer や事務局から連絡があればこのワークフローと時計を無効化し(gh workflow disable)、data/tver_likes.json を消す。
 name: Update TVer likes
 
 on:
@@ -16,6 +18,7 @@ on:
 
 permissions:
   contents: write
+  actions: write  # 時計(tver-likes-clock.yml)を起動し直すため
 
 concurrency:
   group: update-tver-likes
@@ -26,6 +29,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # 毎時の起動は時計(tver-likes-clock.yml)が行う。予定実行は遅れて来るので、来たときに時計が
+      # 止まっていれば起動し直す(毎年の最初の起動もこれ。期間の外なら時計はすぐ止まる)
+      - name: Restart the clock if it is not running
+        if: github.event_name == 'schedule'
+        continue-on-error: true  # 時計の確認に失敗しても取得は続ける
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          n=$(gh run list --workflow tver-likes-clock.yml --limit 20 --json status \
+                -q '[.[] | select(.status != "completed")] | length')
+          if [ "$n" = "0" ]; then gh workflow run tver-likes-clock.yml && echo "時計を起動"; else echo "時計は動いている"; fi
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - name: Fetch TVer likes
