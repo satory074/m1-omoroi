@@ -1,0 +1,71 @@
+# TVer いいね数の取得(update-tver-likes.yml)を毎時17分に起動する時計。
+# GitHub の予定実行(cron)はこのリポジトリで7〜12時間遅れ、毎時の cron は11時間に1回しか来なかった
+# (2026-11-24)。手動起動(workflow_dispatch)は数秒で動くので、このワークフローが
+# 「次の17分まで待つ → 取得を起動 → 次の自分を起動」を繰り返す。
+# GITHUB_TOKEN による workflow_dispatch は新しい実行を作れる(push と違い再帰防止の対象外)。
+#
+# 止まる条件(待つ前と待った後に確かめる): 期間前 / 最終値を取得済み / 締切から1日たった。
+# 期間は scraper/overrides/tver_likes.json、最終値は scraper/work/tver_likes.json の final(main の最新)。
+# 鎖が切れても、update-tver-likes.yml の予定実行(遅れて来る)がこの時計を起動し直す。
+# 同じ group で走るのは1つ、待ちも1つだけなので、二重に起動しても鎖は1本に収まる。
+# 手で止めるときは: gh workflow disable tver-likes-clock.yml
+name: TVer likes clock
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: tver-likes-clock
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Wait until :17, start the update, start the next tick
+        run: |
+          retry() { for i in 1 2 3; do "$@" && return 0; sleep 15; done; return 1; }
+          raw() { gh api "repos/$GH_REPO/contents/$1?ref=main" -H "Accept: application/vnd.github.raw" > "$2"; }
+          in_window() {
+            # 期間の設定が読めなければ止める(予定実行が後で起動し直す)。最終値の印が読めなければ続ける
+            #(取得側も締切後は1回で止まるので、続けても TVer へ余計には取りに行かない)
+            retry raw scraper/overrides/tver_likes.json cfg.json || { echo "止める: 期間の設定が読めない"; return 1; }
+            retry raw scraper/work/tver_likes.json work.json || echo '{}' > work.json
+            python3 - <<'PY'
+          import json, sys
+          from datetime import datetime, timedelta, timezone
+          cfg = {k: v for k, v in json.load(open("cfg.json")).items() if k.isdigit()}
+          work = json.load(open("work.json"))
+          now = datetime.now(timezone.utc)
+          # m1scraper.tver_likes.pick_season と同じ: 開始が今以前で一番新しい年
+          started = [y for y in cfg if datetime.fromisoformat(cfg[y]["start"]) <= now]
+          if not started:
+              sys.exit("止める: 期間前")
+          year = max(started, key=int)
+          deadline = datetime.fromisoformat(cfg[year]["deadline"])
+          if work.get("year") == int(year) and work.get("final"):
+              sys.exit(f"止める: {year}年の最終値を取得済み")
+          if now > deadline + timedelta(days=1):
+              sys.exit(f"止める: {year}年の締切から1日たった")
+          print(f"続ける: {year}年 締切 {deadline.isoformat()}")
+          PY
+          }
+
+          in_window || exit 0
+          now=$(date +%s)
+          next=$(( now / 3600 * 3600 + 17 * 60 ))
+          [ "$next" -le $(( now + 60 )) ] && next=$(( next + 3600 ))
+          echo "$(date -u -d "@$next" '+%H:%M') UTC まで待つ"
+          sleep $(( next - now ))
+
+          in_window || exit 0
+          retry gh workflow run update-tver-likes.yml
+          retry gh workflow run tver-likes-clock.yml
