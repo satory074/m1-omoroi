@@ -55,6 +55,7 @@ jobs:
           fi
           uv run m1 build
       - name: Commit data changes
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -68,4 +69,15 @@ jobs:
             git commit -m "TVer いいね数 自動更新 ($(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M'))"
             git pull --rebase origin main
             git push
+            echo "pushed=1" >> "$GITHUB_OUTPUT"
           fi
+      # 時計が起動した実行(GITHUB_TOKEN の workflow_dispatch。actor が github-actions[bot])の完了では
+      # deploy.yml の workflow_run が発火しない(GITHUB_TOKEN が起こしたイベントは新しい実行を作らない。
+      # 例外は workflow_dispatch だけ)。2026-11-24 に時計の初回の取得が本番に出なかった。
+      # なので自分で deploy を起動する。予定実行・手動実行(actor が人)は今まで通り workflow_run に任せる(二重にしない)
+      - name: Start deploy
+        if: steps.commit.outputs.pushed == '1' && github.actor == 'github-actions[bot]'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run deploy.yml
